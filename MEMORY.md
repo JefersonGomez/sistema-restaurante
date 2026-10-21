@@ -6,7 +6,7 @@
 ## Estado actual
 
 - **Fecha última actualización:** 2026-10-20
-- **Sub-fase en curso:** 1.4 terminada, pendiente de validar commit. Siguiente: 1.5 (middlewares).
+- **Sub-fase en curso:** 1.5 terminada, pendiente de validar commit. Siguiente: 1.6 (módulos del dueño y superadmin).
 - Repo remoto: https://github.com/JefersonGomez/sistema-restaurante (rama `main`).
   **Antes de cada commit/push: mostrar al usuario qué se sube y esperar su validación.**
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
@@ -19,7 +19,7 @@
 | 1.2  | Docker Compose (Postgres 16) + Prisma schema completo + migración inicial                                                                    | `pnpm db:up`, `pnpm db:migrate`    | ✅     |
 | 1.3  | Seed (superadmin, Soda La Esquina, usuarios, estaciones, 4 categorías, 12 platos, modificadores, 8 mesas)                                    | `pnpm db:seed` y consulta          | ✅     |
 | 1.4  | Auth: login, refresh, logout, me (JWT + bcrypt + RefreshToken hasheado)                                                                      | tests de login                     | ✅     |
-| 1.5  | Middlewares: auth, requireRole, tenant, validate, errorHandler, rate limit, helmet, CORS                                                     | tests 401/403                      | ⬜     |
+| 1.5  | Middlewares: auth, requireRole, tenant, validate, errorHandler, rate limit, helmet, CORS                                                     | tests 401/403                      | ✅     |
 | 1.6  | Módulos: admin/restaurantes, restaurante, usuarios, estaciones, categorías, platos, modificadores, mesas (+QR, regenerar token), uploads 501 | test de aislamiento A/B            | ⬜     |
 | 1.7  | Público: `/public/:slug/menu`, `/public/mesa/:token`, `/health`                                                                              | test menú público                  | ⬜     |
 | 1.8  | Socket.IO: handshake JWT, salas por rol, `emitToRestaurant`, ping/pong, `menu:actualizado`                                                   | test de socket                     | ⬜     |
@@ -61,6 +61,11 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
   Prisma P2002→409, P2025→404, JSON inválido→400, resto→500 (mensaje genérico en producción).
 - Tests: `NODE_ENV=test` hace que `env.DATABASE_URL` = `DATABASE_URL_TEST`; `tests/globalSetup.ts`
   corre `prisma migrate deploy`; `limpiarBD()` hace TRUNCATE; helpers `crearRestaurante`, `crearUsuario`, `tokenDe`.
+- Rutas privadas: `router.use(autenticar, requireRole(...), tenant)`; el service recibe
+  `req.tenant.restauranteId`. `tenant` da 403 `SIN_RESTAURANTE` si el JWT no trae restaurante (superadmin).
+- Rate limit (`middlewares/rateLimit.ts`): `limitePublico` 120/min por IP (para `/public`),
+  `limiteLogin` 10 fallidos/15 min por IP. Desactivado en `NODE_ENV=test`. Store en memoria.
+- CORS con `credentials: true` (la cookie de refresh viaja desde staff).
 - `lib/tokens.ts` → `generarTokenQr()` (24 bytes base64url), reutilizar en mesas.
 - `Restaurante.plan` es `String` (default `basico`); `Mesa` única por `(restauranteId, numero)`.
 
@@ -95,3 +100,5 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
 - 2026-10-20: 1.3 subida a GitHub.
 - 2026-10-20: 1.4 auth (login/refresh/logout/me), errorHandler, validate, autenticar, app/server,
   Vitest + Supertest (10 tests verdes). Dependencias: express 5, jsonwebtoken, cookie-parser, vitest, supertest.
+- 2026-10-20: 1.4 subida a GitHub.
+- 2026-10-20: 1.5 requireRole, tenant, rate limit, helmet, CORS (17 tests verdes). Dependencias: helmet, cors, express-rate-limit.

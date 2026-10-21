@@ -4,6 +4,7 @@ declare global {
   namespace Express {
     interface Request {
       usuario?: UsuarioToken;
+      tenant?: { restauranteId: string };
     }
   }
 }
