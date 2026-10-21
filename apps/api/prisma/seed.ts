@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import type { Prisma } from '../src/generated/prisma/client';
+import { calcularTotales } from '@menu-qr/shared';
 import { prisma } from '../src/lib/prisma';
 import { env } from '../src/lib/env';
 import { generarTokenQr } from '../src/lib/tokens';
@@ -298,7 +299,137 @@ async function crearRestauranteDemo(tx: Prisma.TransactionClient) {
     })),
   });
 
+  await crearOperacionDemo(tx, restaurante);
   return restaurante;
+}
+
+// Cuentas y pedidos de ejemplo en distintos estados. La mesa 3 queda libre para probar.
+//   Mesa 1: pedido confirmado con ítems en preparación, listo y entregado
+//   Mesa 2: pedido esperando confirmación del mesero
+//   Mesa 4: pidió la cuenta
+//   Mesa 5: está llamando al mesero
+//   Mesa 6: cuenta cerrada hoy (aparece en el reporte "Hoy")
+async function crearOperacionDemo(
+  tx: Prisma.TransactionClient,
+  r: {
+    id: string;
+    porcentajeIva: number;
+    porcentajeServicio: number;
+    preciosIncluyenImpuestos: boolean;
+  },
+) {
+  const restauranteId = r.id;
+  const platos = await tx.plato.findMany({
+    where: { restauranteId },
+    include: {
+      grupos: {
+        orderBy: { createdAt: 'asc' },
+        include: { modificadores: { orderBy: { createdAt: 'asc' } } },
+      },
+    },
+  });
+  const mesas = await tx.mesa.findMany({ where: { restauranteId } });
+  const mesero = await tx.usuario.findFirstOrThrow({ where: { restauranteId, rol: 'MESERO' } });
+  const caja = await tx.usuario.findFirstOrThrow({ where: { restauranteId, rol: 'CAJA' } });
+  const hace = (min: number) => new Date(Date.now() - min * 60_000);
+
+  // Ítem con la primera opción de cada grupo obligatorio; precio copiado como lo haría la API.
+  const item = (
+    nombreEs: string,
+    cantidad: number,
+    estado: 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'ENTREGADO',
+    notas?: string,
+  ) => {
+    const plato = platos.find((x) => x.nombreEs === nombreEs)!;
+    const mods = plato.grupos.filter((g) => g.obligatorio).map((g) => g.modificadores[0]!);
+    return {
+      platoId: plato.id,
+      estacionId: plato.estacionId,
+      cantidad,
+      notas: notas ?? null,
+      precioUnitario: plato.precio + mods.reduce((s, m) => s + m.precioExtra, 0),
+      estado,
+      enPreparacionEn: estado === 'PENDIENTE' ? null : hace(12),
+      listoEn: estado === 'LISTO' || estado === 'ENTREGADO' ? hace(4) : null,
+      entregadoEn: estado === 'ENTREGADO' ? hace(2) : null,
+      modificadores: {
+        create: mods.map((m) => ({
+          modificadorId: m.id,
+          nombre: m.nombreEs,
+          precioExtra: m.precioExtra,
+        })),
+      },
+    };
+  };
+
+  async function cuenta(
+    numero: number,
+    estado: 'ABIERTA' | 'PIDIO_CUENTA' | 'CERRADA',
+    pedidos: { estado: 'PENDIENTE' | 'CONFIRMADO'; items: ReturnType<typeof item>[] }[],
+  ) {
+    const mesa = mesas.find((m) => m.numero === numero)!;
+    const c = await tx.cuenta.create({
+      data: {
+        restauranteId,
+        mesaId: mesa.id,
+        estado,
+        verificada: pedidos.some((p) => p.estado === 'CONFIRMADO'),
+        abiertaEn: hace(40),
+        ...(estado === 'CERRADA'
+          ? { cerradaEn: hace(1), cerradaPorId: caja.id, metodoPago: 'EFECTIVO' as const }
+          : {}),
+      },
+    });
+    for (const [i, p] of pedidos.entries())
+      await tx.pedido.create({
+        data: {
+          restauranteId,
+          cuentaId: c.id,
+          estado: p.estado,
+          clientRequestId: `seed-${numero}-${i}`,
+          confirmadoEn: p.estado === 'CONFIRMADO' ? hace(15) : null,
+          confirmadoPorId: p.estado === 'CONFIRMADO' ? mesero.id : null,
+          items: { create: p.items },
+        },
+      });
+    const lineas = pedidos.filter((p) => p.estado === 'CONFIRMADO').flatMap((p) => p.items);
+    await tx.cuenta.update({ where: { id: c.id }, data: calcularTotales(lineas, r) });
+    return mesa;
+  }
+
+  await cuenta(1, 'ABIERTA', [
+    {
+      estado: 'CONFIRMADO',
+      items: [
+        item('Casado con bistec', 1, 'EN_PREPARACION', 'Sin cebolla'),
+        item('Arroz con pollo', 1, 'LISTO'),
+        item('Refresco natural', 2, 'ENTREGADO'),
+      ],
+    },
+  ]);
+  await cuenta(2, 'ABIERTA', [
+    {
+      estado: 'PENDIENTE',
+      items: [item('Chifrijo', 1, 'PENDIENTE'), item('Café chorreado', 2, 'PENDIENTE')],
+    },
+  ]);
+  const mesa4 = await cuenta(4, 'PIDIO_CUENTA', [
+    {
+      estado: 'CONFIRMADO',
+      items: [item('Olla de carne', 2, 'ENTREGADO'), item('Agua dulce', 2, 'ENTREGADO')],
+    },
+  ]);
+  await tx.llamada.create({ data: { restauranteId, mesaId: mesa4.id, tipo: 'CUENTA' } });
+  const mesa5 = await cuenta(5, 'ABIERTA', [
+    { estado: 'CONFIRMADO', items: [item('Gallo pinto con huevo', 1, 'PENDIENTE')] },
+  ]);
+  await tx.llamada.create({ data: { restauranteId, mesaId: mesa5.id, tipo: 'MESERO' } });
+  await cuenta(6, 'CERRADA', [
+    {
+      estado: 'CONFIRMADO',
+      items: [item('Casado con pollo', 2, 'ENTREGADO'), item('Café chorreado', 2, 'ENTREGADO')],
+    },
+  ]);
 }
 
 main()

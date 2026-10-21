@@ -49,21 +49,40 @@ enum TipoLlamada {
   CUENTA
 }
 
+enum ModoConfirmacion {
+  SIEMPRE
+  PRIMER_PEDIDO
+  NUNCA
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TARJETA
+  SINPE
+  MIXTO
+}
+
+enum OrigenPedido {
+  CLIENTE
+  MESERO
+}
+
 model Restaurante {
-  id                       String   @id @default(uuid()) @db.Uuid
+  id                       String           @id @default(uuid()) @db.Uuid
   nombre                   String
-  slug                     String   @unique
+  slug                     String           @unique
   logoUrl                  String?
-  colorPrimario            String   @default("#0f766e")
-  moneda                   Moneda   @default(CRC)
-  idiomas                  Idioma[] @default([es, en])
-  porcentajeIva            Int      @default(13)
-  porcentajeServicio       Int      @default(10)
-  preciosIncluyenImpuestos Boolean  @default(true)
-  activo                   Boolean  @default(true)
-  plan                     String   @default("basico")
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  colorPrimario            String           @default("#0f766e")
+  moneda                   Moneda           @default(CRC)
+  idiomas                  Idioma[]         @default([es, en])
+  porcentajeIva            Int              @default(13)
+  porcentajeServicio       Int              @default(10)
+  preciosIncluyenImpuestos Boolean          @default(true)
+  activo                   Boolean          @default(true)
+  plan                     String           @default("basico")
+  modoConfirmacion         ModoConfirmacion @default(PRIMER_PEDIDO)
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
 
   usuarios      Usuario[]
   estaciones    Estacion[]
@@ -84,13 +103,17 @@ model Usuario {
   email         String   @unique
   passwordHash  String
   rol           Rol
+  estacionId    String?  @db.Uuid // COCINA: su estación; null = todas
   activo        Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   restaurante        Restaurante?   @relation(fields: [restauranteId], references: [id])
+  estacion           Estacion?      @relation(fields: [estacionId], references: [id], onDelete: SetNull)
   refreshTokens      RefreshToken[]
-  pedidosConfirmados Pedido[]
+  pedidosConfirmados Pedido[]       @relation("PedidoConfirmadoPor")
+  pedidosCreados     Pedido[]       @relation("PedidoCreadoPor")
+  cuentasCerradas    Cuenta[]
 
   @@index([restauranteId])
 }
@@ -119,6 +142,7 @@ model Estacion {
   restaurante Restaurante  @relation(fields: [restauranteId], references: [id])
   platos      Plato[]
   pedidoItems PedidoItem[]
+  usuarios    Usuario[]
 
   @@unique([restauranteId, nombre])
   @@index([restauranteId])
@@ -225,56 +249,80 @@ model Modificador {
   @@index([grupoId])
 }
 
-// --- Fase 2 (sin endpoints todavía) ---
+// --- Operación (Fase 2) ---
+
+// Solo una cuenta no CERRADA por mesa: índice único parcial creado en SQL en la migración
+// "cuenta_unica_abierta" (Prisma no soporta índices parciales en el schema).
 
 model Cuenta {
-  id            String       @id @default(uuid()) @db.Uuid
-  restauranteId String       @db.Uuid
-  mesaId        String       @db.Uuid
-  estado        EstadoCuenta @default(ABIERTA)
-  abiertaEn     DateTime     @default(now())
-  cerradaEn     DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id               String       @id @default(uuid()) @db.Uuid
+  restauranteId    String       @db.Uuid
+  mesaId           String       @db.Uuid
+  estado           EstadoCuenta @default(ABIERTA)
+  verificada       Boolean      @default(false)
+  // Totales en céntimos; los recalcula el servidor con calcularTotales() (packages/shared).
+  subtotal         Int          @default(0)
+  montoServicio    Int          @default(0)
+  montoIva         Int          @default(0)
+  total            Int          @default(0)
+  metodoPago       MetodoPago?
+  cerradaPorId     String?      @db.Uuid
+  numeroComensales Int?
+  abiertaEn        DateTime     @default(now())
+  cerradaEn        DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
-  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
-  mesa        Mesa        @relation(fields: [mesaId], references: [id])
+  restaurante Restaurante     @relation(fields: [restauranteId], references: [id])
+  mesa        Mesa            @relation(fields: [mesaId], references: [id])
+  cerradaPor  Usuario?        @relation(fields: [cerradaPorId], references: [id])
   pedidos     Pedido[]
+  sesiones    SesionCliente[]
 
   @@index([restauranteId])
   @@index([mesaId])
 }
 
 model Pedido {
-  id              String       @id @default(uuid()) @db.Uuid
-  restauranteId   String       @db.Uuid
-  cuentaId        String       @db.Uuid
-  estado          EstadoPedido @default(PENDIENTE)
-  confirmadoPorId String?      @db.Uuid
-  nota            String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id                 String       @id @default(uuid()) @db.Uuid
+  restauranteId      String       @db.Uuid
+  cuentaId           String       @db.Uuid
+  estado             EstadoPedido @default(PENDIENTE)
+  origen             OrigenPedido @default(CLIENTE)
+  clientRequestId    String // idempotencia: único por cuenta
+  creadoPorUsuarioId String?      @db.Uuid
+  confirmadoPorId    String?      @db.Uuid
+  confirmadoEn       DateTime? // arranca el temporizador de cocina
+  nota               String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   restaurante   Restaurante  @relation(fields: [restauranteId], references: [id])
   cuenta        Cuenta       @relation(fields: [cuentaId], references: [id])
-  confirmadoPor Usuario?     @relation(fields: [confirmadoPorId], references: [id])
+  creadoPor     Usuario?     @relation("PedidoCreadoPor", fields: [creadoPorUsuarioId], references: [id])
+  confirmadoPor Usuario?     @relation("PedidoConfirmadoPor", fields: [confirmadoPorId], references: [id])
   items         PedidoItem[]
 
-  @@index([restauranteId])
-  @@index([cuentaId])
+  @@unique([cuentaId, clientRequestId])
+  @@index([restauranteId, estado])
 }
 
 model PedidoItem {
-  id             String           @id @default(uuid()) @db.Uuid
-  pedidoId       String           @db.Uuid
-  platoId        String           @db.Uuid
-  estacionId     String           @db.Uuid
-  cantidad       Int
-  notas          String?
-  precioUnitario Int // céntimos, copia al momento del pedido
-  estado         EstadoPedidoItem @default(PENDIENTE)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id                String           @id @default(uuid()) @db.Uuid
+  pedidoId          String           @db.Uuid
+  platoId           String           @db.Uuid
+  estacionId        String           @db.Uuid
+  cantidad          Int
+  notas             String?
+  precioUnitario    Int // céntimos, copia al momento del pedido
+  estado            EstadoPedidoItem @default(PENDIENTE)
+  cancelado         Boolean          @default(false)
+  motivoCancelacion String?
+  enPreparacionEn   DateTime?
+  listoEn           DateTime?
+  entregadoEn       DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   pedido        Pedido                  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
   plato         Plato                   @relation(fields: [platoId], references: [id])
@@ -282,6 +330,7 @@ model PedidoItem {
   modificadores PedidoItemModificador[]
 
   @@index([pedidoId])
+  @@index([estacionId, estado])
 }
 
 model PedidoItemModificador {
@@ -311,5 +360,22 @@ model Llamada {
   restaurante Restaurante @relation(fields: [restauranteId], references: [id])
   mesa        Mesa        @relation(fields: [mesaId], references: [id])
 
-  @@index([restauranteId])
+  @@index([restauranteId, atendida])
+  @@index([mesaId])
+}
+
+// Sesión de un celular en una cuenta. Solo se guarda el hash del token.
+model SesionCliente {
+  id        String   @id @default(uuid()) @db.Uuid
+  cuentaId  String   @db.Uuid
+  tokenHash String   @unique
+  creadaEn  DateTime @default(now())
+  expiraEn  DateTime
+  revocada  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cuenta Cuenta @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
+
+  @@index([cuentaId])
 }

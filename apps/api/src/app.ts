@@ -12,10 +12,12 @@ import {
   uploadsRouter,
 } from './modules/menu/menu.routes';
 import { mesasRouter } from './modules/mesas/mesas.routes';
+import { operacionRouter } from './modules/operacion/operacion.routes';
 import { health } from './modules/public/public.controller';
 import { publicRouter } from './modules/public/public.routes';
 import { adminRouter, restauranteRouter } from './modules/restaurantes/restaurantes.routes';
 import { usuariosRouter } from './modules/restaurantes/usuarios.routes';
+import { reportesRouter } from './modules/reportes/reportes.routes';
 
 export const app = express();
 
@@ -35,6 +37,8 @@ app.use('/categorias', categoriasRouter);
 app.use('/platos', platosRouter);
 app.use('/mesas', mesasRouter);
 app.use('/uploads', uploadsRouter);
+app.use('/operacion', operacionRouter);
+app.use('/reportes', reportesRouter);
 
 app.use(noEncontrado);
 app.use(errorHandler);

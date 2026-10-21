@@ -33,6 +33,9 @@ export type LoginInput = z.infer<typeof loginSchema>;
 
 // --- Restaurante ---
 
+export const modoConfirmacionSchema = z.enum(['SIEMPRE', 'PRIMER_PEDIDO', 'NUNCA']);
+export type ModoConfirmacion = z.infer<typeof modoConfirmacionSchema>;
+
 export const restauranteConfigSchema = z
   .object({
     nombre: texto(),
@@ -43,6 +46,7 @@ export const restauranteConfigSchema = z
     porcentajeIva: porcentaje,
     porcentajeServicio: porcentaje,
     preciosIncluyenImpuestos: z.boolean(),
+    modoConfirmacion: modoConfirmacionSchema,
   })
   .partial();
 export type RestauranteConfigInput = z.infer<typeof restauranteConfigSchema>;
@@ -75,6 +79,7 @@ export const crearUsuarioSchema = z.object({
   email,
   password,
   rol: rolPersonalSchema,
+  estacionId: z.uuid().nullable().optional(), // COCINA: su estación; null = todas
 });
 export type CrearUsuarioInput = z.infer<typeof crearUsuarioSchema>;
 
@@ -214,4 +219,135 @@ export type MesaPublica = {
   restaurante: string;
   numero: number;
   nombre: string | null;
+  cuentaId: string;
+  token: string; // sesión del comensal (Authorization: Bearer)
 };
+
+// --- Operación (Fase 2) ---
+
+export const estadoPedidoSchema = z.enum(['PENDIENTE', 'CONFIRMADO', 'CANCELADO']);
+export type EstadoPedido = z.infer<typeof estadoPedidoSchema>;
+export const estadoItemSchema = z.enum(['PENDIENTE', 'EN_PREPARACION', 'LISTO', 'ENTREGADO']);
+export type EstadoItem = z.infer<typeof estadoItemSchema>;
+export const estadoCuentaSchema = z.enum(['ABIERTA', 'PIDIO_CUENTA', 'CERRADA']);
+export type EstadoCuenta = z.infer<typeof estadoCuentaSchema>;
+export const metodoPagoSchema = z.enum(['EFECTIVO', 'TARJETA', 'SINPE', 'MIXTO']);
+export type MetodoPago = z.infer<typeof metodoPagoSchema>;
+
+export const LIMITES_PEDIDO = { itemsMax: 30, cantidadMax: 20, notasMax: 200 } as const;
+
+export const crearPedidoSchema = z.object({
+  clientRequestId: z.string().trim().min(8).max(100),
+  nota: z.string().trim().max(LIMITES_PEDIDO.notasMax).optional(),
+  items: z
+    .array(
+      z.object({
+        platoId: z.uuid(),
+        cantidad: z.number().int().min(1).max(LIMITES_PEDIDO.cantidadMax),
+        notas: z.string().trim().max(LIMITES_PEDIDO.notasMax).optional(),
+        modificadores: z
+          .array(z.uuid())
+          .max(50)
+          .refine((ids) => new Set(ids).size === ids.length, 'Modificadores repetidos')
+          .default([]),
+      }),
+    )
+    .min(1)
+    .max(LIMITES_PEDIDO.itemsMax),
+});
+export type CrearPedidoInput = z.infer<typeof crearPedidoSchema>;
+
+export const motivoSchema = z.object({ motivo: z.string().trim().min(1).max(200) });
+export const cambiarEstadoItemSchema = z.object({
+  estado: z.enum(['EN_PREPARACION', 'LISTO', 'ENTREGADO']),
+});
+export const cerrarCuentaSchema = z.object({ metodoPago: metodoPagoSchema });
+export const llamarSchema = z.object({ tipo: z.literal('MESERO') });
+export const pedidosQuerySchema = z.object({ estado: estadoPedidoSchema.optional() });
+export const itemsQuerySchema = z.object({ estado: estadoItemSchema.optional() });
+export const llamadasQuerySchema = z.object({
+  atendida: z
+    .enum(['true', 'false'])
+    .transform((v) => v === 'true')
+    .optional(),
+});
+
+// Respuestas compartidas (las usan los frontends).
+export type ModificadorElegido = { nombre: string; nombreEn: string | null; precioExtra: number };
+export type ItemDetalle = {
+  id: string;
+  platoId: string;
+  nombreEs: string;
+  nombreEn: string;
+  estacionId: string;
+  cantidad: number;
+  notas: string | null;
+  precioUnitario: number;
+  estado: EstadoItem;
+  cancelado: boolean;
+  motivoCancelacion: string | null;
+  modificadores: ModificadorElegido[];
+  updatedAt: string;
+};
+export type PedidoDetalle = {
+  id: string;
+  estado: EstadoPedido;
+  origen: 'CLIENTE' | 'MESERO';
+  nota: string | null;
+  createdAt: string;
+  confirmadoEn: string | null;
+  updatedAt: string;
+  items: ItemDetalle[];
+};
+export type CuentaDetalle = {
+  id: string;
+  estado: EstadoCuenta;
+  mesa: { id: string; numero: number; nombre: string | null };
+  verificada: boolean;
+  subtotal: number;
+  montoServicio: number;
+  montoIva: number;
+  total: number;
+  metodoPago: MetodoPago | null;
+  abiertaEn: string;
+  cerradaEn: string | null;
+  updatedAt: string;
+  pedidos: PedidoDetalle[];
+};
+
+export type EstadoMesa = 'LIBRE' | 'OCUPADA' | 'PEDIDO_PENDIENTE' | 'PIDIO_CUENTA' | 'LLAMADA';
+export type MesaOperacion = {
+  id: string;
+  numero: number;
+  nombre: string | null;
+  estado: EstadoMesa; // el más urgente
+  cuenta: {
+    id: string;
+    estado: EstadoCuenta;
+    total: number;
+    abiertaEn: string;
+    pedidosPendientes: number;
+  } | null;
+  llamadasActivas: number;
+};
+
+// Pantalla de estación: ítems activos agrupados por pedido.
+export type PedidoEstacion = {
+  pedidoId: string;
+  mesa: { numero: number; nombre: string | null };
+  confirmadoEn: string;
+  nota: string | null;
+  items: ItemDetalle[];
+};
+
+export type ReporteHoy = {
+  desde: string;
+  totalVendido: number;
+  cuentasCerradas: number;
+  ticketPromedio: number;
+  topPlatos: { platoId: string; nombreEs: string; cantidad: number }[];
+  tiempoPromedioPreparacionSeg: number | null;
+};
+
+export * from './totales';
+export * from './seleccion';

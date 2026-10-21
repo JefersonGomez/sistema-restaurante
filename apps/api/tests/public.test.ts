@@ -77,10 +77,17 @@ describe('GET /public/:slug/menu', () => {
 });
 
 describe('GET /public/mesa/:token', () => {
-  it('devuelve slug y número de mesa', async () => {
+  it('devuelve slug, número de mesa, cuenta y sesión', async () => {
     const res = await request(app).get(`/public/mesa/${tokenMesaA}`);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ slug: 'resto-a', restaurante: 'resto-a', numero: 3, nombre: null });
+    expect(res.body).toMatchObject({
+      slug: 'resto-a',
+      restaurante: 'resto-a',
+      numero: 3,
+      nombre: null,
+    });
+    expect(res.body.cuentaId).toBeTypeOf('string');
+    expect(res.body.token).toBeTypeOf('string');
   });
 
   it('token inexistente o mesa inactiva → 404', async () => {

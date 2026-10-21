@@ -1,1 +1,21 @@
 @import 'tailwindcss';
+
+/* Pre-cuenta en impresora de tickets de 80 mm (window.print). */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 3mm;
+  }
+  .ticket {
+    width: 74mm;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    line-height: 1.35;
+    color: #000;
+  }
+  .ticket hr {
+    border: 0;
+    border-top: 1px dashed #000;
+    margin: 4px 0;
+  }
+}

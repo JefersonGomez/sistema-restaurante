@@ -6,7 +6,8 @@ SaaS multi-restaurante de pedidos por QR (Costa Rica). Monorepo pnpm: `apps/api`
 ## Antes de cada tarea
 
 1. Leer `MEMORY.md` (estado actual, decisiones, pendientes).
-2. Si la tarea toca alcance, leer `docs/especificacion-fase1.md` (fuente de verdad).
+2. Si la tarea toca alcance, leer la spec de la fase en curso (fuente de verdad):
+   `docs/especificacion-fase1.md` (hecha) y `docs/especificacion-fase2.md` (en curso).
 
 ## Después de cada cambio
 
@@ -24,8 +25,9 @@ SaaS multi-restaurante de pedidos por QR (Costa Rica). Monorepo pnpm: `apps/api`
 - **No agregar librerías fuera del stack sin preguntar.** Stack: Node 20+, TS estricto, pnpm,
   Express, Socket.IO, PostgreSQL 16, Prisma, Zod, JWT, bcrypt, React, Vite, Tailwind, Vitest,
   Supertest, ESLint, Prettier. Las librerías ya aprobadas están listadas en `MEMORY.md`.
-- No implementar nada de "Fuera de alcance" (pedidos, cuentas, pagos, facturación, impresión,
-  reportes, subida real de imágenes, despliegue).
+- No implementar nada de la sección "Fuera de alcance" de la spec de la fase en curso
+  (Fase 2: pagos en línea, SINPE/pasarelas, facturación de Hacienda, impresión térmica directa,
+  push, offline completo, dividir cuenta, reservas, reportes avanzados, despliegue).
 - Código mínimo y directo. Sin abstracciones "para después".
 
 ## Convenciones de código

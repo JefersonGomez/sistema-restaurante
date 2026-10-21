@@ -8,6 +8,7 @@ const campos = {
   nombre: true,
   email: true,
   rol: true,
+  estacionId: true,
   activo: true,
   createdAt: true,
   updatedAt: true,
@@ -19,10 +20,20 @@ export async function obtener(restauranteId: string, id: string) {
   return u;
 }
 
+// La estación asignada (cocina/bar) tiene que ser del mismo restaurante.
+async function validarEstacion(restauranteId: string, estacionId?: string | null) {
+  if (
+    estacionId &&
+    !(await prisma.estacion.findFirst({ where: { id: estacionId, restauranteId } }))
+  )
+    throw noExiste('Estación');
+}
+
 export const listar = (restauranteId: string) =>
   prisma.usuario.findMany({ where: { restauranteId }, select: campos, orderBy: { nombre: 'asc' } });
 
 export async function crear(restauranteId: string, { password, ...data }: CrearUsuarioInput) {
+  await validarEstacion(restauranteId, data.estacionId);
   return prisma.usuario.create({
     data: { ...data, restauranteId, passwordHash: await bcrypt.hash(password, 10) },
     select: campos,
@@ -36,6 +47,7 @@ export async function actualizar(
   { password, ...data }: ActualizarUsuarioInput,
 ) {
   await obtener(restauranteId, id);
+  await validarEstacion(restauranteId, data.estacionId);
   if (id === yoId && (data.activo === false || (data.rol && data.rol !== 'DUENO')))
     throw new HttpError(400, 'OPERACION_INVALIDA', 'No puede desactivarse ni quitarse el rol');
 

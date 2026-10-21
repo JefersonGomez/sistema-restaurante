@@ -58,6 +58,8 @@ export async function eliminar(restauranteId: string, id: string) {
 export async function marcarAgotado(restauranteId: string, id: string, agotado: boolean) {
   await obtener(restauranteId, id);
   const plato = await prisma.plato.update({ where: { id }, data: { agotado } });
-  emitToRestaurant(restauranteId, 'todos', 'menu:actualizado', { platoId: id, agotado });
+  const aviso = { platoId: id, agotado, updatedAt: plato.updatedAt.toISOString() };
+  emitToRestaurant(restauranteId, 'todos', 'menu:actualizado', aviso);
+  emitToRestaurant(restauranteId, 'comensales', 'menu:actualizado', aviso);
   return plato;
 }

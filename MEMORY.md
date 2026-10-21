@@ -6,13 +6,81 @@
 ## Estado actual
 
 - **Fecha última actualización:** 2026-10-20
-- **Fase 1 completa** (1.6–1.10 hechas y verificadas, pendientes de validar commit). Siguiente: Fase 2
-  (pedidos, cuentas, pantallas de cocina/mesero/caja) cuando el usuario la defina.
+- **Fase 1 completa y subida** (commit `a202fd9`).
+- **Fase 2:** 2.1–2.14 implementadas y verificadas (2026-10-21), pendientes de validar commit.
+  Pendiente del usuario: revisión visual de las pantallas y `prisma migrate reset` de su BD de
+  desarrollo para cargar los ejemplos nuevos del seed (Prisma exige su consentimiento explícito).
 - Repo remoto: https://github.com/JefersonGomez/sistema-restaurante (rama `main`).
   **Antes de cada commit/push: mostrar al usuario qué se sube y esperar su validación.**
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
 
-## Plan de la Fase 1 (sub-fases)
+## Plan de la Fase 2 (sub-fases)
+
+Spec: `docs/especificacion-fase2.md`. Un commit por sub-fase, validado por el usuario.
+
+| #    | Sub-fase                                                                                             | Estado |
+| ---- | ---------------------------------------------------------------------------------------------------- | ------ |
+| 2.1  | Migración: modoConfirmacion, campos de Cuenta/Pedido/PedidoItem, SesionCliente, índice único parcial | ✅     |
+| 2.2  | `calcularTotales()` puro en shared + tests unitarios                                                 | ✅     |
+| 2.3  | Sesión de cliente y apertura de cuenta (`GET /public/mesa/:token`), concurrencia                     | ✅     |
+| 2.4  | Creación de pedidos (cliente y mesero): validaciones, idempotencia, transacción                      | ✅     |
+| 2.5  | Confirmación y transiciones (pedido, ítem, cuenta, llamadas) con 409                                 | ✅     |
+| 2.6  | Socket.IO: salas por estación/cuenta, auth de comensal, eventos post-commit con `version`            | ✅     |
+| 2.7  | Endpoints `/operacion/*` restantes + `/reportes/hoy`                                                 | ✅     |
+| 2.8  | Frontend comensal (carrito, modificadores, Mi cuenta, llamar/pedir cuenta, cierre)                   | ✅     |
+| 2.9  | Pantalla de estación (tablet)                                                                        | ✅     |
+| 2.10 | Pantalla de mesero (celular)                                                                         | ✅     |
+| 2.11 | Pantalla de caja (pre-cuenta 80 mm, cerrar)                                                          | ✅     |
+| 2.12 | Dueño: Hoy + ajustes de modoConfirmacion                                                             | ✅     |
+| 2.13 | Seed con cuentas/pedidos de ejemplo + tests restantes + README de punta a punta                      | ✅     |
+| 2.14 | Script `simular-hora-pico.ts`                                                                        | ✅     |
+
+### Decisiones de la Fase 2 (respondidas por el usuario 2026-10-21)
+
+- `preciosIncluyenImpuestos = true` → el precio del menú incluye **IVA y servicio** (es lo que paga
+  el cliente). Se desglosa hacia atrás: base = total / (1 + IVA% + servicio%).
+- El IVA **no** se cobra sobre el servicio: IVA y servicio se calculan ambos sobre la base.
+- `Usuario.estacionId` opcional: un COCINA con estación solo ve y opera esa estación; vacío = todas.
+- `socket.io-client` aprobado para apps/menu y apps/staff.
+- Propuestas (sin objeción aún): rate limit por sesión de comensal además de IP; mesa "ocupada"
+  solo si su cuenta tiene pedidos o llamadas; con PRIMER_PEDIDO la cuenta se verifica al confirmar el
+  primer pedido o cuando el mesero toma uno; tiempo de preparación = EN_PREPARACION→LISTO;
+  "hoy" en America/Costa_Rica (UTC−6); sala `rest:{id}:comensales` para `menu:actualizado`;
+  clientRequestId con `crypto.getRandomValues` (randomUUID no existe en http por LAN).
+
+### Decisiones técnicas de la Fase 2
+
+- Migración `20261021120000_fase2_operacion`: el SQL se generó con `prisma migrate diff`
+  (`migrate dev` no corre en terminal no interactiva) + índice parcial `cuenta_unica_abierta`
+  (`UNIQUE (mesaId) WHERE estado <> CERRADA`) agregado a mano. Prisma lo ignora (no hay drift).
+  Se agregó `Pedido.confirmadoEn` (no está en la spec) para el temporizador de cocina.
+- Concurrencia: `bloquearCuenta(tx)` = `SELECT … FOR UPDATE` sobre la cuenta en toda transacción
+  que crea pedidos, cambia totales o cierra. `obtenerOCrearCuenta` atrapa P2002 del índice parcial
+  y devuelve la ganadora. Idempotencia: `@@unique([cuentaId, clientRequestId])` + búsqueda previa +
+  P2002 → devolver el existente (200; creado → 201).
+- Transiciones de ítem con `updateMany` condicionado al estado anterior (evita dobles toques).
+- Totales: solo pedidos CONFIRMADOS y sin ítems cancelados; se guardan en la cuenta
+  (`recalcularCuenta`). Pedidos PENDIENTES no suman; no se cierra una cuenta con PENDIENTES (409
+  `PEDIDOS_PENDIENTES`). Pedir más con la cuenta en PIDIO_CUENTA está permitido.
+- Errores nuevos: 409 `PLATO_NO_DISPONIBLE` (motivo agotado/no_disponible), 400
+  `MODIFICADORES_INVALIDOS`, 409 `TRANSICION_INVALIDA`, 410 `CUENTA_CERRADA`, 401 `SESION_EXPIRADA`.
+- Forma única de respuesta de cuentas/pedidos/ítems: `modules/pedidos/detalle.ts` (`aCuenta`,
+  `aPedido`, `aItem`), tipos `CuentaDetalle` etc. en shared. Eventos en `modules/pedidos/eventos.ts`.
+- Endpoints extra (no en la spec, necesarios para las pantallas): `GET /operacion/estaciones`,
+  `GET /operacion/items?estado=LISTO`, evento `llamada:atendida`.
+- `shared` exporta subrutas `@menu-qr/shared/totales` y `/seleccion` para que los frontends no
+  empaqueten zod. `seleccion.ts`: `minimoEfectivo`, `grupoCompleto`, `seleccionValida`,
+  `precioConModificadores` (los usa también la API).
+- Frontends: el socket solo avisa → refrescar por REST (agrupado 150 ms); al (re)conectar, al volver
+  `online` y al volver la pestaña visible se resincroniza. Staff: `api()` refresca el access token
+  ante 401 (un solo refresh a la vez) y el socket usa `auth` como función.
+- Comensal: sesión, carrito y envío pendiente en localStorage (try/catch). El `clientRequestId` se
+  guarda antes de enviar; reintentos con backoff 1/2/4 s y reintento automático al recargar.
+- Estación: umbrales 10/20 min en `EstacionPage.tsx`; sonido con Web Audio API; Wake Lock.
+- Seed: ejemplos en mesas 1, 2, 4, 5 y 6 (mesa 3 libre). Simulador: restaurante `sim-hora-pico-…`
+  que queda `activo=false` (se acumulan en la BD de desarrollo; borrarlos con un reset).
+
+## Plan de la Fase 1 (sub-fases) — completa
 
 | #    | Sub-fase                                                                                                                                     | Verificación                       | Estado |
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------ |
@@ -107,6 +175,8 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
 - En la máquina no hay Python ni `gh` CLI; usar Node/Bash para scripts.
 - Puertos 3000 y 5173 ocupados por otras apps locales → API 4000, menu 5180, staff 5181.
 - El puerto 5432 lo ocupa el contenedor `inventario-api-postgres-1` (otro proyecto). No tocarlo.
+- `prisma migrate reset` está bloqueado para agentes sin consentimiento explícito del usuario
+  (variable PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION). Para probar el seed usar una BD temporal.
 - Al detener `pnpm dev` (tarea en background) en Windows quedan procesos node huérfanos en
   4000/5180/5181: revisar `netstat` y cerrarlos por PID.
 - `curl -d` con tildes desde Git Bash manda latin-1 (sale "Vigor�n"): para probar a mano usar Node/fetch.
@@ -133,3 +203,6 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
   grupos/modificadores, mesas+QR+regenerar, uploads 501). 1.7 público + /health. 1.8 Socket.IO.
   1.9 frontends menu y staff. 1.10 tests (45 verdes, incl. aislamiento verificado con mutación),
   README final, prueba desde cero en copia limpia y recorrido de criterios de aceptación.
+- 2026-10-21: Fase 2 completa (2.1–2.14): migración, totales, sesión de comensal, pedidos,
+  transiciones, Socket.IO por estación/cuenta, /operacion, /reportes/hoy, pantallas de comensal,
+  cocina, mesero, caja y dueño, seed con ejemplos, tests (72 API + 9 shared) y simulador de hora pico.

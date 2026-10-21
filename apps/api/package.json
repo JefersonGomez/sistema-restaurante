@@ -8,7 +8,8 @@
     "test": "vitest run",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "simular": "tsx scripts/simular-hora-pico.ts"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",

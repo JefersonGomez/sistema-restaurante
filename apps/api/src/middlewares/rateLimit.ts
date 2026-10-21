@@ -1,12 +1,18 @@
-import { rateLimit } from 'express-rate-limit';
+import type { Request } from 'express';
+import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { env } from '../lib/env';
 import { HttpError } from './errorHandler';
 
-const crear = (limit: number, minutos: number, soloFallidos = false) =>
+const crear = (
+  limit: number,
+  minutos: number,
+  opciones: { soloFallidos?: boolean; clave?: (req: Request) => string } = {},
+) =>
   rateLimit({
     windowMs: minutos * 60 * 1000,
     limit,
-    skipSuccessfulRequests: soloFallidos,
+    skipSuccessfulRequests: opciones.soloFallidos ?? false,
+    keyGenerator: opciones.clave ?? ((req) => ipKeyGenerator(req.ip ?? '')),
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     // En tests se desactiva para que no interfiera entre casos.
@@ -15,7 +21,11 @@ const crear = (limit: number, minutos: number, soloFallidos = false) =>
       next(new HttpError(429, 'DEMASIADAS_SOLICITUDES', 'Demasiadas solicitudes, intente luego')),
   });
 
-// ponytail: contador en memoria por proceso; usar un store compartido (Redis) con varias instancias.
-export const limitePublico = crear(120, 1);
+// ponytail: contadores en memoria por proceso; usar un store compartido (Redis) con varias instancias.
+
+// Por IP. Alto porque todos los celulares de un restaurante salen por la misma IP del Wi-Fi.
+export const limitePublico = crear(1200, 1);
+// Por sesión de comensal (rutas /public/cuenta): frena a un celular sin afectar a los demás.
+export const limiteSesion = crear(60, 1, { clave: (req) => `sesion:${req.cliente!.sesionId}` });
 // Login: 10 intentos fallidos por IP cada 15 min (los exitosos no cuentan).
-export const limiteLogin = crear(10, 15, true);
+export const limiteLogin = crear(10, 15, { soloFallidos: true });

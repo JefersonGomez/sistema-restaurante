@@ -1,4 +1,4 @@
-import type { MenuPublico, MesaPublica } from '@menu-qr/shared';
+import type { MenuPublico } from '@menu-qr/shared';
 import { prisma } from '../../lib/prisma';
 import { noExiste } from '../../middlewares/errorHandler';
 
@@ -60,18 +60,4 @@ export async function menu(slug: string): Promise<MenuPublico> {
   });
 
   return { restaurante, categorias: categorias.filter((c) => c.platos.length > 0) };
-}
-
-export async function mesa(token: string): Promise<MesaPublica> {
-  const m = await prisma.mesa.findUnique({
-    where: { tokenQr: token },
-    include: { restaurante: { select: { slug: true, nombre: true, activo: true } } },
-  });
-  if (!m || !m.activa || !m.restaurante.activo) throw noExiste('Mesa');
-  return {
-    slug: m.restaurante.slug,
-    restaurante: m.restaurante.nombre,
-    numero: m.numero,
-    nombre: m.nombre,
-  };
 }

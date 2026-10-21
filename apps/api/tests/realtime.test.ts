@@ -5,22 +5,26 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { app } from '../src/app';
 import { prisma } from '../src/lib/prisma';
-import { emitToRestaurant, iniciarRealtime } from '../src/realtime';
-import { crearRestaurante, crearUsuario, limpiarBD, tokenDe } from './helpers';
+import { iniciarRealtime } from '../src/realtime';
+import {
+  abrirSesion,
+  crearRestaurante,
+  crearUsuario,
+  limpiarBD,
+  nuevoRequestId,
+  sembrarMenu,
+  tokenDe,
+} from './helpers';
 
 let server: Server;
 let url: string;
-let restauranteA: string;
-let platoA: string;
+let m: Awaited<ReturnType<typeof sembrarMenu>>;
+let mb: Awaited<ReturnType<typeof sembrarMenu>>;
 const sockets: Socket[] = [];
 
-const conectar = (token?: string) =>
+const conectar = (auth: { token?: string; sesion?: string }) =>
   new Promise<Socket>((resolve, reject) => {
-    const s = cliente(url, {
-      auth: token ? { token } : {},
-      transports: ['websocket'],
-      reconnection: false,
-    });
+    const s = cliente(url, { auth, transports: ['websocket'], reconnection: false });
     sockets.push(s);
     s.on('connect', () => resolve(s));
     s.on('connect_error', reject);
@@ -39,29 +43,15 @@ const esperar = (s: Socket, evento: string, ms = 500) =>
 beforeAll(async () => {
   await limpiarBD();
   const a = await crearRestaurante('resto-a');
-  await crearRestaurante('resto-b');
-  restauranteA = a.restaurante.id;
-  await crearUsuario('cocina@resto-a.test', 'COCINA', restauranteA);
-  await crearUsuario('mesero@resto-a.test', 'MESERO', restauranteA);
+  const b = await crearRestaurante('resto-b');
+  m = await sembrarMenu(a.restaurante.id);
+  mb = await sembrarMenu(b.restaurante.id);
+  await prisma.restaurante.updateMany({ data: { modoConfirmacion: 'NUNCA' } });
+  await crearUsuario('cocina@resto-a.test', 'COCINA', a.restaurante.id);
+  const bar = await crearUsuario('bar@resto-a.test', 'COCINA', a.restaurante.id);
+  await prisma.usuario.update({ where: { id: bar.id }, data: { estacionId: m.estaciones.bar } });
+  await crearUsuario('mesero@resto-a.test', 'MESERO', a.restaurante.id);
   await crearUsuario('admin@x.test', 'SUPERADMIN', null);
-  const estacion = await prisma.estacion.create({
-    data: { restauranteId: restauranteA, nombre: 'Cocina' },
-  });
-  const cat = await prisma.categoria.create({
-    data: { restauranteId: restauranteA, nombreEs: 'C', nombreEn: 'C' },
-  });
-  platoA = (
-    await prisma.plato.create({
-      data: {
-        restauranteId: restauranteA,
-        categoriaId: cat.id,
-        estacionId: estacion.id,
-        nombreEs: 'P',
-        nombreEn: 'P',
-        precio: 100,
-      },
-    })
-  ).id;
 
   server = createServer(app);
   iniciarRealtime(server);
@@ -75,40 +65,91 @@ afterAll(async () => {
 });
 
 describe('Socket.IO', () => {
-  it('rechaza conexiones sin token o sin restaurante', async () => {
-    await expect(conectar()).rejects.toThrow('NO_AUTENTICADO');
-    await expect(conectar(await tokenDe('admin@x.test'))).rejects.toThrow('SIN_RESTAURANTE');
+  it('rechaza conexiones sin credenciales, sin restaurante o con sesión inválida', async () => {
+    await expect(conectar({})).rejects.toThrow('NO_AUTENTICADO');
+    await expect(conectar({ token: await tokenDe('admin@x.test') })).rejects.toThrow(
+      'SIN_RESTAURANTE',
+    );
+    await expect(conectar({ sesion: 'inventada' })).rejects.toThrow('SESION_INVALIDA');
   });
 
   it('ping → pong', async () => {
-    const s = await conectar(await tokenDe('cocina@resto-a.test'));
+    const s = await conectar({ token: await tokenDe('cocina@resto-a.test') });
     const pong = esperar(s, 'pong');
     s.emit('ping');
     expect(await pong).toHaveProperty('ts');
   });
 
-  it('emitToRestaurant llega solo a la sala correcta', async () => {
-    const cocina = await conectar(await tokenDe('cocina@resto-a.test'));
-    const mesero = await conectar(await tokenDe('mesero@resto-a.test'));
-    const enCocina = esperar(cocina, 'prueba');
-    const enMesero = esperar(mesero, 'prueba');
-    emitToRestaurant(restauranteA, 'cocina', 'prueba', { hola: 1 });
-    expect(await enCocina).toEqual({ hola: 1 });
-    expect(await enMesero).toBeNull();
+  it('un pedido confirmado llega solo a la sala de su estación, con solo sus ítems', async () => {
+    const cocina = await conectar({ token: await tokenDe('cocina@resto-a.test') }); // todas las estaciones
+    const bar = await conectar({ token: await tokenDe('bar@resto-a.test') }); // solo bar
+    const duenoB = await conectar({ token: await tokenDe('dueno@resto-b.test') });
+    const enCocina = esperar(cocina, 'pedido:confirmado');
+    const enBar = esperar(bar, 'pedido:confirmado');
+    const enB = esperar(duenoB, 'pedido:confirmado');
+
+    const s = await abrirSesion(m.mesa.tokenQr);
+    await request(app)
+      .post('/public/cuenta/pedidos')
+      .set('Authorization', `Bearer ${s.token}`)
+      .send({
+        clientRequestId: nuevoRequestId(),
+        items: [{ platoId: m.casado, cantidad: 1, modificadores: [m.termino[0]] }],
+      });
+
+    const evento = (await enCocina) as {
+      items: { nombreEs: string }[];
+      mesa: { numero: number };
+      updatedAt: string;
+    };
+    expect(evento.items.map((i) => i.nombreEs)).toEqual(['Casado']);
+    expect(evento.mesa.numero).toBe(1);
+    expect(evento.updatedAt).toBeTypeOf('string');
+    expect(await enBar).toBeNull();
+    expect(await enB).toBeNull();
   });
 
-  it('marcar agotado emite menu:actualizado solo al restaurante del plato', async () => {
-    const mesero = await conectar(await tokenDe('mesero@resto-a.test'));
-    const duenoB = await conectar(await tokenDe('dueno@resto-b.test'));
-    const enA = esperar(mesero, 'menu:actualizado');
-    const enB = esperar(duenoB, 'menu:actualizado');
+  it('los celulares de una mesa ven los cambios de su cuenta y no los de otra', async () => {
+    const s1 = await abrirSesion(m.mesa.tokenQr);
+    const s2 = await abrirSesion(m.mesa.tokenQr); // segundo celular, misma cuenta
+    const otra = await abrirSesion(m.mesa2.tokenQr);
+    const cel1 = await conectar({ sesion: s1.token });
+    const cel2 = await conectar({ sesion: s2.token });
+    const celOtra = await conectar({ sesion: otra.token });
+    const en1 = esperar(cel1, 'cuenta:actualizada');
+    const en2 = esperar(cel2, 'cuenta:actualizada');
+    const enOtra = esperar(celOtra, 'cuenta:actualizada');
+
+    await request(app)
+      .post('/public/cuenta/pedidos')
+      .set('Authorization', `Bearer ${s1.token}`)
+      .send({ clientRequestId: nuevoRequestId(), items: [{ platoId: m.refresco, cantidad: 1 }] });
+
+    expect(await en1).toMatchObject({ cuentaId: s1.cuentaId });
+    expect(await en2).toMatchObject({ cuentaId: s1.cuentaId });
+    expect(await enOtra).toBeNull();
+  });
+
+  it('marcar agotado avisa al personal y a los comensales del restaurante, no a otro', async () => {
+    const mesero = await conectar({ token: await tokenDe('mesero@resto-a.test') });
+    const comensal = await conectar({ sesion: (await abrirSesion(m.mesa.tokenQr)).token });
+    const comensalB = await conectar({ sesion: (await abrirSesion(mb.mesa.tokenQr)).token });
+    const eventos = [mesero, comensal, comensalB].map((s) => esperar(s, 'menu:actualizado'));
 
     const res = await request(app)
-      .patch(`/platos/${platoA}/agotado`)
+      .patch(`/platos/${m.refresco}/agotado`)
       .set('Authorization', `Bearer ${await tokenDe('dueno@resto-a.test')}`)
       .send({ agotado: true });
     expect(res.status).toBe(200);
-    expect(await enA).toEqual({ platoId: platoA, agotado: true });
-    expect(await enB).toBeNull();
+    const [enMesero, enComensal, enB] = await Promise.all(eventos);
+    expect(enMesero).toMatchObject({ platoId: m.refresco, agotado: true });
+    expect(enComensal).toMatchObject({ platoId: m.refresco, agotado: true });
+    expect(enB).toBeNull();
+  });
+
+  it('la sesión de una cuenta cerrada no se puede conectar', async () => {
+    const s = await abrirSesion(m.mesa2.tokenQr);
+    await prisma.cuenta.update({ where: { id: s.cuentaId }, data: { estado: 'CERRADA' } });
+    await expect(conectar({ sesion: s.token })).rejects.toThrow('CUENTA_CERRADA');
   });
 });

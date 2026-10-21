@@ -5,6 +5,7 @@ declare global {
     interface Request {
       usuario?: UsuarioToken;
       tenant?: { restauranteId: string };
+      cliente?: { sesionId: string; cuentaId: string; restauranteId: string; mesaId: string };
     }
   }
 }
