@@ -17,8 +17,8 @@ celular y, en fases futuras, piden directo a cocina, bar y meseros.
 ```
 apps/
   api/      Express + Socket.IO + Prisma
-  menu/     React: menú del comensal  → http://localhost:5173/m/<tokenQr>
-  staff/    React: login del personal → http://localhost:5174
+  menu/     React: menú del comensal  → http://localhost:5180/m/<tokenQr>
+  staff/    React: login del personal → http://localhost:5181
 packages/
   shared/   Tipos y esquemas Zod compartidos
 docs/       Especificación
@@ -32,7 +32,7 @@ pnpm install
 pnpm db:up        # levanta PostgreSQL en Docker
 pnpm db:migrate   # aplica migraciones
 pnpm db:seed      # carga datos de prueba
-pnpm dev          # api :3000, menu :5173, staff :5174
+pnpm dev          # api :4000, menu :5180, staff :5181
 ```
 
 ## Variables de entorno _(pendiente — definitivas en `.env.example`)_
@@ -41,15 +41,14 @@ pnpm dev          # api :3000, menu :5173, staff :5174
 | ---------------------- | -------------------------------------------------------- | --------------------------------- |
 | `DATABASE_URL`         | `postgresql://menuqr:menuqr@localhost:5433/menu_qr`      | BD de desarrollo                  |
 | `DATABASE_URL_TEST`    | `postgresql://menuqr:menuqr@localhost:5433/menu_qr_test` | BD de tests                       |
-| `PORT`                 | `3000`                                                   | Puerto de la API                  |
+| `PORT`                 | `4000`                                                   | Puerto de la API                  |
 | `NODE_ENV`             | `development`                                            | `production` oculta stack traces  |
 | `JWT_ACCESS_SECRET`    | _(cadena larga aleatoria)_                               | Firma del access token            |
-| `JWT_REFRESH_SECRET`   | _(cadena larga aleatoria)_                               | Firma del refresh token           |
 | `JWT_ACCESS_TTL`       | `15m`                                                    | Vida del access token             |
 | `JWT_REFRESH_TTL_DIAS` | `7`                                                      | Vida del refresh token            |
-| `CORS_ORIGINS`         | `http://localhost:5173,http://localhost:5174`            | Orígenes permitidos               |
-| `MENU_PUBLIC_URL`      | `http://localhost:5173`                                  | Base de la URL que codifica el QR |
-| `VITE_API_URL`         | `http://localhost:3000`                                  | URL de la API para los frontends  |
+| `CORS_ORIGINS`         | `http://localhost:5180,http://localhost:5181`            | Orígenes permitidos               |
+| `MENU_PUBLIC_URL`      | `http://localhost:5180`                                  | Base de la URL que codifica el QR |
+| `VITE_API_URL`         | `http://localhost:4000`                                  | URL de la API para los frontends  |
 
 ## Credenciales de prueba (se crean con `pnpm db:seed`)
 
@@ -68,14 +67,24 @@ natural) y 8 mesas. El seed imprime la URL de cada mesa (`/m/<tokenQr>`).
 El seed es idempotente: si el restaurante demo ya existe no lo modifica. Para empezar de cero:
 `pnpm --filter api exec prisma migrate reset` (borra la BD, migra y vuelve a sembrar).
 
-## Tests _(pendiente)_
+## Tests
 
 ```bash
 pnpm db:up
 pnpm test       # Vitest + Supertest contra la BD menu_qr_test
 ```
 
-Incluye: login, 401/403, **aislamiento entre restaurantes** y menú público.
+Los tests aplican las migraciones a `menu_qr_test` y la vacían antes de cada caso; la BD de
+desarrollo no se toca. Por ahora cubren auth (login, refresh con rotación, logout, `/auth/me`).
+Al cerrar la Fase 1 incluirán también 401/403, **aislamiento entre restaurantes** y menú público.
+
+## Autenticación
+
+- `POST /auth/login` `{ email, password }` → `{ accessToken, usuario }` + cookie httpOnly `refreshToken`.
+- El `accessToken` (15 min) va en `Authorization: Bearer <token>`.
+- `POST /auth/refresh` usa la cookie, rota el refresh token y devuelve un `accessToken` nuevo.
+  Reusar un refresh token ya rotado revoca todas las sesiones del usuario.
+- `POST /auth/logout` revoca el refresh token. `GET /auth/me` devuelve el usuario actual.
 
 ## Scripts
 

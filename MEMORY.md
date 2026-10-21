@@ -6,7 +6,7 @@
 ## Estado actual
 
 - **Fecha última actualización:** 2026-10-20
-- **Sub-fase en curso:** 1.3 terminada, pendiente de validar commit. Siguiente: 1.4 (auth).
+- **Sub-fase en curso:** 1.4 terminada, pendiente de validar commit. Siguiente: 1.5 (middlewares).
 - Repo remoto: https://github.com/JefersonGomez/sistema-restaurante (rama `main`).
   **Antes de cada commit/push: mostrar al usuario qué se sube y esperar su validación.**
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
@@ -18,7 +18,7 @@
 | 1.1  | Monorepo y tooling (pnpm workspaces, TS estricto, ESLint, Prettier, `packages/shared`)                                                       | `pnpm install`, `pnpm lint`, `tsc` | ✅     |
 | 1.2  | Docker Compose (Postgres 16) + Prisma schema completo + migración inicial                                                                    | `pnpm db:up`, `pnpm db:migrate`    | ✅     |
 | 1.3  | Seed (superadmin, Soda La Esquina, usuarios, estaciones, 4 categorías, 12 platos, modificadores, 8 mesas)                                    | `pnpm db:seed` y consulta          | ✅     |
-| 1.4  | Auth: login, refresh, logout, me (JWT + bcrypt + RefreshToken hasheado)                                                                      | tests de login                     | ⬜     |
+| 1.4  | Auth: login, refresh, logout, me (JWT + bcrypt + RefreshToken hasheado)                                                                      | tests de login                     | ✅     |
 | 1.5  | Middlewares: auth, requireRole, tenant, validate, errorHandler, rate limit, helmet, CORS                                                     | tests 401/403                      | ⬜     |
 | 1.6  | Módulos: admin/restaurantes, restaurante, usuarios, estaciones, categorías, platos, modificadores, mesas (+QR, regenerar token), uploads 501 | test de aislamiento A/B            | ⬜     |
 | 1.7  | Público: `/public/:slug/menu`, `/public/mesa/:token`, `/health`                                                                              | test menú público                  | ⬜     |
@@ -30,7 +30,7 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
 
 ## Decisiones tomadas
 
-- Puertos propuestos: API `3000`, menu `5173`, staff `5174`, Postgres `5433` (host; 5432 lo usa otro proyecto local).
+- Puertos propuestos: API `4000`, menu `5180`, staff `5181` (3000 y 5173 los usan otros proyectos locales), Postgres `5433` (host; 5432 lo usa otro proyecto local).
 - Tests usan una BD separada `menu_qr_test` en el mismo contenedor Postgres.
 - Logger: `console` envuelto en `lib/logger.ts` (sin librería extra).
 - `pnpm dev` en paralelo con `pnpm -r --parallel --filter ./apps/* dev` (sin `concurrently`).
@@ -49,6 +49,18 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
   por tenant sin joins. `PedidoItem*` no (dependen de `Pedido`).
 - Seed idempotente (no toca el restaurante demo si ya existe); creación del demo en una transacción.
   Reset completo: `pnpm --filter api exec prisma migrate reset`.
+- Express 5 (errores async llegan solos al errorHandler, sin wrappers). `req.query` es getter →
+  `validate` lo redefine con `Object.defineProperty`.
+- Refresh token **opaco** (32 bytes aleatorios, en BD solo su sha256), no JWT → se eliminó
+  `JWT_REFRESH_SECRET`. Rotación en cada refresh; reuso de uno revocado revoca todas las sesiones.
+  Cookie `refreshToken`: httpOnly, sameSite lax, path `/auth`, secure en producción.
+- JWT access: HS256 fijo, payload `{ sub, rol, restauranteId }`. `req.usuario` tipado en `src/types/express.d.ts`.
+- Login: mismo error para email inexistente/clave mala/usuario o restaurante inactivo; compara contra
+  hash de relleno si no existe el email.
+- Errores: `HttpError(status, code, message, details?)` en `middlewares/errorHandler.ts`; Zod→400 VALIDACION,
+  Prisma P2002→409, P2025→404, JSON inválido→400, resto→500 (mensaje genérico en producción).
+- Tests: `NODE_ENV=test` hace que `env.DATABASE_URL` = `DATABASE_URL_TEST`; `tests/globalSetup.ts`
+  corre `prisma migrate deploy`; `limpiarBD()` hace TRUNCATE; helpers `crearRestaurante`, `crearUsuario`, `tokenDe`.
 - `lib/tokens.ts` → `generarTokenQr()` (24 bytes base64url), reutilizar en mesas.
 - `Restaurante.plan` es `String` (default `basico`); `Mesa` única por `(restauranteId, numero)`.
 
@@ -65,6 +77,7 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
 ## Problemas / notas
 
 - En la máquina no hay Python ni `gh` CLI; usar Node/Bash para scripts.
+- Puertos 3000 y 5173 ocupados por otras apps locales → API 4000, menu 5180, staff 5181.
 - El puerto 5432 lo ocupa el contenedor `inventario-api-postgres-1` (otro proyecto). No tocarlo.
 - Con ESM, `process.loadEnvFile` después de un `import` llega tarde → cargar env siempre vía `lib/env.ts`.
 
@@ -79,3 +92,6 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
 - 2026-10-20: 1.2 subida a GitHub.
 - 2026-10-20: 1.3 seed (superadmin + Soda La Esquina: 4 usuarios, 2 estaciones, 4 categorías,
   12 platos, 4 grupos / 12 modificadores, 8 mesas). Dependencia: `bcryptjs`.
+- 2026-10-20: 1.3 subida a GitHub.
+- 2026-10-20: 1.4 auth (login/refresh/logout/me), errorHandler, validate, autenticar, app/server,
+  Vitest + Supertest (10 tests verdes). Dependencias: express 5, jsonwebtoken, cookie-parser, vitest, supertest.

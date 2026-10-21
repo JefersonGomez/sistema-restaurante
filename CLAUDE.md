@@ -12,6 +12,9 @@ SaaS multi-restaurante de pedidos por QR (Costa Rica). Monorepo pnpm: `apps/api`
 
 - Actualizar `MEMORY.md`: marcar el paso, anotar decisiones nuevas y problemas encontrados.
 - Si cambian scripts, variables de entorno, puertos o credenciales → actualizar `README.md`.
+- Al reportar al usuario: explicar **qué se hizo en cada archivo** (archivo → cambio), para que
+  pueda revisar todo.
+- **Antes de cada commit/push: mostrar qué se sube y esperar validación del usuario.**
 
 ## Forma de trabajar
 

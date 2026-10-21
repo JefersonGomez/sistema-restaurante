@@ -8,3 +8,9 @@ export type Moneda = z.infer<typeof monedaSchema>;
 
 export const idiomaSchema = z.enum(['es', 'en']);
 export type Idioma = z.infer<typeof idiomaSchema>;
+
+export const loginSchema = z.object({
+  email: z.string().trim().toLowerCase().pipe(z.email()),
+  password: z.string().min(1).max(200),
+});
+export type LoginInput = z.infer<typeof loginSchema>;
