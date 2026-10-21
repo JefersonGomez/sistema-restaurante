@@ -51,7 +51,7 @@ pnpm dev          # api :3000, menu :5173, staff :5174
 | `MENU_PUBLIC_URL`      | `http://localhost:5173`                                  | Base de la URL que codifica el QR |
 | `VITE_API_URL`         | `http://localhost:3000`                                  | URL de la API para los frontends  |
 
-## Credenciales de prueba _(pendiente — se crean con `pnpm db:seed`)_
+## Credenciales de prueba (se crean con `pnpm db:seed`)
 
 | Rol        | Email                       | Contraseña   |
 | ---------- | --------------------------- | ------------ |
@@ -61,8 +61,12 @@ pnpm dev          # api :3000, menu :5173, staff :5174
 | COCINA     | `cocina@sodalaesquina.test` | `Cocina123!` |
 | CAJA       | `caja@sodalaesquina.test`   | `Caja123!`   |
 
-Restaurante demo: **Soda La Esquina** (`soda-la-esquina`), 8 mesas. Los tokens QR de las mesas
-se imprimen en consola al correr el seed.
+Restaurante demo: **Soda La Esquina** (`soda-la-esquina`): estaciones Cocina y Bar, 4 categorías,
+12 platos ticos (con modificadores obligatorios en gallo pinto, casado con bistec y refresco
+natural) y 8 mesas. El seed imprime la URL de cada mesa (`/m/<tokenQr>`).
+
+El seed es idempotente: si el restaurante demo ya existe no lo modifica. Para empezar de cero:
+`pnpm --filter api exec prisma migrate reset` (borra la BD, migra y vuelve a sembrar).
 
 ## Tests _(pendiente)_
 

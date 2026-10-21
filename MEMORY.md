@@ -6,7 +6,7 @@
 ## Estado actual
 
 - **Fecha última actualización:** 2026-10-20
-- **Sub-fase en curso:** 1.2 terminada, pendiente de validar commit. Siguiente: 1.3 (seed).
+- **Sub-fase en curso:** 1.3 terminada, pendiente de validar commit. Siguiente: 1.4 (auth).
 - Repo remoto: https://github.com/JefersonGomez/sistema-restaurante (rama `main`).
   **Antes de cada commit/push: mostrar al usuario qué se sube y esperar su validación.**
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
@@ -17,7 +17,7 @@
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------ |
 | 1.1  | Monorepo y tooling (pnpm workspaces, TS estricto, ESLint, Prettier, `packages/shared`)                                                       | `pnpm install`, `pnpm lint`, `tsc` | ✅     |
 | 1.2  | Docker Compose (Postgres 16) + Prisma schema completo + migración inicial                                                                    | `pnpm db:up`, `pnpm db:migrate`    | ✅     |
-| 1.3  | Seed (superadmin, Soda La Esquina, usuarios, estaciones, 4 categorías, 12 platos, modificadores, 8 mesas)                                    | `pnpm db:seed` y consulta          | ⬜     |
+| 1.3  | Seed (superadmin, Soda La Esquina, usuarios, estaciones, 4 categorías, 12 platos, modificadores, 8 mesas)                                    | `pnpm db:seed` y consulta          | ✅     |
 | 1.4  | Auth: login, refresh, logout, me (JWT + bcrypt + RefreshToken hasheado)                                                                      | tests de login                     | ⬜     |
 | 1.5  | Middlewares: auth, requireRole, tenant, validate, errorHandler, rate limit, helmet, CORS                                                     | tests 401/403                      | ⬜     |
 | 1.6  | Módulos: admin/restaurantes, restaurante, usuarios, estaciones, categorías, platos, modificadores, mesas (+QR, regenerar token), uploads 501 | test de aislamiento A/B            | ⬜     |
@@ -47,6 +47,9 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
 - Docker: `docker/init-test-db.sql` crea `menu_qr_test` la primera vez que se crea el volumen.
 - `GrupoModificadores` y `Modificador` llevan `restauranteId` (no está en la spec) para filtrar
   por tenant sin joins. `PedidoItem*` no (dependen de `Pedido`).
+- Seed idempotente (no toca el restaurante demo si ya existe); creación del demo en una transacción.
+  Reset completo: `pnpm --filter api exec prisma migrate reset`.
+- `lib/tokens.ts` → `generarTokenQr()` (24 bytes base64url), reutilizar en mesas.
 - `Restaurante.plan` es `String` (default `basico`); `Mesa` única por `(restauranteId, numero)`.
 
 ## Librerías aprobadas fuera de la lista base
@@ -73,3 +76,6 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
 - 2026-10-20: 1.1 subida a GitHub (commit inicial).
 - 2026-10-20: 1.2 docker-compose (Postgres 16, puerto 5433), schema Prisma completo (14 modelos),
   migración `init`, `lib/env.ts`, `lib/prisma.ts`.
+- 2026-10-20: 1.2 subida a GitHub.
+- 2026-10-20: 1.3 seed (superadmin + Soda La Esquina: 4 usuarios, 2 estaciones, 4 categorías,
+  12 platos, 4 grupos / 12 modificadores, 8 mesas). Dependencia: `bcryptjs`.
