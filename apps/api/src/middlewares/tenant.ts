@@ -1,4 +1,4 @@
-import type { RequestHandler } from 'express';
+import type { Request, RequestHandler } from 'express';
 import { HttpError } from './errorHandler';
 
 // El restauranteId sale SOLO del JWT; nunca de body, query o params.
@@ -9,3 +9,6 @@ export const tenant: RequestHandler = (req, _res, next) => {
   req.tenant = { restauranteId };
   next();
 };
+
+// Para controllers de rutas que pasaron por `tenant`.
+export const restauranteDe = (req: Request) => req.tenant!.restauranteId;

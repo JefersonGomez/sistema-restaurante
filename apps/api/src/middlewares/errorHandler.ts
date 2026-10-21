@@ -15,6 +15,9 @@ export class HttpError extends Error {
   }
 }
 
+export const noExiste = (que: string) =>
+  new HttpError(404, 'NO_ENCONTRADO', `${que} no encontrado`);
+
 export const noEncontrado: RequestHandler = (req) => {
   throw new HttpError(404, 'NO_ENCONTRADO', `Ruta no encontrada: ${req.method} ${req.path}`);
 };
@@ -29,6 +32,8 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     e = new HttpError(400, 'VALIDACION', 'Datos inválidos', z.flattenError(err));
   else if (esPrisma(err, 'P2002'))
     e = new HttpError(409, 'DUPLICADO', 'Ya existe un registro con esos datos');
+  else if (esPrisma(err, 'P2003'))
+    e = new HttpError(409, 'EN_USO', 'No se puede borrar: otros registros dependen de este');
   else if (esPrisma(err, 'P2025')) e = new HttpError(404, 'NO_ENCONTRADO', 'Recurso no encontrado');
   else if (err?.type === 'entity.parse.failed')
     e = new HttpError(400, 'JSON_INVALIDO', 'El cuerpo no es JSON válido');

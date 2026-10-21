@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "pnpm -r --parallel --filter ./apps/* dev",
+    "build": "pnpm -r --if-present build",
     "db:up": "docker compose up -d postgres",
     "db:migrate": "pnpm --filter api db:migrate",
     "db:seed": "pnpm --filter api db:seed",
