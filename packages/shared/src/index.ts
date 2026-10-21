@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { HORA_REGEX } from './horario';
 
 export const rolSchema = z.enum(['SUPERADMIN', 'DUENO', 'MESERO', 'COCINA', 'CAJA']);
 export type Rol = z.infer<typeof rolSchema>;
@@ -47,6 +48,9 @@ export const restauranteConfigSchema = z
     porcentajeServicio: porcentaje,
     preciosIncluyenImpuestos: z.boolean(),
     modoConfirmacion: modoConfirmacionSchema,
+    // Horario en hora de Costa Rica ("HH:MM"); null = siempre abierto.
+    horaApertura: z.string().regex(HORA_REGEX, 'Hora HH:MM').nullable(),
+    horaCierre: z.string().regex(HORA_REGEX, 'Hora HH:MM').nullable(),
   })
   .partial();
 export type RestauranteConfigInput = z.infer<typeof restauranteConfigSchema>;
@@ -96,6 +100,7 @@ export const categoriaSchema = z.object({
   nombreEn: texto(),
   orden: z.number().int().min(0).optional(),
   activa: z.boolean().optional(),
+  icono: z.string().trim().max(16).nullable().optional(), // emoji
 });
 export const actualizarCategoriaSchema = categoriaSchema.partial();
 export type CategoriaInput = z.infer<typeof categoriaSchema>;
@@ -123,6 +128,7 @@ export const platoSchema = z.object({
   activo: z.boolean().optional(),
   orden: z.number().int().min(0).optional(),
   alergenos: z.array(texto(40)).max(20).optional(),
+  destacado: z.boolean().optional(), // aparece en el banner del menú
 });
 export const actualizarPlatoSchema = platoSchema.partial();
 export type PlatoInput = z.infer<typeof platoSchema>;
@@ -197,6 +203,7 @@ export type PlatoPublico = {
   precio: number;
   fotoUrl: string | null;
   agotado: boolean;
+  destacado: boolean;
   alergenos: string[];
   grupos: GrupoPublico[];
 };
@@ -211,8 +218,17 @@ export type MenuPublico = {
     porcentajeIva: number;
     porcentajeServicio: number;
     preciosIncluyenImpuestos: boolean;
+    horaApertura: string | null;
+    horaCierre: string | null;
+    abierto: boolean; // calculado por el servidor en hora de Costa Rica
   };
-  categorias: { id: string; nombreEs: string; nombreEn: string; platos: PlatoPublico[] }[];
+  categorias: {
+    id: string;
+    nombreEs: string;
+    nombreEn: string;
+    icono: string | null;
+    platos: PlatoPublico[];
+  }[];
 };
 export type MesaPublica = {
   slug: string;
@@ -351,3 +367,4 @@ export type ReporteHoy = {
 
 export * from './totales';
 export * from './seleccion';
+export * from './horario';

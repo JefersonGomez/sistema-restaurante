@@ -93,23 +93,23 @@ describe('flujo completo', () => {
     expect(listos.map((i: { id: string }) => i.id)).toEqual([itemCasado]);
     expect((await estado(t.mesero, itemCasado, 'ENTREGADO')).body.estado).toBe('ENTREGADO');
 
-    // Caja: desglose con servicio e IVA (precios con impuestos incluidos: 4 800 + 2 × 1 500)
+    // Caja: menú ₡7 800 con IVA incluido; el servicio (10 % de la base) se suma
     const solicitud = await request(app)
       .post('/public/cuenta/solicitar')
       .set('Authorization', `Bearer ${sesion.token}`);
     expect(solicitud.body.estado).toBe('PIDIO_CUENTA');
     const cuenta = (await como(t.caja).get(`/operacion/cuentas/${sesion.cuentaId}`)).body;
     expect(cuenta).toMatchObject({
-      total: 780000,
-      subtotal: 634146,
-      montoServicio: 63415,
-      montoIva: 82439,
+      total: 849027,
+      subtotal: 690265,
+      montoServicio: 69027,
+      montoIva: 89735,
     });
 
     const cierre = await como(t.caja)
       .post(`/operacion/cuentas/${sesion.cuentaId}/cerrar`)
       .send({ metodoPago: 'SINPE' });
-    expect(cierre.body).toMatchObject({ estado: 'CERRADA', metodoPago: 'SINPE', total: 780000 });
+    expect(cierre.body).toMatchObject({ estado: 'CERRADA', metodoPago: 'SINPE', total: 849027 });
 
     // La sesión del comensal deja de servir y la mesa queda libre.
     expect(
@@ -156,7 +156,7 @@ describe('flujo completo', () => {
       motivoCancelacion: 'Se acabó el hielo',
     });
     expect((await prisma.cuenta.findUniqueOrThrow({ where: { id: sesion.cuentaId } })).total).toBe(
-      480000,
+      522478,
     );
 
     const otro = await pedidoPendiente();
@@ -360,7 +360,7 @@ describe('reportes/hoy', () => {
       .send({ metodoPago: 'EFECTIVO' });
 
     const r = (await como(t.dueno).get('/reportes/hoy')).body;
-    expect(r).toMatchObject({ totalVendido: 1110000, cuentasCerradas: 1, ticketPromedio: 1110000 });
+    expect(r).toMatchObject({ totalVendido: 1208230, cuentasCerradas: 1, ticketPromedio: 1208230 });
     expect(r.topPlatos[0]).toMatchObject({ nombreEs: 'Casado', cantidad: 2 });
   });
 });

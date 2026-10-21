@@ -1,4 +1,9 @@
-import { calcularTotales, minimoEfectivo, type CrearPedidoInput } from '@menu-qr/shared';
+import {
+  calcularTotales,
+  estaAbierto,
+  minimoEfectivo,
+  type CrearPedidoInput,
+} from '@menu-qr/shared';
 import { Prisma } from '../../generated/prisma/client';
 import { prisma } from '../../lib/prisma';
 import { HttpError, noExiste } from '../../middlewares/errorHandler';
@@ -140,11 +145,19 @@ export async function crearPedido(p: NuevoPedido) {
         where: { id: p.cuentaId, restauranteId: p.restauranteId },
         include: {
           mesa: { select: { numero: true } },
-          restaurante: { select: { modoConfirmacion: true } },
+          restaurante: { select: { modoConfirmacion: true, horaApertura: true, horaCierre: true } },
         },
       });
       if (!cuenta) throw noExiste('Cuenta');
       if (cuenta.estado === 'CERRADA') throw cuentaCerrada();
+      // Fuera de horario el comensal no puede pedir; el mesero sí (p. ej. últimos pedidos).
+      const { horaApertura, horaCierre } = cuenta.restaurante;
+      if (p.origen === 'CLIENTE' && !estaAbierto(horaApertura, horaCierre))
+        throw new HttpError(
+          409,
+          'RESTAURANTE_CERRADO',
+          `El restaurante atiende de ${horaApertura} a ${horaCierre}`,
+        );
 
       const ids = [...new Set(p.input.items.map((i) => i.platoId))];
       const platos = await tx.plato.findMany({

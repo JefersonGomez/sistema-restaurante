@@ -103,9 +103,9 @@ describe('crear pedido', () => {
     const cuenta = await request(app)
       .get('/public/cuenta')
       .set('Authorization', `Bearer ${sesion.token}`);
-    // Precios con impuestos incluidos (default): total = 10 600
-    expect(cuenta.body).toMatchObject({ total: 1060000, mesa: { numero: 1 } });
-    expect(cuenta.body.subtotal + cuenta.body.montoServicio + cuenta.body.montoIva).toBe(1060000);
+    // Menú ₡10 600 con IVA incluido; + 10 % de servicio sobre la base
+    expect(cuenta.body).toMatchObject({ total: 1153805, mesa: { numero: 1 } });
+    expect(cuenta.body.subtotal + cuenta.body.montoServicio + cuenta.body.montoIva).toBe(1153805);
   });
 
   it('modificadores: obligatorio, máximo y ajenos', async () => {
@@ -227,7 +227,7 @@ describe('modoConfirmacion', () => {
 
     expect((await confirmar(p1.body.id)).status).toBe(200);
     expect((await prisma.cuenta.findUniqueOrThrow({ where: { id: sesion.cuentaId } })).total).toBe(
-      480000,
+      522478, // ₡4 800 con IVA + servicio sobre la base
     );
 
     const p2 = await pedir(sesion.token, pedido([casado()]));
@@ -268,5 +268,36 @@ describe('llamar y pedir la cuenta', () => {
     expect(res.body.estado).toBe('PIDIO_CUENTA');
     expect(await prisma.llamada.count({ where: { tipo: 'CUENTA' } })).toBe(1);
     expect((await post('solicitar')).status).toBe(409);
+  });
+});
+
+describe('horario del restaurante', () => {
+  // Un rango de una hora que nunca incluye "ahora" en Costa Rica.
+  const rangoCerrado = () => {
+    const h = (new Date(Date.now() - 6 * 3600_000).getUTCHours() + 2) % 24;
+    const hh = (n: number) => String(n % 24).padStart(2, '0') + ':00';
+    return { horaApertura: hh(h), horaCierre: hh(h + 1) };
+  };
+
+  it('fuera de horario el comensal no puede pedir (409) pero el mesero sí', async () => {
+    await prisma.restaurante.update({ where: { id: restauranteId }, data: rangoCerrado() });
+    const menu = await request(app).get('/public/resto-a/menu');
+    expect(menu.body.restaurante.abierto).toBe(false);
+
+    const res = await pedir(sesion.token, pedido([casado()]));
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('RESTAURANTE_CERRADO');
+
+    await crearUsuario('mesero@resto-a.test', 'MESERO', restauranteId);
+    const delMesero = await request(app)
+      .post(`/operacion/mesas/${m.mesa.id}/pedidos`)
+      .set('Authorization', `Bearer ${await tokenDe('mesero@resto-a.test')}`)
+      .send(pedido([casado()]));
+    expect(delMesero.status).toBe(201);
+  });
+
+  it('sin horario configurado siempre está abierto', async () => {
+    const menu = await request(app).get('/public/resto-a/menu');
+    expect(menu.body.restaurante).toMatchObject({ abierto: true, horaApertura: null });
   });
 });

@@ -53,6 +53,8 @@ async function crearRestauranteDemo(tx: Prisma.TransactionClient) {
       moneda: 'CRC',
       colorPrimario: '#b45309',
       preciosIncluyenImpuestos: true,
+      horaApertura: '07:00',
+      horaCierre: '21:00',
     },
   });
   const restauranteId = restaurante.id;
@@ -72,12 +74,12 @@ async function crearRestauranteDemo(tx: Prisma.TransactionClient) {
   const cocina = await tx.estacion.create({ data: { restauranteId, nombre: 'Cocina' } });
   const bar = await tx.estacion.create({ data: { restauranteId, nombre: 'Bar' } });
 
-  const categoria = (orden: number, nombreEs: string, nombreEn: string) =>
-    tx.categoria.create({ data: { restauranteId, orden, nombreEs, nombreEn } });
-  const desayunos = await categoria(1, 'Desayunos', 'Breakfast');
-  const fuertes = await categoria(2, 'Platos fuertes', 'Main dishes');
-  const bocas = await categoria(3, 'Bocas', 'Appetizers');
-  const bebidas = await categoria(4, 'Bebidas', 'Drinks');
+  const categoria = (orden: number, nombreEs: string, nombreEn: string, icono: string) =>
+    tx.categoria.create({ data: { restauranteId, orden, nombreEs, nombreEn, icono } });
+  const desayunos = await categoria(1, 'Desayunos', 'Breakfast', '☕');
+  const fuertes = await categoria(2, 'Platos fuertes', 'Main dishes', '🍛');
+  const bocas = await categoria(3, 'Bocas', 'Appetizers', '🍢');
+  const bebidas = await categoria(4, 'Bebidas', 'Drinks', '🥤');
 
   type GrupoDemo = {
     nombreEs: string;
@@ -96,6 +98,7 @@ async function crearRestauranteDemo(tx: Prisma.TransactionClient) {
     descripcionEn: string;
     precio: number; // colones
     alergenos?: string[];
+    destacado?: boolean;
     grupos?: GrupoDemo[];
   };
 
@@ -199,6 +202,7 @@ async function crearRestauranteDemo(tx: Prisma.TransactionClient) {
       categoriaId: bocas.id,
       estacionId: cocina.id,
       nombreEs: 'Chifrijo',
+      destacado: true,
       nombreEn: 'Chifrijo',
       descripcionEs: 'Arroz, frijoles, chicharrón, pico de gallo y tortillas tostadas.',
       descripcionEn: 'Rice, beans, fried pork, pico de gallo and tortilla chips.',

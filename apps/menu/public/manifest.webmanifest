@@ -1,0 +1,12 @@
+{
+  "name": "Menú QR",
+  "short_name": "Menú",
+  "description": "Menú y pedidos desde la mesa",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#E7E6F0",
+  "theme_color": "#5B2DB5",
+  "icons": [
+    { "src": "/icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

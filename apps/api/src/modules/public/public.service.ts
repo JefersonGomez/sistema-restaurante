@@ -1,4 +1,4 @@
-import type { MenuPublico } from '@menu-qr/shared';
+import { estaAbierto, type MenuPublico } from '@menu-qr/shared';
 import { prisma } from '../../lib/prisma';
 import { noExiste } from '../../middlewares/errorHandler';
 
@@ -19,16 +19,20 @@ export async function menu(slug: string): Promise<MenuPublico> {
       porcentajeIva: true,
       porcentajeServicio: true,
       preciosIncluyenImpuestos: true,
+      horaApertura: true,
+      horaCierre: true,
     },
   });
   if (!r || !r.activo) throw noExiste('Restaurante');
-  const { id: restauranteId, activo: _activo, ...restaurante } = r;
+  const { id: restauranteId, activo: _activo, ...datos } = r;
+  const restaurante = { ...datos, abierto: estaAbierto(r.horaApertura, r.horaCierre) };
 
   const categorias = await prisma.categoria.findMany({
     where: { restauranteId, activa: true },
     orderBy: [{ orden: 'asc' }, { nombreEs: 'asc' }],
     select: {
       ...nombres,
+      icono: true,
       // Los agotados se devuelven marcados; los inactivos no.
       platos: {
         where: { restauranteId, activo: true },
@@ -40,6 +44,7 @@ export async function menu(slug: string): Promise<MenuPublico> {
           precio: true,
           fotoUrl: true,
           agotado: true,
+          destacado: true,
           alergenos: true,
           grupos: {
             orderBy: { createdAt: 'asc' },

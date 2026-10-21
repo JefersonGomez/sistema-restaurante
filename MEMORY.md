@@ -7,11 +7,9 @@
 
 - **Fecha última actualización:** 2026-10-20
 - **Fase 1 completa y subida** (commit `a202fd9`).
-- **Fase 2:** 2.1–2.14 implementadas y verificadas (2026-10-21), pendientes de validar commit.
-  Pendiente del usuario: revisión visual de las pantallas y `prisma migrate reset` de su BD de
-  desarrollo para cargar los ejemplos nuevos del seed (Prisma exige su consentimiento explícito).
-- Repo remoto: https://github.com/JefersonGomez/sistema-restaurante (rama `main`).
-  **Antes de cada commit/push: mostrar al usuario qué se sube y esperar su validación.**
+- **Fase 2 completa y subida** (commit `a0317b7`).
+- **Frontend del comensal (spec `docs/especificacion-frontend-menu.md`, guía visual
+  `prototipo_front/prototipo-menu.html`):** implementado y verificado 2026-10-21, pendiente de validar commit.
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
 
 ## Plan de la Fase 2 (sub-fases)
@@ -47,6 +45,25 @@ Spec: `docs/especificacion-fase2.md`. Un commit por sub-fase, validado por el us
   primer pedido o cuando el mesero toma uno; tiempo de preparación = EN_PREPARACION→LISTO;
   "hoy" en America/Costa_Rica (UTC−6); sala `rest:{id}:comensales` para `menu:actualizado`;
   clientRequestId con `crypto.getRandomValues` (randomUUID no existe en http por LAN).
+
+### Decisiones del frontend del comensal (respondidas por el usuario 2026-10-21)
+
+- **Cambio de regla de impuestos:** `preciosIncluyenImpuestos = true` ahora significa que el precio
+  del menú incluye **solo el IVA**; el 10 % de servicio se **suma** y se calcula sobre la base sin IVA.
+  (Reemplaza la decisión de la Fase 2 de "IVA y servicio incluidos".) ₡4 800 → total ₡5 224,78.
+- Horario: `Restaurante.horaApertura/horaCierre` ("HH:MM", hora CR; null = siempre abierto),
+  `estaAbierto()` en `shared/horario.ts`; el menú público trae `abierto`; pedidos de CLIENTE fuera
+  de horario → 409 `RESTAURANTE_CERRADO` (el mesero sí puede). El dueño lo edita en "Hoy".
+- `Plato.destacado` (banner) y `Categoria.icono` (emoji). Migración `20261022120000_menu_horario_destacado`.
+- React 19 (no 18). Tailwind 4: tokens en `@theme inline` de `index.css`, no `tailwind.config`.
+- Librerías nuevas en apps/menu: `@tanstack/react-query`, `zustand`, `lucide-react`; dev:
+  `vitest`, `@testing-library/react|user-event|jest-dom`, `jsdom`.
+- Estructura: `componentes/` (estructura, menu, detalle, cuenta), `pantallas/`, `datos/` (mesa.tsx =
+  consultas + socket, envio.ts, acciones.ts), `estado/` (carrito, idioma, avisos), `textos/` (es, en).
+- Al confirmarse un envío se quita del carrito solo lo enviado (`restar`), no lo agregado después.
+- Platos sin foto muestran el ícono de su categoría (el prototipo usa un emoji por plato).
+- `socket.io-client` se importa dinámicamente (JS inicial 174 KB gzip).
+- Verificación visual con `playwright-core` + Edge instalado (en el scratchpad, no en el repo).
 
 ### Decisiones técnicas de la Fase 2
 
@@ -177,6 +194,9 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
 - El puerto 5432 lo ocupa el contenedor `inventario-api-postgres-1` (otro proyecto). No tocarlo.
 - `prisma migrate reset` está bloqueado para agentes sin consentimiento explícito del usuario
   (variable PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION). Para probar el seed usar una BD temporal.
+- Cambiar la regla de impuestos NO recalcula los totales guardados de cuentas abiertas: hubo que
+  correr `recalcularCuenta` a mano en la BD de desarrollo. Si se cambia en producción, hacer lo mismo.
+- jsdom reporta `navigator.language = en-US`: los tests de componentes fijan `useIdioma` en 'es'.
 - Al detener `pnpm dev` (tarea en background) en Windows quedan procesos node huérfanos en
   4000/5180/5181: revisar `netstat` y cerrarlos por PID.
 - `curl -d` con tildes desde Git Bash manda latin-1 (sale "Vigor�n"): para probar a mano usar Node/fetch.
@@ -206,3 +226,7 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
 - 2026-10-21: Fase 2 completa (2.1–2.14): migración, totales, sesión de comensal, pedidos,
   transiciones, Socket.IO por estación/cuenta, /operacion, /reportes/hoy, pantallas de comensal,
   cocina, mesero, caja y dueño, seed con ejemplos, tests (72 API + 9 shared) y simulador de hora pico.
+- 2026-10-21: Fase 2 subida (a0317b7). BD de desarrollo reiniciada con consentimiento del usuario.
+- 2026-10-21: frontend del comensal según prototipo (claro/oscuro, PWA), nueva regla de impuestos,
+  horario/destacado/ícono (migración), tests: shared 15, API 74, menu 16. Recorrido en vivo en el
+  navegador OK (pedido, estado en vivo, agotado sin recargar, pantalla de agradecimiento).

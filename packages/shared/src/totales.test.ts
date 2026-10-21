@@ -35,11 +35,21 @@ describe('calcularTotales', () => {
     });
   });
 
-  it('precios CON impuestos: el total es el del menú y se desglosa hacia atrás', () => {
-    // ₡4 800 → base 4800/1.23 = 3902.439… → ₡3 902,44
+  it('precios CON IVA incluido: se desglosa el IVA y el servicio (sobre la base) se suma', () => {
+    // ₡4 800 → base 4800/1.13 = 4247.787… → ₡4 247,79 ; IVA ₡552,21 ; servicio ₡424,78
     const t = calcularTotales([{ precioUnitario: 480000, cantidad: 1 }], incluidos);
-    expect(t).toEqual({ subtotal: 390244, montoServicio: 39024, montoIva: 50732, total: 480000 });
+    expect(t).toEqual({ subtotal: 424779, montoServicio: 42478, montoIva: 55221, total: 522478 });
     expect(t.subtotal + t.montoServicio + t.montoIva).toBe(t.total);
+  });
+
+  it('precios CON IVA incluido y sin servicio: el total es el del menú', () => {
+    const cfg = { ...incluidos, porcentajeServicio: 0 };
+    expect(calcularTotales([{ precioUnitario: 113000, cantidad: 1 }], cfg)).toEqual({
+      subtotal: 100000,
+      montoServicio: 0,
+      montoIva: 13000,
+      total: 113000,
+    });
   });
 
   it('sin servicio (0%) solo aplica IVA', () => {
@@ -94,10 +104,11 @@ describe('calcularTotales', () => {
     expect(t.montoServicio).toBe(2);
   });
 
-  it('con impuestos incluidos el desglose siempre cuadra con el total', () => {
+  it('con IVA incluido el desglose siempre cuadra y el menú + servicio da el total', () => {
     for (let precio = 1; precio <= 5000; precio += 7) {
       const t = calcularTotales([{ precioUnitario: precio, cantidad: 3 }], incluidos);
-      expect(t.total).toBe(precio * 3);
+      expect(t.total).toBe(precio * 3 + t.montoServicio);
+      expect(t.subtotal + t.montoIva).toBe(precio * 3);
       expect(t.subtotal + t.montoServicio + t.montoIva).toBe(t.total);
       expect(t.montoIva).toBeGreaterThanOrEqual(0);
     }

@@ -1,0 +1,388 @@
+<title>Menú Soda La Esquina</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: una columna de app tipo teléfono, centrada en escritorio y a todo lo ancho en celular; navegación inferior fija */
+:root{
+  --bg:#E7E6F0; --app:#FFFFFF; --surface:#F6F5FB; --surface-2:#EEECF7; --fg:#1D1B2A; --muted:#6F6C80; --line:#E4E2EE;
+  --amber:#F7A91C; --amber-soft:#FFF2D6; --amber-ink:#8F5300;
+  --purple:#5B2DB5; --purple-soft:#EEE8FB; --on-accent:#FFFFFF;
+  --danger:#DD3A2E; --ok:#1C8A57; --ok-soft:#E2F4EB; --banner:#17131F; --banner-fg:#FFFFFF;
+  --shadow:0 18px 50px rgba(40,30,80,.14);
+  --font:"Poppins",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r-lg:22px; --r-md:16px; --r-sm:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E0D14; --app:#16141E; --surface:#1F1C2A; --surface-2:#272336; --fg:#F2F0F8; --muted:#A39FB5; --line:#2E2A3C;
+  --amber:#FFB632; --amber-soft:#3A2B0E; --amber-ink:#FFD27A;
+  --purple:#8E6AEC; --purple-soft:#2B2345; --on-accent:#FFFFFF;
+  --danger:#FF6F64; --ok:#4CC48E; --ok-soft:#14302A; --banner:#0A0910; --banner-fg:#FFFFFF;
+  --shadow:0 18px 50px rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E0D14; --app:#16141E; --surface:#1F1C2A; --surface-2:#272336; --fg:#F2F0F8; --muted:#A39FB5; --line:#2E2A3C;
+  --amber:#FFB632; --amber-soft:#3A2B0E; --amber-ink:#FFD27A;
+  --purple:#8E6AEC; --purple-soft:#2B2345; --on-accent:#FFFFFF;
+  --danger:#FF6F64; --ok:#4CC48E; --ok-soft:#14302A; --banner:#0A0910; --banner-fg:#FFFFFF;
+  --shadow:0 18px 50px rgba(0,0,0,.5); color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
+.app{max-width:420px;margin:0 auto;background:var(--app);border-radius:32px;box-shadow:var(--shadow);min-height:calc(100% - 0px);
+  display:flex;flex-direction:column;position:relative;overflow:hidden}
+@media (max-width:480px){body{padding-block:0;padding-left:0;padding-right:0}.app{border-radius:0;box-shadow:none;min-height:100%}}
+main{flex:1;padding:22px 20px 110px;display:flex;flex-direction:column;gap:22px}
+.icon{width:22px;height:22px;flex:none}
+.sm{width:16px;height:16px}
+
+/* Encabezado */
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.brand h1{font-size:22px;font-weight:600;letter-spacing:-.01em;text-wrap:balance;margin:0}
+.meta{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+.pill{padding:5px 12px;border-radius:999px;font-weight:500;font-size:12.5px}
+.pill.open{background:var(--amber-soft);color:var(--amber-ink)}
+.pill.table{background:var(--purple-soft);color:var(--purple)}
+.top-actions{display:flex;gap:6px}
+.icon-btn{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;position:relative}
+.icon-btn:hover{background:var(--surface)}
+.icon-btn .dot{position:absolute;top:6px;right:6px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--amber);color:#2A1A00;font-size:10px;font-weight:600;display:grid;place-items:center}
+.lang{font-size:12px;font-weight:600;letter-spacing:.04em}
+
+.search{display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:var(--r-md);padding:0 16px;height:52px}
+.search input{flex:1;min-width:0;border:0;background:none;font:inherit;color:var(--fg);outline:none}
+.search input::placeholder{color:var(--muted)}
+
+/* Banner */
+.promo{background:var(--banner);color:var(--banner-fg);border-radius:var(--r-lg);position:relative;overflow:hidden;min-height:150px;display:flex;align-items:center;padding:20px;text-align:left;width:100%}
+.promo::before{content:"";position:absolute;right:-40px;top:-30px;width:190px;height:260px;background:var(--amber);transform:rotate(24deg);opacity:.95}
+.promo .txt{position:relative;z-index:1;display:flex;flex-direction:column;gap:2px}
+.promo small{font-size:15px;opacity:.9}
+.promo strong{font-size:23px;font-weight:700;letter-spacing:.02em;line-height:1.1}
+.promo .price{margin-top:10px;background:#00000066;border:1px dashed #FFB632;color:#FFC24D;font-weight:700;font-size:21px;padding:4px 14px;border-radius:8px;align-self:flex-start;font-variant-numeric:tabular-nums}
+.promo .art{position:absolute;right:14px;bottom:8px;font-size:84px;z-index:1;filter:drop-shadow(0 8px 14px rgba(0,0,0,.35))}
+
+/* Categorías */
+.sec-title{font-size:17px;font-weight:600;margin:0}
+.cats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 10px}
+.cat{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.cat .tile{width:100%;aspect-ratio:1;max-width:76px;border-radius:20px;background:var(--surface-2);display:grid;place-items:center;font-size:32px;transition:transform .15s}
+.cat:hover .tile{transform:translateY(-2px)}
+.cat.on{color:var(--fg);font-weight:500}
+.cat.on .tile{background:var(--amber);box-shadow:0 8px 18px rgba(247,169,28,.35)}
+
+/* Platos */
+.list{display:flex;flex-direction:column;gap:12px}
+.dish{display:flex;gap:14px;background:var(--surface);border-radius:var(--r-md);padding:12px;text-align:left;width:100%;align-items:center}
+.dish .img{width:84px;height:84px;border-radius:14px;background:var(--surface-2);display:grid;place-items:center;font-size:42px;flex:none}
+.dish .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.dish h3{font-size:15px;font-weight:600;margin:0}
+.dish p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dish .row{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+.money{font-weight:600;font-variant-numeric:tabular-nums}
+.add{width:34px;height:34px;border-radius:10px;background:var(--purple);color:var(--on-accent);display:grid;place-items:center}
+.dish.off{opacity:.55}
+.tag-off{font-size:11.5px;font-weight:600;color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent);padding:3px 9px;border-radius:999px}
+.empty{color:var(--muted);text-align:center;padding:30px 10px}
+
+/* Encabezado de pantalla interna */
+.bar{display:grid;grid-template-columns:42px 1fr 42px;align-items:center}
+.bar h2{margin:0;text-align:center;font-size:19px;font-weight:600}
+
+/* Carrito */
+.citem{background:var(--surface);border-radius:var(--r-md);padding:14px;display:flex;gap:14px}
+.citem .img{width:88px;height:88px;border-radius:14px;background:var(--surface-2);display:grid;place-items:center;font-size:44px;flex:none}
+.citem .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.citem .head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.citem h3{margin:0;font-size:15px;font-weight:600}
+.mods{font-size:12px;color:var(--muted)}
+.note-btn{display:flex;align-items:center;gap:6px;color:var(--amber-ink);font-size:13px;font-weight:500;text-align:left;padding:0}
+.note-text{font-size:12.5px;color:var(--amber-ink);background:var(--amber-soft);padding:6px 10px;border-radius:8px}
+.qty{display:flex;align-items:center;gap:12px}
+.qty button{width:32px;height:32px;border-radius:9px;display:grid;place-items:center}
+.qty .minus{background:var(--line);color:var(--muted)}
+.qty .plus{background:var(--purple);color:var(--on-accent)}
+.qty span{min-width:14px;text-align:center;font-weight:500;font-variant-numeric:tabular-nums}
+.trash{color:var(--danger);padding:2px}
+.summary{background:var(--surface);border-radius:var(--r-md);padding:16px;display:flex;flex-direction:column;gap:10px;font-size:14px}
+.summary .l{display:flex;justify-content:space-between;color:var(--muted)}
+.summary .l span:last-child{font-variant-numeric:tabular-nums;color:var(--fg)}
+.summary .tot{border-top:1px dashed var(--line);padding-top:12px;font-size:17px;font-weight:600;color:var(--fg)}
+.summary small{color:var(--muted);font-size:11.5px}
+.cta{width:100%;height:56px;border-radius:var(--r-md);background:var(--purple);color:var(--on-accent);font-weight:600;font-size:15.5px;display:flex;align-items:center;justify-content:center;gap:10px}
+.cta[disabled]{opacity:.6;cursor:default}
+.cta.ghost{background:var(--surface);color:var(--fg)}
+.cta.amber{background:var(--amber);color:#2A1A00}
+
+/* Mi cuenta */
+.order{background:var(--surface);border-radius:var(--r-md);padding:16px;display:flex;flex-direction:column;gap:12px}
+.order .oh{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.order .oh strong{font-size:15px}
+.order .oh time{color:var(--muted);font-size:12px}
+.status{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.st-0{background:var(--amber-soft);color:var(--amber-ink)}
+.st-1,.st-2{background:var(--purple-soft);color:var(--purple)}
+.st-3,.st-4{background:var(--ok-soft);color:var(--ok)}
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.steps i{height:5px;border-radius:3px;background:var(--line)}
+.steps i.on{background:var(--purple)}
+.steps.done i.on{background:var(--ok)}
+.oitem{display:flex;justify-content:space-between;gap:10px;font-size:13.5px}
+.oitem span:first-child{min-width:0}
+.oitem .m{display:block;color:var(--muted);font-size:12px}
+.wait{display:flex;gap:10px;align-items:center;background:var(--amber-soft);color:var(--amber-ink);border-radius:12px;padding:10px 12px;font-size:13px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.demo{font-size:11.5px;color:var(--muted);text-align:center}
+
+/* Navegación inferior */
+.nav{position:sticky;bottom:0;margin-top:auto;background:var(--app);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px))}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);padding:6px 0;border-radius:12px;position:relative}
+.nav button.on{color:var(--purple);font-weight:600}
+.nav .badge{position:absolute;top:0;left:calc(50% + 6px);background:var(--amber);color:#2A1A00;font-size:10px;font-weight:700;border-radius:999px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 5px}
+
+/* Hoja de detalle */
+.scrim{position:fixed;inset:0;background:rgba(10,8,20,.5);display:flex;align-items:flex-end;justify-content:center;z-index:20;animation:fade .2s}
+.sheet{width:100%;max-width:420px;max-height:92%;background:var(--app);border-radius:26px 26px 0 0;overflow:auto;padding:0 20px calc(20px + env(safe-area-inset-bottom,0px));animation:up .25s ease-out}
+.hero{margin:0 -20px;height:190px;background:var(--surface-2);display:grid;place-items:center;font-size:96px;position:relative}
+.hero .x{position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:50%;background:var(--app);display:grid;place-items:center}
+.sheet h2{margin:18px 0 6px;font-size:21px;font-weight:600}
+.sheet .desc{color:var(--muted);font-size:13.5px;line-height:1.55;margin:0}
+.group{margin-top:18px;display:flex;flex-direction:column;gap:8px}
+.group .gh{display:flex;justify-content:space-between;align-items:center}
+.group .gh strong{font-size:14.5px}
+.req{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:var(--amber-soft);color:var(--amber-ink)}
+.req.opt{background:var(--surface-2);color:var(--muted)}
+.opt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:12px;background:var(--surface);font-size:14px;cursor:pointer}
+.opt-row input{accent-color:var(--purple);width:18px;height:18px}
+.opt-row .x2{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums;margin-left:auto}
+textarea{width:100%;min-height:72px;resize:vertical;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:12px;padding:12px;font:inherit;font-size:14px}
+.err{color:var(--danger);font-size:12.5px;min-height:1em}
+.sheet-foot{display:flex;gap:12px;align-items:center;margin-top:18px}
+.sheet-foot .cta{flex:1}
+
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--app);padding:12px 18px;border-radius:14px;font-size:13.5px;z-index:40;max-width:calc(100% - 32px);text-align:center;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+@keyframes up{from{transform:translateY(40px);opacity:.4}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app" id="app" aria-live="polite"></div>
+
+<script>
+const IC={
+search:'<path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm9 3-4.35-4.35"/>',
+bell:'<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9Zm4.3 13a1.94 1.94 0 0 0 3.4 0"/>',
+home:'<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-9.5Z"/>',
+cart:'<path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.76L20.5 8H6.2M9 20.5h.01M17 20.5h.01"/>',
+receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6m-6 4h3"/>',
+plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',
+trash:'<path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+note:'<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5Zm0 0v5h5M9 13h6m-6 4h4"/>',
+back:'<path d="m15 18-6-6 6-6"/>',x:'<path d="M18 6 6 18M6 6l12 12"/>',
+clock:'<path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-13v4l3 2"/>',
+check:'<path d="m5 12 5 5L20 7"/>',hand:'<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12m0-1.5v-2a1.5 1.5 0 0 1 3 0V12m0-1.5a1.5 1.5 0 0 1 3 0V16a5 5 0 0 1-5 5h-1.6a5 5 0 0 1-3.9-1.9L4.4 16a1.5 1.5 0 0 1 2.3-1.9L8 15.5"/>'
+};
+const ico=(n,c='icon')=>`<svg class="${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
+
+const T={
+es:{open:'Abierto',hours:'7:00 a. m. a 9:00 p. m.',table:'Mesa',search:'Buscar platos',promoA:'Jueves de',promoB:'CHIFRIJO',cats:'Categorías',all:'Todo',menu:'Menú',cart:'Carrito',account:'Mi cuenta',mycart:'Mi carrito',add:'Agregar',out:'Agotado',note:'Nota de preparación',notePh:'Ej.: sin cebolla, salsa aparte',required:'Obligatorio',optional:'Opcional',chooseOne:'Elija una opción',subtotal:'Subtotal',service:'Servicio (10%)',total:'Total',ivaInc:'Los precios incluyen IVA (13%).',send:'Enviar pedido',sending:'Enviando…',emptyCart:'Su carrito está vacío.',seeMenu:'Ver el menú',order:'Pedido',waitConf:'Esperando que el mesero confirme su pedido.',st:['Enviado','Confirmado','En preparación','Listo','Entregado'],callW:'Llamar al mesero',askBill:'Pedir la cuenta',called:'El mesero ya viene a su mesa.',billAsked:'Pidió la cuenta. El mesero se la trae.',noOrders:'Todavía no ha hecho pedidos.',sent:'Pedido enviado a la cocina.',added:'Agregado al carrito',demo:'Demostración: los estados avanzan solos.',accTotal:'Total de la mesa',noResults:'No hay platos que coincidan.',editNote:'Editar nota',addNote:'Nota de preparación',orderMore:'Pedir algo más'},
+en:{open:'Open',hours:'7:00 am to 9:00 pm',table:'Table',search:'Search dishes',promoA:'Thursday',promoB:'CHIFRIJO',cats:'Categories',all:'All',menu:'Menu',cart:'Cart',account:'My bill',mycart:'My cart',add:'Add',out:'Sold out',note:'Kitchen note',notePh:'E.g. no onion, sauce on the side',required:'Required',optional:'Optional',chooseOne:'Choose an option',subtotal:'Subtotal',service:'Service (10%)',total:'Total',ivaInc:'Prices include 13% VAT.',send:'Send order',sending:'Sending…',emptyCart:'Your cart is empty.',seeMenu:'See the menu',order:'Order',waitConf:'Waiting for your server to confirm the order.',st:['Sent','Confirmed','Preparing','Ready','Served'],callW:'Call server',askBill:'Ask for the bill',called:'Your server is on the way.',billAsked:'Bill requested. Your server will bring it.',noOrders:'You have not ordered yet.',sent:'Order sent to the kitchen.',added:'Added to cart',demo:'Demo: statuses advance on their own.',accTotal:'Table total',noResults:'No dishes match.',editNote:'Edit note',addNote:'Kitchen note',orderMore:'Order something else'}
+};
+
+const CATS=[
+ {id:'des',e:'☕',es:'Desayunos',en:'Breakfast'},{id:'cas',e:'🍛',es:'Casados',en:'Casados'},
+ {id:'boc',e:'🍢',es:'Bocas',en:'Bocas'},{id:'sop',e:'🍲',es:'Sopas',en:'Soups'},
+ {id:'arr',e:'🍚',es:'Arroces',en:'Rice'},{id:'pos',e:'🍰',es:'Postres',en:'Desserts'},
+ {id:'beb',e:'🥤',es:'Bebidas',en:'Drinks'},{id:'caf',e:'🫖',es:'Café',en:'Coffee'}
+];
+const DISHES=[
+ {id:1,c:'des',e:'🍳',p:3200,es:'Gallo pinto con huevo',en:'Gallo pinto with eggs',des:'Gallo pinto, natilla, plátano maduro y tortilla.',den:'Rice and beans, sour cream, sweet plantain and tortilla.',g:[{id:'h',es:'Huevo',en:'Eggs',req:1,max:1,o:[{id:'f',es:'Frito',en:'Fried',x:0},{id:'r',es:'Revuelto',en:'Scrambled',x:0},{id:'p',es:'Picado',en:'With tomato & onion',x:0}]}]},
+ {id:2,c:'des',e:'🥞',p:4500,es:'Desayuno típico completo',en:'Full Tico breakfast',des:'Gallo pinto, huevos, queso frito, natilla y café.',den:'Rice and beans, eggs, fried cheese, sour cream and coffee.'},
+ {id:3,c:'cas',e:'🍗',p:4800,es:'Casado con pollo',en:'Casado with chicken',des:'Arroz, frijoles, ensalada, maduro y pollo en salsa.',den:'Rice, beans, salad, plantain and chicken in sauce.',g:[{id:'b',es:'Extra',en:'Extras',req:0,max:2,o:[{id:'q',es:'Queso frito',en:'Fried cheese',x:800},{id:'a',es:'Aguacate',en:'Avocado',x:600}]}]},
+ {id:4,c:'cas',e:'🥩',p:5500,es:'Casado con bistec',en:'Casado with steak',des:'Bistec encebollado con arroz, frijoles y picadillo.',den:'Steak with onions, rice, beans and picadillo.',g:[{id:'t',es:'Término',en:'Doneness',req:1,max:1,o:[{id:'m',es:'Término medio',en:'Medium',x:0},{id:'t3',es:'Tres cuartos',en:'Medium well',x:0},{id:'b',es:'Bien cocido',en:'Well done',x:0}]}]},
+ {id:5,c:'boc',e:'🥣',p:3900,es:'Chifrijo',en:'Chifrijo',des:'Frijoles, arroz, chicharrón, pico de gallo y tortillitas.',den:'Beans, rice, pork crackling, pico de gallo and chips.',g:[{id:'x',es:'Extra',en:'Extras',req:0,max:1,o:[{id:'a',es:'Aguacate',en:'Avocado',x:600}]}]},
+ {id:6,c:'boc',e:'🫓',p:3000,es:'Patacones con frijolitos',en:'Patacones with beans',des:'Plátano verde frito con frijol molido y guacamole.',den:'Fried green plantain with bean dip and guacamole.'},
+ {id:7,c:'boc',e:'🫔',p:2000,es:'Tamal de cerdo',en:'Pork tamal',des:'Tamal en hoja de plátano.',den:'Tamal wrapped in banana leaf.',off:1},
+ {id:8,c:'sop',e:'🍲',p:5200,es:'Olla de carne',en:'Beef stew soup',des:'Res, yuca, chayote, elote y plátano. Con arroz.',den:'Beef, cassava, chayote, corn and plantain. With rice.'},
+ {id:9,c:'sop',e:'🥘',p:3500,es:'Sopa negra',en:'Black bean soup',des:'Frijol negro con huevo duro y culantro.',den:'Black beans with boiled egg and cilantro.'},
+ {id:10,c:'arr',e:'🍚',p:4200,es:'Arroz con pollo',en:'Rice with chicken',des:'Con papas tostadas y ensalada rusa.',den:'With potato chips and beet salad.'},
+ {id:11,c:'pos',e:'🍰',p:2200,es:'Tres leches',en:'Tres leches cake',des:'Queque húmedo con merengue.',den:'Moist sponge cake with meringue.'},
+ {id:12,c:'beb',e:'🥤',p:1500,es:'Refresco natural',en:'Fresh fruit drink',des:'En agua o en leche.',den:'Made with water or milk.',g:[{id:'s',es:'Sabor',en:'Flavor',req:1,max:1,o:[{id:'c',es:'Cas',en:'Cas',x:0},{id:'m',es:'Mora',en:'Blackberry',x:0},{id:'p',es:'Piña',en:'Pineapple',x:0}]},{id:'l',es:'Preparación',en:'Made with',req:0,max:1,o:[{id:'l',es:'En leche',en:'With milk',x:300}]}]},
+ {id:13,c:'caf',e:'☕',p:1200,es:'Café chorreado',en:'Drip coffee',des:'Café de altura, colado en chorreador.',den:'Highland coffee brewed in a chorreador.'},
+ {id:14,c:'caf',e:'🧋',p:1600,es:'Café con leche',en:'Coffee with milk',des:'Café chorreado con leche caliente.',den:'Drip coffee with hot milk.'}
+];
+
+const S={lang:'es',screen:'menu',cat:null,q:'',cart:[],orders:[],sheet:null,sending:false,editNote:null,billAsked:false};
+try{const l=localStorage.getItem('mqr_lang');if(l==='en'||l==='es')S.lang=l}catch(e){}
+const t=k=>T[S.lang][k];
+const L=o=>o[S.lang];
+const fmt=n=>'₡'+String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dish=id=>DISHES.find(d=>d.id===id);
+const unit=it=>{const d=dish(it.id);let p=d.p;(d.g||[]).forEach(g=>(it.mods[g.id]||[]).forEach(oid=>{p+=g.o.find(o=>o.id===oid).x}));return p};
+const modText=it=>{const d=dish(it.id);return (d.g||[]).flatMap(g=>(it.mods[g.id]||[]).map(oid=>L(g.o.find(o=>o.id===oid)))).join(', ')};
+const totals=items=>{const sub=items.reduce((a,it)=>a+unit(it)*it.qty,0);const serv=Math.round(sub*0.10);return{sub,serv,tot:sub+serv}};
+const cartCount=()=>S.cart.reduce((a,i)=>a+i.qty,0);
+
+function toast(msg){document.querySelector('.toast')?.remove();const el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),2600)}
+
+function vMenu(){
+ const q=S.q.trim().toLowerCase();
+ const list=DISHES.filter(d=>(!S.cat||d.c===S.cat)&&(!q||(d.es+' '+d.en).toLowerCase().includes(q)));
+ return `
+ <div class="top">
+  <div class="brand"><h1>Soda La Esquina</h1>
+   <div class="meta"><span class="pill open">${t('open')}</span><span>${t('hours')}</span></div></div>
+  <div class="top-actions">
+   <button class="icon-btn lang" data-a="lang" aria-label="Cambiar idioma">${S.lang==='es'?'EN':'ES'}</button>
+   <button class="icon-btn" data-a="call" aria-label="${t('callW')}" style="color:var(--amber)">${ico('bell')}</button>
+  </div>
+ </div>
+ <div class="meta" style="margin-top:-8px"><span class="pill table">${t('table')} 5</span></div>
+ <label class="search">${ico('search')}<input id="q" type="search" placeholder="${t('search')}" value="${esc(S.q)}" autocomplete="off"></label>
+ ${q?'':`<button class="promo" data-a="open" data-id="5"><div class="txt"><small>${t('promoA')}</small><strong>${t('promoB')}</strong><span class="price">${fmt(3500)}</span></div><span class="art" aria-hidden="true">🥣</span></button>`}
+ <h2 class="sec-title">${t('cats')}</h2>
+ <div class="cats">${CATS.map(c=>`<button class="cat ${S.cat===c.id?'on':''}" data-a="cat" data-id="${c.id}" aria-pressed="${S.cat===c.id}"><span class="tile" aria-hidden="true">${c.e}</span>${L(c)}</button>`).join('')}</div>
+ <h2 class="sec-title">${S.cat?L(CATS.find(c=>c.id===S.cat)):t('all')}</h2>
+ <div class="list">${list.length?list.map(d=>`
+  <button class="dish ${d.off?'off':''}" data-a="open" data-id="${d.id}" ${d.off?'aria-disabled="true"':''}>
+   <span class="img" aria-hidden="true">${d.e}</span>
+   <span class="body"><h3>${L(d)}</h3><p>${S.lang==='es'?d.des:d.den}</p>
+    <span class="row"><span class="money">${fmt(d.p)}</span>${d.off?`<span class="tag-off">${t('out')}</span>`:`<span class="add" aria-hidden="true">${ico('plus','sm')}</span>`}</span></span>
+  </button>`).join(''):`<p class="empty">${t('noResults')}</p>`}</div>`;
+}
+
+function vCart(){
+ if(!S.cart.length) return `<div class="bar"><button class="icon-btn" data-a="go" data-s="menu" aria-label="Volver">${ico('back')}</button><h2>${t('mycart')}</h2><span></span></div>
+  <p class="empty">${t('emptyCart')}</p><button class="cta" data-a="go" data-s="menu">${t('seeMenu')}</button>`;
+ const tt=totals(S.cart);
+ return `<div class="bar"><button class="icon-btn" data-a="go" data-s="menu" aria-label="Volver">${ico('back')}</button><h2>${t('mycart')}</h2><span></span></div>
+ <div class="list">${S.cart.map((it,i)=>{const d=dish(it.id);const m=modText(it);return `
+  <div class="citem"><span class="img" aria-hidden="true">${d.e}</span>
+   <div class="body">
+    <div class="head"><h3>${L(d)}</h3><button class="trash" data-a="del" data-i="${i}" aria-label="Quitar ${esc(L(d))}">${ico('trash')}</button></div>
+    ${m?`<span class="mods">${esc(m)}</span>`:''}
+    ${S.editNote===i?`<textarea id="note-${i}" placeholder="${t('notePh')}" maxlength="200">${esc(it.note)}</textarea><button class="note-btn" data-a="savenote" data-i="${i}">${ico('check','sm')} OK</button>`
+     :it.note?`<span class="note-text">${esc(it.note)}</span><button class="note-btn" data-a="note" data-i="${i}">${ico('note','sm')} ${t('editNote')}</button>`
+     :`<button class="note-btn" data-a="note" data-i="${i}">${ico('note','sm')} ${t('addNote')}</button>`}
+    <div class="head" style="align-items:center;margin-top:2px">
+     <div class="qty"><button class="minus" data-a="qty" data-i="${i}" data-d="-1" aria-label="Menos">${ico('minus','sm')}</button><span>${it.qty}</span><button class="plus" data-a="qty" data-i="${i}" data-d="1" aria-label="Más">${ico('plus','sm')}</button></div>
+     <span class="money">${fmt(unit(it)*it.qty)}</span></div>
+   </div></div>`}).join('')}</div>
+ <div class="summary">
+  <div class="l"><span>${t('subtotal')}</span><span>${fmt(tt.sub)}</span></div>
+  <div class="l"><span>${t('service')}</span><span>${fmt(tt.serv)}</span></div>
+  <div class="l tot"><span>${t('total')}</span><span>${fmt(tt.tot)}</span></div>
+  <small>${t('ivaInc')}</small>
+ </div>
+ <button class="cta" data-a="send" ${S.sending?'disabled':''}>${S.sending?t('sending'):t('send')+' · '+fmt(tt.tot)}</button>`;
+}
+
+function vAccount(){
+ const head=`<div class="bar"><span></span><h2>${t('account')}</h2><span></span></div><div class="meta" style="justify-content:center;margin-top:-10px"><span class="pill table">${t('table')} 5</span></div>`;
+ if(!S.orders.length) return head+`<p class="empty">${t('noOrders')}</p><button class="cta" data-a="go" data-s="menu">${t('seeMenu')}</button>`;
+ const all=S.orders.flatMap(o=>o.items);const tt=totals(all);
+ return head+`<div class="list">${S.orders.slice().reverse().map(o=>`
+  <div class="order">
+   <div class="oh"><strong>${t('order')} #${o.n}</strong><span class="status st-${o.s}">${t('st')[o.s]}</span></div>
+   <div class="steps ${o.s>=3?'done':''}" aria-hidden="true">${[0,1,2,3,4].map(k=>`<i class="${k<=o.s?'on':''}"></i>`).join('')}</div>
+   ${o.s===0?`<div class="wait">${ico('clock','sm')}<span>${t('waitConf')}</span></div>`:''}
+   ${o.items.map(it=>{const m=modText(it);return `<div class="oitem"><span>${it.qty}× ${L(dish(it.id))}${m||it.note?`<span class="m">${esc([m,it.note].filter(Boolean).join(' · '))}</span>`:''}</span><span class="money">${fmt(unit(it)*it.qty)}</span></div>`}).join('')}
+   <div class="oh"><time>${o.time}</time></div>
+  </div>`).join('')}</div>
+ <div class="summary">
+  <div class="l"><span>${t('subtotal')}</span><span>${fmt(tt.sub)}</span></div>
+  <div class="l"><span>${t('service')}</span><span>${fmt(tt.serv)}</span></div>
+  <div class="l tot"><span>${t('accTotal')}</span><span>${fmt(tt.tot)}</span></div>
+  <small>${t('ivaInc')}</small>
+ </div>
+ <div class="actions"><button class="cta ghost" data-a="call">${ico('hand','sm')} ${t('callW')}</button><button class="cta amber" data-a="bill" ${S.billAsked?'disabled':''}>${ico('receipt','sm')} ${t('askBill')}</button></div>
+ <button class="cta ghost" data-a="go" data-s="menu">${ico('plus','sm')} ${t('orderMore')}</button>
+ <p class="demo">${t('demo')}</p>`;
+}
+
+function vSheet(){
+ const sh=S.sheet;if(!sh)return '';const d=dish(sh.id);
+ const it={id:d.id,mods:sh.mods,qty:sh.qty};
+ return `<div class="scrim" data-a="close"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(L(d))}">
+  <div class="hero"><span aria-hidden="true">${d.e}</span><button class="x" data-a="close" aria-label="Cerrar">${ico('x','sm')}</button></div>
+  <h2>${L(d)}</h2><p class="desc">${S.lang==='es'?d.des:d.den}</p>
+  ${(d.g||[]).map(g=>`<div class="group" role="group" aria-label="${esc(L(g))}">
+   <div class="gh"><strong>${L(g)}</strong><span class="req ${g.req?'':'opt'}">${g.req?t('required'):t('optional')}</span></div>
+   ${g.o.map(o=>{const on=(sh.mods[g.id]||[]).includes(o.id);const type=g.max===1&&g.req?'radio':'checkbox';return `<label class="opt-row"><input id="m-${g.id}-${o.id}" type="${type}" name="g-${g.id}" data-a="mod" data-g="${g.id}" data-o="${o.id}" ${on?'checked':''}><span>${L(o)}</span>${o.x?`<span class="x2">+${fmt(o.x)}</span>`:''}</label>`}).join('')}
+   <div class="err" id="err-${g.id}">${sh.err===g.id?t('chooseOne'):''}</div>
+  </div>`).join('')}
+  <div class="group"><div class="gh"><strong>${t('note')}</strong><span class="req opt">${t('optional')}</span></div>
+   <textarea id="sheet-note" placeholder="${t('notePh')}" maxlength="200">${esc(sh.note)}</textarea></div>
+  <div class="sheet-foot">
+   <div class="qty"><button class="minus" data-a="sqty" data-d="-1" aria-label="Menos">${ico('minus','sm')}</button><span>${sh.qty}</span><button class="plus" data-a="sqty" data-d="1" aria-label="Más">${ico('plus','sm')}</button></div>
+   <button class="cta" data-a="addcart">${t('add')} · ${fmt(unit(it)*sh.qty)}</button>
+  </div>
+ </div></div>`;
+}
+
+function render(){
+ const app=document.getElementById('app');
+ const focusId=document.activeElement?.id;const pos=document.activeElement?.selectionStart;
+ const body=S.screen==='menu'?vMenu():S.screen==='cart'?vCart():vAccount();
+ const pend=S.orders.filter(o=>o.s<4).length;
+ app.innerHTML=`<main>${body}</main>
+ <nav class="nav" aria-label="Navegación">
+  <button class="${S.screen==='menu'?'on':''}" data-a="go" data-s="menu">${ico('home')}${t('menu')}</button>
+  <button class="${S.screen==='cart'?'on':''}" data-a="go" data-s="cart">${ico('cart')}${t('cart')}${cartCount()?`<span class="badge">${cartCount()}</span>`:''}</button>
+  <button class="${S.screen==='account'?'on':''}" data-a="go" data-s="account">${ico('receipt')}${t('account')}${pend?`<span class="badge">${pend}</span>`:''}</button>
+ </nav>${vSheet()}`;
+ document.documentElement.lang=S.lang;
+ if(focusId){const el=document.getElementById(focusId);if(el){el.focus();if(pos!=null&&el.setSelectionRange)try{el.setSelectionRange(pos,pos)}catch(e){}}}
+}
+
+function openSheet(id){const d=dish(id);if(!d||d.off){if(d?.off)toast(L(d)+' · '+t('out'));return}
+ const mods={};(d.g||[]).forEach(g=>{mods[g.id]=[]});S.sheet={id,mods,qty:1,note:'',err:null};render()}
+
+function advance(o){const delays=[3500,4500,7000,6000];const step=()=>{if(o.s>=4)return;setTimeout(()=>{o.s++;render();if(o.s===3)toast(`${t('order')} #${o.n}: ${t('st')[3]}`);step()},delays[o.s])};step()}
+
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+ if(a==='close'){if(b.classList.contains('scrim')&&e.target!==b)return;S.sheet=null;render();return}
+ if(a==='mod')return;
+ if(a==='lang'){S.lang=S.lang==='es'?'en':'es';try{localStorage.setItem('mqr_lang',S.lang)}catch(e){}render()}
+ if(a==='cat'){S.cat=S.cat===b.dataset.id?null:b.dataset.id;render()}
+ if(a==='open')openSheet(+b.dataset.id);
+ if(a==='go'){S.screen=b.dataset.s;S.editNote=null;render();window.scrollTo(0,0)}
+ if(a==='call')toast(t('called'));
+ if(a==='bill'){S.billAsked=true;render();toast(t('billAsked'))}
+ if(a==='sqty'){S.sheet.note=document.getElementById('sheet-note').value;S.sheet.qty=Math.min(20,Math.max(1,S.sheet.qty+ +b.dataset.d));render()}
+ if(a==='addcart'){const sh=S.sheet,d=dish(sh.id);sh.note=document.getElementById('sheet-note').value.trim();
+  const miss=(d.g||[]).find(g=>g.req&&!(sh.mods[g.id]||[]).length);
+  if(miss){sh.err=miss.id;render();document.getElementById('err-'+miss.id)?.scrollIntoView({block:'center'});return}
+  const key=JSON.stringify([sh.id,sh.mods,sh.note]);const ex=S.cart.find(i=>i.key===key);
+  if(ex)ex.qty=Math.min(20,ex.qty+sh.qty);else S.cart.push({key,id:sh.id,mods:JSON.parse(JSON.stringify(sh.mods)),qty:sh.qty,note:sh.note});
+  S.sheet=null;render();toast(t('added'))}
+ if(a==='del'){S.cart.splice(+b.dataset.i,1);S.editNote=null;render()}
+ if(a==='qty'){const it=S.cart[+b.dataset.i];it.qty+=+b.dataset.d;if(it.qty<1)S.cart.splice(+b.dataset.i,1);else it.qty=Math.min(20,it.qty);render()}
+ if(a==='note'){S.editNote=+b.dataset.i;render();document.getElementById('note-'+b.dataset.i)?.focus()}
+ if(a==='savenote'){const i=+b.dataset.i;S.cart[i].note=document.getElementById('note-'+i).value.trim();S.editNote=null;render()}
+ if(a==='send'){if(S.sending||!S.cart.length)return;S.sending=true;render();
+  setTimeout(()=>{const d=new Date();const o={n:S.orders.length+1,items:S.cart.map(i=>({...i})),s:0,time:d.toLocaleTimeString(S.lang==='es'?'es-CR':'en-US',{hour:'numeric',minute:'2-digit'})};
+   S.orders.push(o);S.cart=[];S.sending=false;S.screen='account';render();window.scrollTo(0,0);toast(t('sent'));advance(o)},900)}
+});
+document.addEventListener('change',e=>{
+ const el=e.target;if(el.dataset.a!=='mod'||!S.sheet)return;const d=dish(S.sheet.id);const g=d.g.find(x=>x.id===el.dataset.g);
+ S.sheet.note=document.getElementById('sheet-note').value;
+ let cur=S.sheet.mods[g.id]||[];
+ if(g.max===1&&g.req)cur=[el.dataset.o];
+ else if(el.checked){cur=[...cur,el.dataset.o];if(cur.length>g.max)cur=cur.slice(-g.max)}
+ else cur=cur.filter(x=>x!==el.dataset.o);
+ S.sheet.mods[g.id]=cur;if(S.sheet.err===g.id)S.sheet.err=null;render();
+});
+document.addEventListener('input',e=>{if(e.target.id==='q'){S.q=e.target.value;render()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.sheet){S.sheet=null;render()}});
+
+/* Ejemplo: carrito precargado para mostrar la pantalla en uso */
+S.cart=[{key:'a',id:14,mods:{},qty:1,note:'Con poca azúcar'},{key:'b',id:3,mods:{b:['a']},qty:1,note:''},{key:'c',id:12,mods:{s:['m'],l:[]},qty:2,note:''}];
+render();
+</script>

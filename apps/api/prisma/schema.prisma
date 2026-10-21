@@ -81,6 +81,8 @@ model Restaurante {
   activo                   Boolean          @default(true)
   plan                     String           @default("basico")
   modoConfirmacion         ModoConfirmacion @default(PRIMER_PEDIDO)
+  horaApertura             String? // "HH:MM" hora de Costa Rica; null = siempre abierto
+  horaCierre               String?
   createdAt                DateTime         @default(now())
   updatedAt                DateTime         @updatedAt
 
@@ -173,6 +175,7 @@ model Categoria {
   nombreEn      String
   orden         Int      @default(0)
   activa        Boolean  @default(true)
+  icono         String? // emoji que se muestra en el menú
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -197,6 +200,7 @@ model Plato {
   activo        Boolean  @default(true)
   orden         Int      @default(0)
   alergenos     String[] @default([])
+  destacado     Boolean  @default(false) // banner de promoción del menú
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

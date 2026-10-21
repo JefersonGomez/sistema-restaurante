@@ -82,7 +82,10 @@ apps/
     prisma/          schema, migraciones y seed
     scripts/         simular-hora-pico.ts (prueba de carga)
     tests/           Vitest + Supertest
-  menu/     React: comensal (/m/:token) — menú, carrito, Mi cuenta en vivo, llamar/pedir cuenta
+  menu/     React: comensal — /m/:token (menú), /carrito, /cuenta; TanStack Query + Zustand
+    src/componentes/ estructura · menu · detalle · cuenta     src/pantallas/ Menu · Cart · Account
+    src/datos/       mesa (consultas + socket) · envio (reintentos) · acciones
+    src/estado/      carrito · idioma · avisos             src/textos/ es · en
   staff/    React: login + pantallas de cocina/bar, mesero, caja y "Hoy" del dueño
 packages/
   shared/   Esquemas Zod, tipos, calcularTotales() y reglas de modificadores
@@ -123,18 +126,27 @@ Restaurante demo: **Soda La Esquina** (`soda-la-esquina`): estaciones Cocina y B
 natural) y 8 mesas. El usuario de cocina no tiene estación asignada, así que ve cocina y bar; si
 el dueño le asigna una (`PATCH /usuarios/:id { estacionId }`), solo ve y opera esa.
 
+Horario 7:00 a. m. a 9:00 p. m., un ícono por categoría y el chifrijo como plato destacado (banner).
+
 El seed es idempotente: si el restaurante demo ya existe no lo modifica.
 
 ## Reglas de negocio
 
 **Totales** (`packages/shared/src/totales.ts`, función pura con tests). Todo en céntimos; redondeo
 "mitad hacia arriba" una vez por concepto sobre la suma de la cuenta. Los ítems cancelados y los
-pedidos sin confirmar no suman. El IVA no se cobra sobre el servicio.
+pedidos sin confirmar no suman. El servicio se calcula siempre sobre la base sin IVA y el IVA no se
+cobra sobre el servicio.
 
+- Precios **con IVA incluido** (`preciosIncluyenImpuestos = true`, el default): el precio del menú ya
+  trae el IVA y el 10 % de servicio se suma aparte. `base = menú / 1.13`, `IVA = menú − base`,
+  `servicio = base × 10%`, `total = menú + servicio`.
+  Ej.: ₡4 800 → base ₡4 247,79 · IVA ₡552,21 · servicio ₡424,78 · total ₡5 224,78.
 - Precios **sin** impuestos: `servicio = subtotal × 10%`, `IVA = subtotal × 13%`, `total = suma`.
-- Precios **con** impuestos (el precio del menú ya trae IVA y servicio): `total = suma del menú`,
-  `subtotal = total / 1.23`, `servicio = subtotal × 10%`, `IVA = total − subtotal − servicio`.
-  Ej.: ₡4 800 → subtotal ₡3 902,44 · servicio ₡390,24 · IVA ₡507,32.
+
+**Horario** (`horaApertura`/`horaCierre`, hora de Costa Rica; el dueño lo edita en "Hoy"): fuera
+de horario el menú se muestra "Cerrado" y la API rechaza los pedidos de comensales (409
+`RESTAURANTE_CERRADO`); el mesero sí puede tomar pedidos. Sin horario = siempre abierto. Se
+admiten horarios que cruzan la medianoche (p. ej. 18:00–02:00).
 
 **Confirmación** (`modoConfirmacion`, el dueño lo cambia en "Hoy"): `PRIMER_PEDIDO` (default: el
 mesero confirma el primero y la cuenta queda verificada), `SIEMPRE` o `NUNCA`. Los pedidos que
@@ -211,6 +223,26 @@ Eventos (siempre después del commit; cada uno trae `updatedAt`): `pedido:nuevo`
 `ping` → `pong`. La base de datos es la fuente de verdad: los clientes usan el evento como aviso y
 vuelven a pedir el estado por REST, también en cada reconexión.
 
+## Frontend del comensal
+
+Diseño basado en [`prototipo_front/prototipo-menu.html`](prototipo_front/prototipo-menu.html) y
+[`docs/especificacion-frontend-menu.md`](docs/especificacion-frontend-menu.md). Los colores son
+variables CSS (`apps/menu/src/index.css`) con modo claro y oscuro según `prefers-color-scheme`,
+expuestos a Tailwind 4 con `@theme`. Fuente Poppins. Columna de 420 px; en el celular ocupa todo el
+ancho y respeta las áreas seguras. PWA básica (`manifest.webmanifest`, sin service worker).
+
+- **Datos:** TanStack Query (mesa, menú, cuenta); al volver a la pestaña o reconectar el socket se
+  vuelve a pedir la cuenta. Los eventos con `updatedAt` más viejo que el último visto se ignoran.
+- **Carrito e idioma:** Zustand, guardados en localStorage dentro de `try/catch`. Un plato con los
+  mismos modificadores y nota se fusiona sumando la cantidad.
+- **Envío seguro:** el `clientRequestId` se guarda antes de enviar y se reutiliza en cada
+  reintento (1 s, 2 s, 4 s) y al recargar la página; al confirmarse se quita del carrito solo lo
+  enviado.
+- **Tamaño:** ~174 KB gzip de JS inicial; `socket.io-client` (15 KB) se carga aparte.
+- **Tests** (`pnpm --filter menu test`, Vitest + Testing Library + jsdom): validación de
+  modificadores en la hoja de detalle, cálculo del carrito, fusión de ítems iguales y reintento con
+  el mismo `clientRequestId`.
+
 ## Tests
 
 ```bash
@@ -248,7 +280,7 @@ y máxima) de creación y de llegada a cocina. Termina con ✅ si no se perdió 
 | `pnpm db:up`                | `docker compose up -d postgres` |
 | `pnpm db:migrate`           | `prisma migrate dev`            |
 | `pnpm db:seed`              | Datos de prueba                 |
-| `pnpm test`                 | Tests (API y `shared`)          |
+| `pnpm test`                 | Tests (API, `shared` y `menu`)  |
 | `pnpm typecheck`            | `tsc` en todos los paquetes     |
 | `pnpm lint` / `pnpm format` | ESLint / Prettier               |
 

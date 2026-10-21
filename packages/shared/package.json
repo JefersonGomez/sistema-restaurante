@@ -7,7 +7,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./totales": "./src/totales.ts",
-    "./seleccion": "./src/seleccion.ts"
+    "./seleccion": "./src/seleccion.ts",
+    "./horario": "./src/horario.ts"
   },
   "scripts": {
     "typecheck": "tsc -p .",

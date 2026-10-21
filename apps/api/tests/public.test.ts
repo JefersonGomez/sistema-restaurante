@@ -62,6 +62,9 @@ describe('GET /public/:slug/menu', () => {
       (p: { nombreEs: string }) => p.nombreEs === 'A Agotado',
     );
     expect(agotado.agotado).toBe(true);
+    expect(res.body.categorias[0]).toHaveProperty('icono');
+    expect(agotado).toMatchObject({ destacado: false });
+    expect(res.body.restaurante).toMatchObject({ abierto: true });
   });
 
   it('no devuelve datos de otro restaurante', async () => {

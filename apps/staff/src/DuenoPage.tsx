@@ -18,7 +18,12 @@ const MODOS: { id: ModoConfirmacion; titulo: string; detalle: string }[] = [
   { id: 'NUNCA', titulo: 'Nunca', detalle: 'Todos los pedidos van directo a cocina.' },
 ];
 
-type Config = { modoConfirmacion: ModoConfirmacion; moneda: Moneda };
+type Config = {
+  modoConfirmacion: ModoConfirmacion;
+  moneda: Moneda;
+  horaApertura: string | null;
+  horaCierre: string | null;
+};
 
 export function DuenoPage() {
   const [reporte, setReporte] = useState<ReporteHoy>();
@@ -37,9 +42,9 @@ export function DuenoPage() {
     cargar().catch((e: Error) => setMensaje(e.message));
   }, [cargar]);
 
-  const cambiarModo = async (modoConfirmacion: ModoConfirmacion) => {
+  const guardarAjuste = async (cambios: Partial<Config>) => {
     try {
-      setConfig(await api<Config>('/restaurante', { method: 'PATCH', body: { modoConfirmacion } }));
+      setConfig(await api<Config>('/restaurante', { method: 'PATCH', body: cambios }));
       setMensaje('Ajuste guardado.');
     } catch (e) {
       setMensaje((e as Error).message);
@@ -111,7 +116,7 @@ export function DuenoPage() {
                   type="radio"
                   name="modo"
                   checked={config?.modoConfirmacion === m.id}
-                  onChange={() => cambiarModo(m.id)}
+                  onChange={() => guardarAjuste({ modoConfirmacion: m.id })}
                   className="mt-1 accent-teal-700"
                 />
                 <span>
@@ -121,6 +126,49 @@ export function DuenoPage() {
               </label>
             ))}
           </div>
+        </section>
+
+        <section className="rounded-xl bg-white p-4 shadow-sm">
+          <h2 className="mb-1 font-semibold">Horario de atención (hora de Costa Rica)</h2>
+          <p className="mb-3 text-sm text-stone-500">
+            Fuera de este horario el menú se ve como cerrado y los comensales no pueden pedir; el
+            mesero sí puede tomar pedidos. Vacío = siempre abierto.
+          </p>
+          <form
+            key={`${config?.horaApertura}-${config?.horaCierre}`}
+            className="flex flex-wrap items-end gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const f = new FormData(e.currentTarget);
+              const hora = (k: string) => (f.get(k) as string) || null;
+              guardarAjuste({ horaApertura: hora('apertura'), horaCierre: hora('cierre') });
+            }}
+          >
+            <label className="text-sm">
+              Abre
+              <input
+                type="time"
+                name="apertura"
+                defaultValue={config?.horaApertura ?? ''}
+                className="mt-1 block rounded-md border border-stone-300 px-2 py-1.5"
+              />
+            </label>
+            <label className="text-sm">
+              Cierra
+              <input
+                type="time"
+                name="cierre"
+                defaultValue={config?.horaCierre ?? ''}
+                className="mt-1 block rounded-md border border-stone-300 px-2 py-1.5"
+              />
+            </label>
+            <button
+              type="submit"
+              className="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white"
+            >
+              Guardar horario
+            </button>
+          </form>
         </section>
       </main>
     </div>
