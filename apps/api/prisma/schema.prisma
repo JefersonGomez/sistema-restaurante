@@ -1,0 +1,315 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Moneda {
+  CRC
+  USD
+}
+
+enum Idioma {
+  es
+  en
+}
+
+enum Rol {
+  SUPERADMIN
+  DUENO
+  MESERO
+  COCINA
+  CAJA
+}
+
+enum EstadoCuenta {
+  ABIERTA
+  PIDIO_CUENTA
+  CERRADA
+}
+
+enum EstadoPedido {
+  PENDIENTE
+  CONFIRMADO
+  CANCELADO
+}
+
+enum EstadoPedidoItem {
+  PENDIENTE
+  EN_PREPARACION
+  LISTO
+  ENTREGADO
+}
+
+enum TipoLlamada {
+  MESERO
+  CUENTA
+}
+
+model Restaurante {
+  id                       String   @id @default(uuid()) @db.Uuid
+  nombre                   String
+  slug                     String   @unique
+  logoUrl                  String?
+  colorPrimario            String   @default("#0f766e")
+  moneda                   Moneda   @default(CRC)
+  idiomas                  Idioma[] @default([es, en])
+  porcentajeIva            Int      @default(13)
+  porcentajeServicio       Int      @default(10)
+  preciosIncluyenImpuestos Boolean  @default(true)
+  activo                   Boolean  @default(true)
+  plan                     String   @default("basico")
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  usuarios      Usuario[]
+  estaciones    Estacion[]
+  mesas         Mesa[]
+  categorias    Categoria[]
+  platos        Plato[]
+  grupos        GrupoModificadores[]
+  modificadores Modificador[]
+  cuentas       Cuenta[]
+  pedidos       Pedido[]
+  llamadas      Llamada[]
+}
+
+model Usuario {
+  id            String   @id @default(uuid()) @db.Uuid
+  restauranteId String?  @db.Uuid // null solo para SUPERADMIN
+  nombre        String
+  email         String   @unique
+  passwordHash  String
+  rol           Rol
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  restaurante        Restaurante?   @relation(fields: [restauranteId], references: [id])
+  refreshTokens      RefreshToken[]
+  pedidosConfirmados Pedido[]
+
+  @@index([restauranteId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  usuarioId String   @db.Uuid
+  tokenHash String   @unique
+  expiraEn  DateTime
+  revocado  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+}
+
+model Estacion {
+  id            String   @id @default(uuid()) @db.Uuid
+  restauranteId String   @db.Uuid
+  nombre        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  restaurante Restaurante  @relation(fields: [restauranteId], references: [id])
+  platos      Plato[]
+  pedidoItems PedidoItem[]
+
+  @@unique([restauranteId, nombre])
+  @@index([restauranteId])
+}
+
+model Mesa {
+  id            String   @id @default(uuid()) @db.Uuid
+  restauranteId String   @db.Uuid
+  numero        Int
+  nombre        String?
+  tokenQr       String   @unique
+  activa        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  cuentas     Cuenta[]
+  llamadas    Llamada[]
+
+  @@unique([restauranteId, numero])
+  @@index([restauranteId])
+}
+
+model Categoria {
+  id            String   @id @default(uuid()) @db.Uuid
+  restauranteId String   @db.Uuid
+  nombreEs      String
+  nombreEn      String
+  orden         Int      @default(0)
+  activa        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  platos      Plato[]
+
+  @@index([restauranteId])
+}
+
+model Plato {
+  id            String   @id @default(uuid()) @db.Uuid
+  restauranteId String   @db.Uuid
+  categoriaId   String   @db.Uuid
+  estacionId    String   @db.Uuid
+  nombreEs      String
+  nombreEn      String
+  descripcionEs String?
+  descripcionEn String?
+  precio        Int // céntimos
+  fotoUrl       String?
+  agotado       Boolean  @default(false)
+  activo        Boolean  @default(true)
+  orden         Int      @default(0)
+  alergenos     String[] @default([])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  restaurante Restaurante          @relation(fields: [restauranteId], references: [id])
+  categoria   Categoria            @relation(fields: [categoriaId], references: [id])
+  estacion    Estacion             @relation(fields: [estacionId], references: [id])
+  grupos      GrupoModificadores[]
+  pedidoItems PedidoItem[]
+
+  @@index([restauranteId])
+  @@index([categoriaId])
+}
+
+// restauranteId se agrega (no está en la spec) para filtrar por tenant sin joins.
+model GrupoModificadores {
+  id            String   @id @default(uuid()) @db.Uuid
+  restauranteId String   @db.Uuid
+  platoId       String   @db.Uuid
+  nombreEs      String
+  nombreEn      String
+  obligatorio   Boolean  @default(false)
+  minimo        Int      @default(0)
+  maximo        Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  restaurante   Restaurante   @relation(fields: [restauranteId], references: [id])
+  plato         Plato         @relation(fields: [platoId], references: [id], onDelete: Cascade)
+  modificadores Modificador[]
+
+  @@index([restauranteId])
+  @@index([platoId])
+}
+
+model Modificador {
+  id            String   @id @default(uuid()) @db.Uuid
+  restauranteId String   @db.Uuid
+  grupoId       String   @db.Uuid
+  nombreEs      String
+  nombreEn      String
+  precioExtra   Int      @default(0) // céntimos
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  restaurante Restaurante             @relation(fields: [restauranteId], references: [id])
+  grupo       GrupoModificadores      @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  usos        PedidoItemModificador[]
+
+  @@index([restauranteId])
+  @@index([grupoId])
+}
+
+// --- Fase 2 (sin endpoints todavía) ---
+
+model Cuenta {
+  id            String       @id @default(uuid()) @db.Uuid
+  restauranteId String       @db.Uuid
+  mesaId        String       @db.Uuid
+  estado        EstadoCuenta @default(ABIERTA)
+  abiertaEn     DateTime     @default(now())
+  cerradaEn     DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  mesa        Mesa        @relation(fields: [mesaId], references: [id])
+  pedidos     Pedido[]
+
+  @@index([restauranteId])
+  @@index([mesaId])
+}
+
+model Pedido {
+  id              String       @id @default(uuid()) @db.Uuid
+  restauranteId   String       @db.Uuid
+  cuentaId        String       @db.Uuid
+  estado          EstadoPedido @default(PENDIENTE)
+  confirmadoPorId String?      @db.Uuid
+  nota            String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  restaurante   Restaurante  @relation(fields: [restauranteId], references: [id])
+  cuenta        Cuenta       @relation(fields: [cuentaId], references: [id])
+  confirmadoPor Usuario?     @relation(fields: [confirmadoPorId], references: [id])
+  items         PedidoItem[]
+
+  @@index([restauranteId])
+  @@index([cuentaId])
+}
+
+model PedidoItem {
+  id             String           @id @default(uuid()) @db.Uuid
+  pedidoId       String           @db.Uuid
+  platoId        String           @db.Uuid
+  estacionId     String           @db.Uuid
+  cantidad       Int
+  notas          String?
+  precioUnitario Int // céntimos, copia al momento del pedido
+  estado         EstadoPedidoItem @default(PENDIENTE)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  pedido        Pedido                  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  plato         Plato                   @relation(fields: [platoId], references: [id])
+  estacion      Estacion                @relation(fields: [estacionId], references: [id])
+  modificadores PedidoItemModificador[]
+
+  @@index([pedidoId])
+}
+
+model PedidoItemModificador {
+  id            String   @id @default(uuid()) @db.Uuid
+  pedidoItemId  String   @db.Uuid
+  modificadorId String?  @db.Uuid
+  nombre        String // copia
+  precioExtra   Int // céntimos, copia
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  pedidoItem  PedidoItem   @relation(fields: [pedidoItemId], references: [id], onDelete: Cascade)
+  modificador Modificador? @relation(fields: [modificadorId], references: [id], onDelete: SetNull)
+
+  @@index([pedidoItemId])
+}
+
+model Llamada {
+  id            String      @id @default(uuid()) @db.Uuid
+  restauranteId String      @db.Uuid
+  mesaId        String      @db.Uuid
+  tipo          TipoLlamada
+  atendida      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  mesa        Mesa        @relation(fields: [mesaId], references: [id])
+
+  @@index([restauranteId])
+}

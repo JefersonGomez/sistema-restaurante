@@ -39,8 +39,8 @@ pnpm dev          # api :3000, menu :5173, staff :5174
 
 | Variable               | Ejemplo                                                  | Descripción                       |
 | ---------------------- | -------------------------------------------------------- | --------------------------------- |
-| `DATABASE_URL`         | `postgresql://menuqr:menuqr@localhost:5432/menu_qr`      | BD de desarrollo                  |
-| `DATABASE_URL_TEST`    | `postgresql://menuqr:menuqr@localhost:5432/menu_qr_test` | BD de tests                       |
+| `DATABASE_URL`         | `postgresql://menuqr:menuqr@localhost:5433/menu_qr`      | BD de desarrollo                  |
+| `DATABASE_URL_TEST`    | `postgresql://menuqr:menuqr@localhost:5433/menu_qr_test` | BD de tests                       |
 | `PORT`                 | `3000`                                                   | Puerto de la API                  |
 | `NODE_ENV`             | `development`                                            | `production` oculta stack traces  |
 | `JWT_ACCESS_SECRET`    | _(cadena larga aleatoria)_                               | Firma del access token            |

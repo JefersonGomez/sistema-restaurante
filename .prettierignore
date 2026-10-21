@@ -2,3 +2,4 @@ pnpm-lock.yaml
 dist
 coverage
 docs/especificacion-fase1.md
+apps/api/src/generated
