@@ -3,9 +3,7 @@ import { useState } from 'react';
 import type { ConfigImpuestos, PedidoDetalle, Totales } from '@menu-qr/shared';
 import type { LineaCarrito } from '../estado/carrito';
 import { useIdioma, useTextos } from '../estado/idioma';
-import { pasoPedido } from '../lib/util';
-import { QuantityStepper } from './detalle';
-import { FotoPlato } from './menu';
+import { pasoPedido, QuantityStepper, FotoPlato } from '@menu-qr/ui';
 
 export function NoteEditor({
   nota,

@@ -6,7 +6,7 @@ import { CartItem, TotalsSummary } from '../componentes/cuenta';
 import { BarraTitulo, Main } from '../componentes/estructura';
 import { useCarrito } from '../estado/carrito';
 import { useTextos } from '../estado/idioma';
-import { formatoPrecio } from '../lib/util';
+import { formatoPrecio } from '@menu-qr/ui';
 
 export function CartScreen() {
   const { menu, tokenQr } = useMesa();

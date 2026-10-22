@@ -88,7 +88,8 @@ apps/
     src/estado/      carrito · idioma · avisos             src/textos/ es · en
   staff/    React: login + pantallas de cocina/bar, mesero, caja y "Hoy" del dueño
 packages/
-  shared/   Esquemas Zod, tipos, calcularTotales() y reglas de modificadores
+  shared/   Esquemas Zod, tipos, calcularTotales(), estaAbierto() y reglas de modificadores
+  ui/       Tokens de diseño (tokens.css), textos ES/EN y componentes compartidos por menu y staff
 docs/       Especificaciones
 ```
 

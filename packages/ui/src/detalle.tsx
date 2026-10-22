@@ -2,10 +2,24 @@ import { Minus, Plus, X } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { GrupoPublico, PlatoPublico } from '@menu-qr/shared';
 import { grupoCompleto, minimoEfectivo, precioConModificadores } from '@menu-qr/shared/seleccion';
-import type { LineaCarrito } from '../estado/carrito';
-import { useIdioma, useTextos } from '../estado/idioma';
-import { nombreEn } from '../lib/util';
+import { useUi } from './contexto';
+import { nombreEn } from './util';
 import { FotoPlato } from './menu';
+
+// Lo que la hoja de detalle entrega al agregar (cada app arma su carrito con esto).
+export type NuevaLinea = {
+  platoId: string;
+  nombreEs: string;
+  nombreEn: string;
+  icono: string | null;
+  fotoUrl: string | null;
+  cantidad: number;
+  nota: string;
+  modificadores: string[];
+  modsEs: string[];
+  modsEn: string[];
+  precioUnitario: number; // estimado; el precio oficial lo calcula el servidor
+};
 
 // Botón − / + con área táctil de 44px y aspecto del prototipo (32px).
 export function QuantityStepper({
@@ -19,7 +33,7 @@ export function QuantityStepper({
   min?: number;
   max?: number;
 }) {
-  const t = useTextos();
+  const { t } = useUi();
   return (
     <div className="flex items-center gap-1" role="group" aria-label={t.cantidad}>
       <button
@@ -78,8 +92,8 @@ export function ModifierGroup({
   onCambio: (elegidos: string[]) => void;
   refGrupo: (el: HTMLDivElement | null) => void;
 }) {
-  const t = useTextos();
-  const idioma = useIdioma((s) => s.idioma);
+  const { t } = useUi();
+  const { idioma } = useUi();
   const min = minimoEfectivo(g);
   const idError = `err-${g.id}`;
   return (
@@ -205,11 +219,11 @@ export function DishSheet({
   icono: string | null;
   precio: (c: number) => string;
   puedePedir: boolean;
-  onAgregar: (l: Omit<LineaCarrito, 'clave'>) => void;
+  onAgregar: (l: NuevaLinea) => void;
   onCerrar: () => void;
 }) {
-  const t = useTextos();
-  const idioma = useIdioma((s) => s.idioma);
+  const { t } = useUi();
+  const { idioma } = useUi();
   const [elegidos, setElegidos] = useState<string[]>([]);
   const [nota, setNota] = useState('');
   const [cantidad, setCantidad] = useState(1);

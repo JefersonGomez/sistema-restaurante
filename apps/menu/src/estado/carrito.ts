@@ -1,19 +1,10 @@
 import { create } from 'zustand';
+import type { NuevaLinea } from '@menu-qr/ui';
 import { guardar, leer } from '../almacen';
 
-export type LineaCarrito = {
+// La línea que entrega la hoja de detalle + su clave de fusión.
+export type LineaCarrito = NuevaLinea & {
   clave: string; // plato + modificadores + nota: dos líneas con la misma clave se fusionan
-  platoId: string;
-  nombreEs: string;
-  nombreEn: string;
-  icono: string | null;
-  fotoUrl: string | null;
-  cantidad: number;
-  nota: string;
-  modificadores: string[];
-  modsEs: string[];
-  modsEn: string[];
-  precioUnitario: number; // estimado; el precio oficial lo calcula el servidor
 };
 
 export const CANTIDAD_MAX = 20;

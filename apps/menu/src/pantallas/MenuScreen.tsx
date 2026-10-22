@@ -2,18 +2,27 @@ import { useMemo, useState } from 'react';
 import type { PlatoPublico } from '@menu-qr/shared';
 import { useLlamadas } from '../datos/acciones';
 import { useMesa } from '../datos/mesa';
-import { DishSheet } from '../componentes/detalle';
+import {
+  DishSheet,
+  CategoryGrid,
+  DishCard,
+  Header,
+  PromoBanner,
+  SearchBar,
+  formatoHora,
+  formatoPrecio,
+  nombreEn,
+  normalizar,
+} from '@menu-qr/ui';
 import { Main } from '../componentes/estructura';
-import { CategoryGrid, DishCard, Header, PromoBanner, SearchBar } from '../componentes/menu';
 import { avisar } from '../estado/avisos';
 import { useCarrito } from '../estado/carrito';
 import { useIdioma, useTextos } from '../estado/idioma';
-import { formatoHora, formatoPrecio, nombreEn, normalizar } from '../lib/util';
 
 export function MenuScreen() {
   const { menu, mesa } = useMesa();
   const t = useTextos();
-  const idioma = useIdioma((s) => s.idioma);
+  const { idioma, alternar: alternarIdioma } = useIdioma();
   const agregar = useCarrito((s) => s.agregar);
   const { llamar } = useLlamadas();
   const [busqueda, setBusqueda] = useState('');
@@ -40,7 +49,12 @@ export function MenuScreen() {
 
   return (
     <Main>
-      <Header restaurante={r} mesa={mesa!.numero} onLlamar={llamar} />
+      <Header
+        restaurante={r}
+        mesa={mesa!.numero}
+        onLlamar={llamar}
+        onCambiarIdioma={alternarIdioma}
+      />
       <SearchBar valor={busqueda} onCambio={setBusqueda} />
       {!r.abierto && r.horaApertura && r.horaCierre && (
         <p role="status" className="rounded-md bg-danger-soft px-4 py-3 text-[13px] text-danger">

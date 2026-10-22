@@ -16,7 +16,7 @@ import {
 } from './componentes/estructura';
 import { useCarrito } from './estado/carrito';
 import { useIdioma } from './estado/idioma';
-import { pasoPedido } from './lib/util';
+import { pasoPedido, UiProvider } from '@menu-qr/ui';
 import { AccountScreen } from './pantallas/AccountScreen';
 import { CartScreen } from './pantallas/CartScreen';
 import { MenuScreen } from './pantallas/MenuScreen';
@@ -76,16 +76,18 @@ function App() {
     document.documentElement.lang = idioma;
   }, [idioma]);
   return (
-    <AppShell>
-      <Routes>
-        <Route path="/m/:token" element={<RutaMesa />}>
-          <Route index element={<MenuScreen />} />
-          <Route path="carrito" element={<CartScreen />} />
-          <Route path="cuenta" element={<AccountScreen />} />
-        </Route>
-        <Route path="*" element={<ErrorScreen tipo="sinMesa" />} />
-      </Routes>
-    </AppShell>
+    <UiProvider idioma={idioma}>
+      <AppShell>
+        <Routes>
+          <Route path="/m/:token" element={<RutaMesa />}>
+            <Route index element={<MenuScreen />} />
+            <Route path="carrito" element={<CartScreen />} />
+            <Route path="cuenta" element={<AccountScreen />} />
+          </Route>
+          <Route path="*" element={<ErrorScreen tipo="sinMesa" />} />
+        </Routes>
+      </AppShell>
+    </UiProvider>
   );
 }
 

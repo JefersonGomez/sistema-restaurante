@@ -2,9 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { PlatoPublico } from '@menu-qr/shared';
-import { DishSheet } from '../src/componentes/detalle';
+import { DishSheet, formatoPrecio } from '@menu-qr/ui';
 import { useIdioma } from '../src/estado/idioma';
-import { formatoPrecio } from '../src/lib/util';
 
 const casadoBistec: PlatoPublico = {
   id: 'casado',

@@ -15,7 +15,7 @@ import * as api from '../api';
 import { avisar } from '../estado/avisos';
 import { useCarrito } from '../estado/carrito';
 import { useTextos } from '../estado/idioma';
-import { pasoPedido } from '../lib/util';
+import { pasoPedido } from '@menu-qr/ui';
 import { olvidarEnvio } from './envio';
 
 const claveSesion = (tokenQr: string) => `sesion:${tokenQr}`;

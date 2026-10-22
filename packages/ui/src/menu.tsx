@@ -1,7 +1,7 @@
 import { Bell, Plus, Search } from 'lucide-react';
 import type { MenuPublico, PlatoPublico } from '@menu-qr/shared';
-import { useIdioma, useTextos } from '../estado/idioma';
-import { formatoHora, nombreEn } from '../lib/util';
+import { useUi } from './contexto';
+import { formatoHora, nombreEn } from './util';
 
 type Restaurante = MenuPublico['restaurante'];
 type Categoria = MenuPublico['categorias'][number];
@@ -29,13 +29,15 @@ export function Header({
   restaurante: r,
   mesa,
   onLlamar,
+  onCambiarIdioma,
 }: {
   restaurante: Restaurante;
   mesa: number;
   onLlamar: () => void;
+  onCambiarIdioma: () => void;
 }) {
-  const t = useTextos();
-  const { idioma, alternar } = useIdioma();
+  const { t } = useUi();
+  const { idioma } = useUi();
   const horario =
     r.horaApertura && r.horaCierre
       ? t.horario(formatoHora(r.horaApertura, idioma), formatoHora(r.horaCierre, idioma))
@@ -56,7 +58,7 @@ export function Header({
           {r.idiomas.length > 1 && (
             <button
               type="button"
-              onClick={alternar}
+              onClick={onCambiarIdioma}
               aria-label={t.cambiarIdioma}
               className="grid size-11 place-items-center rounded-[14px] text-xs font-semibold tracking-[0.04em] hover:bg-surface"
             >
@@ -83,7 +85,7 @@ export function Header({
 }
 
 export function SearchBar({ valor, onCambio }: { valor: string; onCambio: (v: string) => void }) {
-  const t = useTextos();
+  const { t } = useUi();
   return (
     <label className="flex h-[52px] items-center gap-2.5 rounded-md bg-surface px-4">
       <Search className="size-[22px] shrink-0 text-muted" strokeWidth={1.9} aria-hidden />
@@ -111,8 +113,8 @@ export function PromoBanner({
   precio: (c: number) => string;
   onAbrir: () => void;
 }) {
-  const t = useTextos();
-  const idioma = useIdioma((s) => s.idioma);
+  const { t } = useUi();
+  const { idioma } = useUi();
   return (
     <button
       type="button"
@@ -157,7 +159,7 @@ export function CategoryGrid({
   activa: string | null;
   onElegir: (id: string | null) => void;
 }) {
-  const idioma = useIdioma((s) => s.idioma);
+  const { idioma } = useUi();
   return (
     <div className="grid grid-cols-4 gap-x-2.5 gap-y-3.5">
       {categorias.map((c) => {
@@ -233,8 +235,8 @@ export function DishCard({
   puedePedir: boolean;
   onAbrir: () => void;
 }) {
-  const t = useTextos();
-  const idioma = useIdioma((s) => s.idioma);
+  const { t } = useUi();
+  const { idioma } = useUi();
   const descripcion = idioma === 'en' ? p.descripcionEn : p.descripcionEs;
   return (
     <button

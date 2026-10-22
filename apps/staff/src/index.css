@@ -1,4 +1,8 @@
 @import 'tailwindcss';
+@import '../../../packages/ui/src/tokens.css';
+/* Tailwind tiene que escanear también los componentes compartidos. */
+@source '../../../packages/ui/src';
+
 
 /* Pre-cuenta en impresora de tickets de 80 mm (window.print). */
 @media print {

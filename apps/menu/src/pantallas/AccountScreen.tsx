@@ -4,9 +4,8 @@ import { useLlamadas } from '../datos/acciones';
 import { useMesa } from '../datos/mesa';
 import { OrderCard, TotalsSummary } from '../componentes/cuenta';
 import { BarraTitulo, Main } from '../componentes/estructura';
-import { Pastilla } from '../componentes/menu';
+import { Pastilla, formatoPrecio } from '@menu-qr/ui';
 import { useTextos } from '../estado/idioma';
-import { formatoPrecio } from '../lib/util';
 
 export function AccountScreen() {
   const { menu, mesa, cuenta, tokenQr } = useMesa();

@@ -14,13 +14,13 @@
   sin UI para administrar menú/mesas (solo API); platos sin foto usan el ícono de la categoría.
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
 
-## Plan de la Fase 3 (sub-fases) — esperando aprobación del usuario
+## Plan de la Fase 3 (sub-fases) — aprobado 2026-10-22; el usuario autorizó commit + push al cerrar cada sub-fase
 
 Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por el usuario.
 
 | #    | Sub-fase                                                                                               | Estado |
 | ---- | ------------------------------------------------------------------------------------------------------ | ------ |
-| 3.1  | Tokens compartidos (packages/ui: tokens CSS + componentes del menú reutilizables)                      | ⬜     |
+| 3.1  | Tokens compartidos (packages/ui: tokens CSS + componentes del menú reutilizables)                      | ✅     |
 | 3.2  | Imágenes: StorageDriver local/R2, POST /uploads/imagen, sharp 320/960 WebP, borrar viejas, logo        | ⬜     |
 | 3.3  | Horarios por turno, zonaHoraria, cerradoManual, promoción (platoDestacadoId, textos, precioPromo); 423 | ⬜     |
 | 3.4  | Panel del dueño: layout (sidebar / nav inferior) + Inicio con accesos rápidos                          | ⬜     |
@@ -35,7 +35,12 @@ Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por e
 
 - Promoción: si el plato es el destacado y hay `precioPromo`, el servidor **cobra el precio de promo**.
 - Tablets: **PIN por usuario** (4 dígitos, hash); en la tablet se elige el nombre y se pone el PIN.
-- Commits: uno por sub-fase.
+- Commits: uno por sub-fase; el usuario dijo "ve subiendo todo" → commit y push sin esperar.
+- 3.1: `packages/ui` = tokens.css (fuente única de colores/radios/modo oscuro/animaciones; las apps lo
+  importan con ruta relativa + `@source` para que Tailwind escanee los componentes), textos es/en,
+  util (formatoPrecio, pasoPedido…), componentes del menú (DishSheet, ModifierGroup, QuantityStepper,
+  Modal, FotoPlato, DishCard, CategoryGrid, SearchBar, PromoBanner, Header, Pastilla) y `UiProvider`
+  (idioma + textos por contexto; el comensal lo alimenta desde Zustand, el personal usa 'es').
 - Propuestas sin objeción: HEIC solo si sharp puede leerlo (si no, error claro pidiendo JPG/PNG);
   fotos del seed generadas con sharp; los campos `horaApertura/horaCierre` y `Plato.destacado`
   se reemplazan por `HorarioRestaurante` y `platoDestacadoId` (migrando los datos).

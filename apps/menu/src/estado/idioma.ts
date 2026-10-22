@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import type { Idioma } from '@menu-qr/shared';
 import { guardar, leer } from '../almacen';
-import { en } from '../textos/en';
-import { es } from '../textos/es';
+import { textosDe } from '@menu-qr/ui';
 
 const CLAVE = 'menu-idioma';
 
@@ -22,4 +21,4 @@ export const useIdioma = create<{ idioma: Idioma; alternar: () => void }>((set, 
   },
 }));
 
-export const useTextos = () => (useIdioma((s) => s.idioma) === 'en' ? en : es);
+export const useTextos = () => textosDe(useIdioma((s) => s.idioma));
