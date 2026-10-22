@@ -14,6 +14,7 @@ import { publicRouter } from './modules/public/public.routes';
 import { adminRouter, restauranteRouter } from './modules/restaurantes/restaurantes.routes';
 import { usuariosRouter } from './modules/restaurantes/usuarios.routes';
 import { reportesRouter } from './modules/reportes/reportes.routes';
+import { dispositivosRouter } from './modules/dispositivos/dispositivos.routes';
 
 export const app = express();
 
@@ -47,6 +48,7 @@ app.use('/mesas', mesasRouter);
 app.use('/uploads', uploadsRouter);
 app.use('/operacion', operacionRouter);
 app.use('/reportes', reportesRouter);
+app.use('/dispositivos', dispositivosRouter);
 
 app.use(noEncontrado);
 app.use(errorHandler);

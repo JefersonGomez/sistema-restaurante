@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
-import { API, obtenerToken, refrescar } from './api';
+import { alRechazoDeSocket, API, obtenerToken, refrescar } from './api';
 
 type Manejadores = Record<string, (payload: never) => void>;
 
@@ -21,8 +21,14 @@ export function useTiempoReal(manejadores: Manejadores, alConectar: () => void) 
       ref.current.alConectar();
     });
     socket.on('disconnect', () => setConectado(false));
-    socket.on('connect_error', async () => {
+    // El servidor corta el socket cuando el dueño revoca la tablet.
+    socket.on(
+      'disconnect',
+      (motivo) => motivo === 'io server disconnect' && ref.current.alConectar(),
+    );
+    socket.on('connect_error', async (e) => {
       setConectado(false);
+      alRechazoDeSocket(e.message);
       // Error de red: Socket.IO reintenta solo. Rechazo del servidor (p. ej. token vencido):
       // no reintenta, así que se refresca el token y se reconecta a mano.
       if (socket.active) return;

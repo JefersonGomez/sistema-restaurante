@@ -29,7 +29,8 @@ const conRestaurante = { restaurante: { select: { activo: true } } } as const;
 const puedeEntrar = (u: { activo: boolean; restaurante: { activo: boolean } | null }) =>
   u.activo && (u.restaurante?.activo ?? true);
 
-async function emitirTokens(u: UsuarioToken) {
+async function emitirTokens({ id, rol, restauranteId }: Omit<UsuarioToken, 'estacionId'>) {
+  const u = { id, rol, restauranteId };
   const refreshToken = generarRefreshToken();
   await prisma.refreshToken.create({
     data: {

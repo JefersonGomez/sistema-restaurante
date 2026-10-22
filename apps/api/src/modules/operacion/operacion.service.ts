@@ -129,10 +129,7 @@ export async function cambiarEstadoItem(
   // Cocina prepara (solo su estación si tiene una asignada); el mesero entrega; el dueño todo.
   if (usuario.rol === 'COCINA') {
     if (estado === 'ENTREGADO') throw new HttpError(403, 'PROHIBIDO', 'Cocina no marca entregas');
-    const { estacionId } = await prisma.usuario.findUniqueOrThrow({
-      where: { id: usuario.id },
-      select: { estacionId: true },
-    });
+    const estacionId = await estacionDe(usuario);
     if (estacionId && estacionId !== item.estacionId)
       throw new HttpError(403, 'PROHIBIDO', 'El ítem es de otra estación');
   }
@@ -332,11 +329,18 @@ export async function pedidos(restauranteId: string, estado?: EstadoPedido) {
   return filas.map((p) => ({ ...aPedido(p), cuentaId: p.cuenta.id, mesa: p.cuenta.mesa }));
 }
 
-export async function estacionesVisibles(restauranteId: string, usuario: UsuarioToken) {
-  const { estacionId } = await prisma.usuario.findUniqueOrThrow({
+// En una tablet vinculada manda la estación del dispositivo; si no, la asignada al usuario.
+async function estacionDe(usuario: UsuarioToken) {
+  if (usuario.estacionId) return usuario.estacionId;
+  const u = await prisma.usuario.findUniqueOrThrow({
     where: { id: usuario.id },
     select: { estacionId: true },
   });
+  return u.estacionId;
+}
+
+export async function estacionesVisibles(restauranteId: string, usuario: UsuarioToken) {
+  const estacionId = await estacionDe(usuario);
   return prisma.estacion.findMany({
     where: { restauranteId, ...(usuario.rol === 'COCINA' && estacionId ? { id: estacionId } : {}) },
     orderBy: { nombre: 'asc' },

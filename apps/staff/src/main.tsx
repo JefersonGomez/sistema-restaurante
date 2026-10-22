@@ -17,6 +17,9 @@ import { AjustesPage } from './panel/AjustesPage';
 import { MesasPage } from './panel/MesasPage';
 import { PersonalPage } from './panel/PersonalPage';
 import { CambiarPasswordPage } from './CambiarPasswordPage';
+import { DispositivosPage } from './panel/DispositivosPage';
+import { TabletPage } from './TabletPage';
+import { tokenTablet } from './api';
 import { EstadoVacio, TituloPagina } from './panel/comunes';
 import { Encabezado } from './ui';
 import './index.css';
@@ -32,7 +35,7 @@ const INICIO: Record<Rol, string> = {
 
 function Solo({ roles, children }: { roles: Rol[]; children: ReactNode }) {
   const { usuario } = useAuth();
-  if (!usuario) return <Navigate to="/login" replace />;
+  if (!usuario) return <Navigate to={tokenTablet() ? '/tablet' : '/login'} replace />;
   if (!roles.includes(usuario.rol)) return <Navigate to={INICIO[usuario.rol]} replace />;
   return children;
 }
@@ -65,10 +68,12 @@ function App() {
   const { usuario, cargando } = useAuth();
   if (cargando) return <p className="p-6 text-stone-500">Cargando…</p>;
   if (usuario?.debeCambiarPassword) return <CambiarPasswordPage />;
-  const inicio = usuario ? INICIO[usuario.rol] : '/login';
+  // Una tablet vinculada vuelve a la pantalla de PIN, no al login con correo.
+  const inicio = usuario ? INICIO[usuario.rol] : tokenTablet() ? '/tablet' : '/login';
   return (
     <Routes>
       <Route path="/login" element={usuario ? <Navigate to={inicio} replace /> : <LoginPage />} />
+      <Route path="/tablet" element={usuario ? <Navigate to={inicio} replace /> : <TabletPage />} />
       <Route
         path="/admin"
         element={
@@ -92,7 +97,8 @@ function App() {
         <Route path="mesas" element={<MesasPage />} />
         <Route path="personal" element={<PersonalPage />} />
         <Route path="ajustes" element={<AjustesPage />} />
-        {['dispositivos', 'reportes'].map((seccion) => (
+        <Route path="dispositivos" element={<DispositivosPage />} />
+        {['reportes'].map((seccion) => (
           <Route key={seccion} path={seccion} element={<EnPreparacion seccion={seccion} />} />
         ))}
       </Route>

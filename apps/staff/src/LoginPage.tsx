@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from './auth';
 import { Boton, Campo } from './panel/comunes';
 
@@ -63,6 +64,9 @@ export function LoginPage() {
         <Boton type="submit" disabled={enviando} className="h-14 w-full text-[15.5px]">
           {enviando ? 'Ingresando…' : 'Ingresar'}
         </Boton>
+        <Link to="/tablet" className="block min-h-11 text-center text-sm text-muted underline">
+          ¿Es una tablet de cocina? Entrar con PIN
+        </Link>
       </form>
     </main>
   );

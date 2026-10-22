@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { actualizarUsuarioSchema, crearUsuarioSchema, idParamSchema } from '@menu-qr/shared';
+import {
+  actualizarUsuarioSchema,
+  crearUsuarioSchema,
+  idParamSchema,
+  pinUsuarioSchema,
+} from '@menu-qr/shared';
+import { fijarPin } from '../dispositivos/dispositivos.controller';
 import { autenticar } from '../../middlewares/auth';
 import { requireRole } from '../../middlewares/roles';
 import { tenant } from '../../middlewares/tenant';
@@ -22,4 +28,9 @@ usuariosRouter.post(
   '/:id/restablecer-password',
   validate({ params: idParamSchema }),
   c.restablecer,
+);
+usuariosRouter.put(
+  '/:id/pin',
+  validate({ params: idParamSchema, body: pinUsuarioSchema }),
+  fijarPin,
 );

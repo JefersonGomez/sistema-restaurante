@@ -17,16 +17,25 @@ type Sesion = {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   recargar: () => Promise<void>;
+  entrarTablet: (accessToken: string, usuario: Usuario) => void;
 };
 
 const Ctx = createContext<Sesion | null>(null);
 
 // Una sola vez por carga de página (StrictMode monta dos veces los efectos en desarrollo).
 let sesionInicial: Promise<Usuario | null> | undefined;
+// Con la cookie de refresh (correo y contraseña) o, en una tablet, con la sesión del PIN guardada.
+const yo = () => api.api<{ usuario: Usuario }>('/auth/me').then((r) => r.usuario);
 const recuperarSesion = () =>
   (sesionInicial ??= api
     .refrescar()
-    .then((ok) => (ok ? api.api<{ usuario: Usuario }>('/auth/me').then((r) => r.usuario) : null))
+    .then((ok) => {
+      if (ok) return yo();
+      const tablet = api.sesionTablet();
+      if (!tablet) return null;
+      api.fijarToken(tablet);
+      return yo();
+    })
     .catch(() => null));
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -47,11 +56,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsuario(null);
   };
 
+  const entrarTablet = (accessToken: string, u: Usuario) => {
+    api.guardarSesionTablet(accessToken);
+    setUsuario(u);
+  };
+
   const recargar = async () =>
     setUsuario((await api.api<{ usuario: Usuario }>('/auth/me')).usuario);
 
   return (
-    <Ctx.Provider value={{ usuario, cargando, login, logout, recargar }}>{children}</Ctx.Provider>
+    <Ctx.Provider value={{ usuario, cargando, login, logout, recargar, entrarTablet }}>
+      {children}
+    </Ctx.Provider>
   );
 }
 

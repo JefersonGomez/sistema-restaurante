@@ -12,6 +12,7 @@ const USUARIOS_DEMO = [
   { rol: 'COCINA', nombre: 'Lucía', email: 'cocina@sodalaesquina.test', password: 'Cocina123!' },
   { rol: 'CAJA', nombre: 'Carlos', email: 'caja@sodalaesquina.test', password: 'Caja123!' },
 ] as const;
+const PIN_COCINA = '1234';
 
 const SLUG = 'soda-la-esquina';
 const colones = (monto: number) => monto * 100; // a céntimos
@@ -64,6 +65,8 @@ async function crearRestauranteDemo(tx: Prisma.TransactionClient) {
         nombre: u.nombre,
         email: u.email,
         passwordHash: await bcrypt.hash(u.password, 10),
+        // PIN para entrar en la tablet de cocina (Panel → Dispositivos).
+        pinHash: u.rol === 'COCINA' ? await bcrypt.hash(PIN_COCINA, 10) : null,
       },
     });
   }

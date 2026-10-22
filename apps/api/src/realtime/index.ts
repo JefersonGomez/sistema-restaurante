@@ -4,6 +4,7 @@ import { env } from '../lib/env';
 import { logger } from '../lib/logger';
 import { prisma } from '../lib/prisma';
 import { hashToken, verificarAccessToken } from '../lib/tokens';
+import { dispositivoVigente } from '../middlewares/auth';
 
 // Salas:
 //   rest:{id}                     todo el personal del restaurante
@@ -11,6 +12,7 @@ import { hashToken, verificarAccessToken } from '../lib/tokens';
 //   rest:{id}:estacion:{estId}    pantallas de cocina y bar
 //   rest:{id}:comensales          todos los celulares de comensales (menu:actualizado)
 //   cuenta:{cuentaId}             celulares de una mesa
+//   disp:{dispositivoId}          la tablet vinculada (para cortarla al revocarla)
 export type Sala = 'todos' | 'meseros' | 'caja' | 'comensales' | { estacion: string };
 
 const nombreSala = (restauranteId: string, sala: Sala) =>
@@ -24,13 +26,23 @@ let io: Server | undefined;
 
 // Personal: `auth.token` = access token (JWT).
 async function salasDePersonal(token: string) {
-  const { id, rol, restauranteId } = verificarAccessToken(token);
+  const { id, rol, restauranteId, dispositivoId, estacionId } = verificarAccessToken(token);
   if (!restauranteId) throw new Error('SIN_RESTAURANTE');
+  if (dispositivoId && !(await dispositivoVigente(dispositivoId)))
+    throw new Error('DISPOSITIVO_REVOCADO');
   const usuario = await prisma.usuario.findFirst({
     where: { id, restauranteId, activo: true },
     select: { estacionId: true },
   });
   if (!usuario) throw new Error('NO_AUTENTICADO');
+
+  // Tablet vinculada: solo la estación del dispositivo.
+  if (dispositivoId)
+    return [
+      nombreSala(restauranteId, 'todos'),
+      nombreSala(restauranteId, { estacion: estacionId! }),
+      `disp:${dispositivoId}`,
+    ];
 
   const salas: Sala[] = ['todos'];
   if (rol === 'DUENO' || rol === 'MESERO') salas.push('meseros');
@@ -72,7 +84,9 @@ export function iniciarRealtime(server: HttpServer) {
       const msg = (e as Error).message;
       next(
         new Error(
-          ['SIN_RESTAURANTE', 'SESION_INVALIDA', 'CUENTA_CERRADA'].includes(msg)
+          ['SIN_RESTAURANTE', 'SESION_INVALIDA', 'CUENTA_CERRADA', 'DISPOSITIVO_REVOCADO'].includes(
+            msg,
+          )
             ? msg
             : 'NO_AUTENTICADO',
         ),
@@ -102,4 +116,9 @@ export function emitToRestaurant(
 
 export function emitToCuenta(cuentaId: string, evento: string, payload: unknown) {
   io?.to(`cuenta:${cuentaId}`).emit(evento, payload);
+}
+
+// Al revocar una tablet se cortan sus conexiones abiertas.
+export function desconectarDispositivo(dispositivoId: string) {
+  io?.in(`disp:${dispositivoId}`).disconnectSockets(true);
 }

@@ -29,3 +29,10 @@ export const limitePublico = crear(1200, 1);
 export const limiteSesion = crear(60, 1, { clave: (req) => `sesion:${req.cliente!.sesionId}` });
 // Login: 10 intentos fallidos por IP cada 15 min (los exitosos no cuentan).
 export const limiteLogin = crear(10, 15, { soloFallidos: true });
+// Vincular tablet: 10 códigos fallidos por IP cada 15 min (son solo 6 dígitos).
+export const limiteVincular = crear(10, 15, { soloFallidos: true });
+// PIN: 20 fallidos por tablet cada 15 min (además del bloqueo de 5 intentos por persona).
+export const limitePin = crear(20, 15, {
+  soloFallidos: true,
+  clave: (req) => `disp:${req.get('x-dispositivo') ?? ipKeyGenerator(req.ip ?? '')}`,
+});

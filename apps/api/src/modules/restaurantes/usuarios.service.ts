@@ -32,8 +32,15 @@ async function validarEstacion(restauranteId: string, estacionId?: string | null
     throw noExiste('Estación');
 }
 
-export const listar = (restauranteId: string) =>
-  prisma.usuario.findMany({ where: { restauranteId }, select: campos, orderBy: { nombre: 'asc' } });
+// tienePin en vez del hash: el panel solo necesita saber si ya tiene uno.
+export async function listar(restauranteId: string) {
+  const filas = await prisma.usuario.findMany({
+    where: { restauranteId },
+    select: { ...campos, pinHash: true },
+    orderBy: { nombre: 'asc' },
+  });
+  return filas.map(({ pinHash, ...u }) => ({ ...u, tienePin: !!pinHash }));
+}
 
 export async function crear(restauranteId: string, { password, ...data }: CrearUsuarioInput) {
   await validarEstacion(restauranteId, data.estacionId);

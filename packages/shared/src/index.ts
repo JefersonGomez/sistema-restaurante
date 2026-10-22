@@ -42,6 +42,17 @@ export const cambiarPasswordSchema = z.object({
   nueva: password,
 });
 
+// --- Dispositivos (tablets de cocina/bar) ---
+
+const pin = z.string().regex(/^\d{4}$/, 'El PIN son 4 números');
+export const codigoDispositivoSchema = z.object({ nombre: texto(60), estacionId: z.uuid() });
+export const vincularDispositivoSchema = z.object({
+  codigo: z.string().regex(/^\d{6}$/, 'El código son 6 números'),
+});
+export const entrarConPinSchema = z.object({ usuarioId: z.uuid(), pin });
+export const pinUsuarioSchema = z.object({ pin: pin.nullable() }); // null = quitar el PIN
+export type CodigoDispositivoInput = z.infer<typeof codigoDispositivoSchema>;
+
 // --- Restaurante ---
 
 export const modoConfirmacionSchema = z.enum(['SIEMPRE', 'PRIMER_PEDIDO', 'NUNCA']);

@@ -126,6 +126,8 @@ Generar un secreto: `node -e "console.log(require('crypto').randomBytes(48).toSt
 | COCINA     | `cocina@sodalaesquina.test` | `Cocina123!` | Cocina/Bar (tablet)   |
 | CAJA       | `caja@sodalaesquina.test`   | `Caja123!`   | Caja (computadora)    |
 
+Lucía (cocina) tiene además el **PIN `1234`** para entrar en una tablet vinculada (ver abajo).
+
 Restaurante demo: **Soda La Esquina** (`soda-la-esquina`): estaciones Cocina y Bar, 4 categorías,
 12 platos ticos (con modificadores obligatorios en gallo pinto, casado con bistec y refresco
 natural) y 8 mesas. El usuario de cocina no tiene estación asignada, así que ve cocina y bar; si
@@ -264,6 +266,19 @@ acceso y restablecer contraseña: se muestra una temporal una sola vez y la pers
 entrar. **Ajustes**: nombre y logo, color del menú (solo colores que contrasten con texto blanco),
 idiomas, moneda, impuestos, confirmación de pedidos, promoción, horario por turnos y "Cerrar
 temporalmente".
+
+**Dispositivos** (tablets de cocina y bar):
+
+1. En el panel → Dispositivos → "Vincular tablet": nombre y estación → aparece un código de 6
+   números que vence en 10 minutos.
+2. En la tablet abrir `http://<servidor>:5181/tablet` (o el enlace "¿Es una tablet de cocina?" del
+   login) y escribir el código. La tablet guarda un token de dispositivo y queda ligada a esa estación.
+3. El personal de cocina entra tocando su nombre y escribiendo su PIN de 4 números (el dueño lo pone
+   en Personal → "Poner PIN"). Solo ve los pedidos de la estación de la tablet. La sesión dura 12 h
+   y sobrevive a recargar la página.
+4. 5 PIN incorrectos bloquean a esa persona 15 minutos (poner un PIN nuevo la desbloquea). Además
+   hay límite de intentos por tablet y por IP.
+5. "Desvincular" en el panel corta al instante la sesión y el socket de la tablet.
 
 ## Frontend del comensal
 

@@ -24,6 +24,7 @@ type Usuario = {
   estacionId: string | null;
   activo: boolean;
   ultimoAcceso: string | null;
+  tienePin: boolean;
 };
 type Estacion = { id: string; nombre: string };
 
@@ -159,6 +160,65 @@ function FormUsuario({
   );
 }
 
+// PIN de 4 números para entrar en las tablets de cocina (Panel → Dispositivos).
+function PinCocina({ u }: { u: Usuario }) {
+  const qc = useQueryClient();
+  const [abierto, setAbierto] = useState(false);
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+  const guardar = useMutation({
+    mutationFn: (p: string | null) =>
+      api(`/usuarios/${u.id}/pin`, { method: 'PUT', body: { pin: p } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['usuarios'] });
+      setAbierto(false);
+      setPin('');
+    },
+    onError: (e: ErrorApi) => setError(e.message),
+  });
+  if (!abierto)
+    return (
+      <Boton variante="suave" onClick={() => setAbierto(true)}>
+        {u.tienePin ? 'Cambiar PIN' : 'Poner PIN'}
+      </Boton>
+    );
+  return (
+    <form
+      className="flex w-full flex-wrap items-end gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!/^\d{4}$/.test(pin)) return setError('El PIN son 4 números');
+        guardar.mutate(pin);
+      }}
+    >
+      <Campo
+        etiqueta={`PIN de ${u.nombre} para la tablet`}
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={4}
+        className="w-48"
+        value={pin}
+        onChange={(e) => {
+          setError('');
+          setPin(e.target.value.replace(/\D/g, ''));
+        }}
+        error={error}
+      />
+      <Boton type="submit" disabled={guardar.isPending}>
+        Guardar PIN
+      </Boton>
+      {u.tienePin && (
+        <Boton variante="suave" onClick={() => guardar.mutate(null)}>
+          Quitar PIN
+        </Boton>
+      )}
+      <Boton variante="suave" onClick={() => setAbierto(false)}>
+        Cancelar
+      </Boton>
+    </form>
+  );
+}
+
 export function PersonalPage() {
   const qc = useQueryClient();
   const { usuario: yo } = useAuth();
@@ -259,7 +319,12 @@ export function PersonalPage() {
                       {ROLES.find((r) => r.id === u.rol)?.texto ?? u.rol}
                     </Etiqueta>
                     {u.rol === 'COCINA' && (
-                      <Etiqueta tono="neutro">{nombreEstacion(u.estacionId)}</Etiqueta>
+                      <>
+                        <Etiqueta tono="neutro">{nombreEstacion(u.estacionId)}</Etiqueta>
+                        <Etiqueta tono={u.tienePin ? 'ok' : 'amber'}>
+                          {u.tienePin ? 'Con PIN' : 'Sin PIN'}
+                        </Etiqueta>
+                      </>
                     )}
                     <span className="text-xs text-muted">
                       Último acceso: {hace(u.ultimoAcceso)}
@@ -290,6 +355,7 @@ export function PersonalPage() {
                       <Pencil className="size-4" aria-hidden />
                     </button>
                   </div>
+                  {u.rol === 'COCINA' && <PinCocina u={u} />}
                 </Tarjeta>
               </li>
             ),

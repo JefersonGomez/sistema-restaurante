@@ -7,6 +7,7 @@ export class ErrorApi extends Error {
     public status: number,
     public code: string,
     message: string,
+    public details?: { intentosRestantes?: number },
   ) {
     super(message);
   }
@@ -54,6 +55,70 @@ export async function login(email: string, password: string) {
 export async function logout() {
   await post('/auth/logout').catch(() => {});
   fijarToken(null);
+  guardar(CLAVE_SESION_TABLET, null);
+}
+
+// --- Tablet de cocina vinculada ---
+// El token del dispositivo vive en localStorage (es de larga duración: es lo que "vincula" la
+// tablet). La sesión del cocinero (12 h) también, para no pedir el PIN en cada recarga.
+const CLAVE_TABLET = 'tabletCocina';
+const CLAVE_SESION_TABLET = 'tabletSesion';
+const leer = (k: string) => {
+  try {
+    return localStorage.getItem(k);
+  } catch {
+    return null;
+  }
+};
+const guardar = (k: string, v: string | null) => {
+  try {
+    if (v === null) localStorage.removeItem(k);
+    else localStorage.setItem(k, v);
+  } catch {
+    /* sin almacenamiento: se vuelve a vincular o a poner el PIN */
+  }
+};
+export const tokenTablet = () => leer(CLAVE_TABLET);
+export const guardarTokenTablet = (t: string | null) => guardar(CLAVE_TABLET, t);
+export const sesionTablet = () => leer(CLAVE_SESION_TABLET);
+export const guardarSesionTablet = (accessToken: string) => {
+  guardar(CLAVE_SESION_TABLET, accessToken);
+  fijarToken(accessToken);
+};
+
+// La tablet fue desvinculada o su sesión venció: se vuelve a la pantalla de PIN / vincular.
+function volverATablet(revocada: boolean) {
+  if (revocada) guardarTokenTablet(null);
+  guardar(CLAVE_SESION_TABLET, null);
+  fijarToken(null);
+  location.assign('/tablet');
+}
+export const alRechazoDeSocket = (codigo: string) =>
+  codigo === 'DISPOSITIVO_REVOCADO' && volverATablet(true);
+
+export async function apiTablet<T>(ruta: string, body?: unknown): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${API}/dispositivos${ruta}`, {
+      method: body ? 'POST' : 'GET',
+      headers: {
+        'X-Dispositivo': tokenTablet() ?? '',
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new ErrorApi(0, 'RED', 'Sin conexión');
+  }
+  const datos = await res.json().catch(() => null);
+  if (!res.ok)
+    throw new ErrorApi(
+      res.status,
+      datos?.error?.code ?? 'ERROR',
+      datos?.error?.message ?? 'Error',
+      datos?.error?.details,
+    );
+  return datos as T;
 }
 
 // Llamada autenticada; si el access token venció, refresca una vez y reintenta.
@@ -78,6 +143,8 @@ export async function api<T>(
     throw new ErrorApi(0, 'RED', 'Sin conexión');
   }
   const datos = await res.json().catch(() => null);
+  if (res.status === 401 && sesionTablet())
+    volverATablet(datos?.error?.code === 'DISPOSITIVO_REVOCADO');
   if (!res.ok)
     throw new ErrorApi(res.status, datos?.error?.code ?? 'ERROR', datos?.error?.message ?? 'Error');
   return datos as T;

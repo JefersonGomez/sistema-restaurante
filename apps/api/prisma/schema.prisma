@@ -92,6 +92,7 @@ model Restaurante {
   updatedAt                DateTime         @updatedAt
 
   usuarios       Usuario[]
+  dispositivos   Dispositivo[]
   estaciones     Estacion[]
   mesas          Mesa[]
   categorias     Categoria[]
@@ -115,6 +116,9 @@ model Usuario {
   ultimoAcceso        DateTime?
   rol                 Rol
   estacionId          String?   @db.Uuid // COCINA: su estación; null = todas
+  pinHash             String? // PIN de 4 dígitos para entrar en una tablet vinculada
+  intentosPin         Int       @default(0)
+  pinBloqueadoHasta   DateTime?
   activo              Boolean   @default(true)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
@@ -150,10 +154,11 @@ model Estacion {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  restaurante Restaurante  @relation(fields: [restauranteId], references: [id])
-  platos      Plato[]
-  pedidoItems PedidoItem[]
-  usuarios    Usuario[]
+  restaurante  Restaurante   @relation(fields: [restauranteId], references: [id])
+  platos       Plato[]
+  pedidoItems  PedidoItem[]
+  usuarios     Usuario[]
+  dispositivos Dispositivo[]
 
   @@unique([restauranteId, nombre])
   @@index([restauranteId])
@@ -405,6 +410,28 @@ model HorarioRestaurante {
   updatedAt     DateTime @updatedAt
 
   restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+
+  @@index([restauranteId])
+}
+
+// Tablet de cocina/bar vinculada con un código de 6 dígitos. Mientras no se vincula, tiene
+// codigo y codigoExpira; al vincularse se borra el código y queda el hash del token.
+model Dispositivo {
+  id            String    @id @default(uuid()) @db.Uuid
+  restauranteId String    @db.Uuid
+  estacionId    String    @db.Uuid
+  nombre        String
+  codigo        String?   @unique
+  codigoExpira  DateTime?
+  tokenHash     String?   @unique
+  vinculadoEn   DateTime?
+  ultimoUso     DateTime?
+  revocado      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  estacion    Estacion    @relation(fields: [estacionId], references: [id], onDelete: Cascade)
 
   @@index([restauranteId])
 }

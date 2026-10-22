@@ -26,7 +26,7 @@ Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por e
 | 3.4  | Panel del dueño: layout (sidebar / nav inferior) + Inicio con accesos rápidos                          | ✅     |
 | 3.5  | Panel: Menú (categorías/platos, dnd, formulario con cámara, modificadores, vista previa)               | ✅     |
 | 3.6  | Panel: Mesas y QR (PDF), Personal (temporal, último acceso), Ajustes (contraste del acento)            | ✅     |
-| 3.7  | Dispositivos con PIN (vincular 6 dígitos, token de dispositivo, PIN 4 dígitos, bloqueo, revocar)       | ⬜     |
+| 3.7  | Dispositivos con PIN (vincular 6 dígitos, token de dispositivo, PIN 4 dígitos, bloqueo, revocar)       | ✅     |
 | 3.8  | Reportes agregados en SQL + vistas de platos + recharts + CSV                                          | ⬜     |
 | 3.9  | Rediseño de estación, mesero y caja con la identidad visual                                            | ⬜     |
 | 3.10 | Tests obligatorios, seed (fotos generadas, horarios, promo, dispositivo, 30 días), README              | ⬜     |
@@ -81,6 +81,19 @@ zona, cerradoManual)` con Intl (sin librerías). Cerrado → 423 (antes 409) sol
   frontend y es responsivo (celular / tablet / PC, ver README). El detalle del plato, si el restaurante
   está cerrado, dice "Cerrado" y explica por qué (antes solo se veía el botón apagado). Ojo al probar:
   el horario se evalúa en America/Costa_Rica (Git Bash no tiene esa zona; usar la hora UTC − 6).
+- 3.7: migración `20261022160000_dispositivos` (modelo Dispositivo: código de 6 dígitos único con
+  vencimiento → al vincular se borra y queda el hash del token; Usuario.pinHash/intentosPin/
+  pinBloqueadoHasta). Rutas: dueño GET /dispositivos, POST /dispositivos/codigo, DELETE
+  /dispositivos/:id (revoca y `desconectarDispositivo` corta la sala `disp:{id}`), PUT /usuarios/:id/pin
+  (null quita; poner PIN desbloquea). Tablet con header `X-Dispositivo`: POST /dispositivos/vincular,
+  GET /dispositivos/tablet, POST /dispositivos/tablet/entrar. Solo rol COCINA con PIN y de esa estación
+  (o sin estación). La sesión de tablet es un access JWT de 12 h con dispositivoId+estacionId (sin
+  refresh); `autenticar` y el socket verifican que el dispositivo siga vigente (1 consulta). En la
+  tablet manda la estación del dispositivo (`estacionDe` en operacion.service). Código vencido → 410,
+  usado/inexistente → 404; 5 PIN malos → 429 por 15 min. Rate limit: vincular 10 fallidos/15 min por IP;
+  PIN 20 fallidos/15 min por tablet. Staff: /tablet (vincular, quién, teclado PIN), panel/Dispositivos
+  (código con cuenta regresiva, se refresca cada 3 s mientras espera), PIN en Personal. El token del
+  dispositivo y la sesión de la tablet se guardan en localStorage. Seed: Lucía PIN 1234.
 - Propuestas sin objeción: HEIC solo si sharp puede leerlo (si no, error claro pidiendo JPG/PNG);
   fotos del seed generadas con sharp; los campos `horaApertura/horaCierre` y `Plato.destacado`
   se reemplazan por `HorarioRestaurante` y `platoDestacadoId` (migrando los datos).
