@@ -10,6 +10,8 @@ import { LoginPage } from './LoginPage';
 import { MeseroPage } from './MeseroPage';
 import { UiProvider } from '@menu-qr/ui';
 import { InicioPage } from './panel/InicioPage';
+import { MenuPanelPage } from './panel/menu/MenuPanelPage';
+import { PlatoForm } from './panel/menu/PlatoForm';
 import { PanelLayout } from './panel/PanelLayout';
 import { EstadoVacio, TituloPagina } from './panel/comunes';
 import { Encabezado } from './ui';
@@ -80,7 +82,9 @@ function App() {
         }
       >
         <Route index element={<InicioPage />} />
-        {['menu', 'mesas', 'personal', 'dispositivos', 'reportes', 'ajustes'].map((seccion) => (
+        <Route path="menu" element={<MenuPanelPage />} />
+        <Route path="menu/plato/:id" element={<PlatoForm />} />
+        {['mesas', 'personal', 'dispositivos', 'reportes', 'ajustes'].map((seccion) => (
           <Route key={seccion} path={seccion} element={<EnPreparacion seccion={seccion} />} />
         ))}
       </Route>

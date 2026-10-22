@@ -96,3 +96,27 @@ export function obtenerMenu(slug: string, recargar = false) {
     };
   return menuCache.menu;
 }
+
+// Sube una imagen (multipart) a /uploads/imagen. Plato → { url320, url960 }; logo → { url }.
+export async function subirImagen<T>(archivo: File, destino: 'plato' | 'logo'): Promise<T> {
+  const enviar = () => {
+    const datos = new FormData();
+    datos.append('imagen', archivo);
+    return fetch(`${API}/uploads/imagen?destino=${destino}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: datos,
+    });
+  };
+  let res: Response;
+  try {
+    res = await enviar();
+    if (res.status === 401 && (await refrescar())) res = await enviar();
+  } catch {
+    throw new ErrorApi(0, 'RED', 'Sin conexión');
+  }
+  const datos = await res.json().catch(() => null);
+  if (!res.ok)
+    throw new ErrorApi(res.status, datos?.error?.code ?? 'ERROR', datos?.error?.message ?? 'Error');
+  return datos as T;
+}

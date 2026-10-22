@@ -1,6 +1,7 @@
 import type { ActualizarCategoriaInput, CategoriaInput, OrdenInput } from '@menu-qr/shared';
 import { prisma } from '../../lib/prisma';
 import { HttpError, noExiste } from '../../middlewares/errorHandler';
+import { avisarMenu } from './platos.service';
 
 export async function obtener(restauranteId: string, id: string) {
   const c = await prisma.categoria.findFirst({ where: { id, restauranteId } });
@@ -14,8 +15,11 @@ export const listar = (restauranteId: string) =>
     orderBy: [{ orden: 'asc' }, { nombreEs: 'asc' }],
   });
 
-export const crear = (restauranteId: string, data: CategoriaInput) =>
-  prisma.categoria.create({ data: { ...data, restauranteId } });
+export async function crear(restauranteId: string, data: CategoriaInput) {
+  const c = await prisma.categoria.create({ data: { ...data, restauranteId } });
+  avisarMenu(restauranteId);
+  return c;
+}
 
 export async function actualizar(
   restauranteId: string,
@@ -23,12 +27,15 @@ export async function actualizar(
   data: ActualizarCategoriaInput,
 ) {
   await obtener(restauranteId, id);
-  return prisma.categoria.update({ where: { id }, data });
+  const c = await prisma.categoria.update({ where: { id }, data });
+  avisarMenu(restauranteId);
+  return c;
 }
 
 export async function eliminar(restauranteId: string, id: string) {
   await obtener(restauranteId, id);
   await prisma.categoria.delete({ where: { id } });
+  avisarMenu(restauranteId);
 }
 
 // `ids` en el orden deseado; todas deben ser del restaurante.
@@ -39,5 +46,6 @@ export async function ordenar(restauranteId: string, { ids }: OrdenInput) {
   await prisma.$transaction(
     ids.map((id, orden) => prisma.categoria.update({ where: { id }, data: { orden } })),
   );
+  avisarMenu(restauranteId);
   return listar(restauranteId);
 }

@@ -10,6 +10,7 @@ import {
   estacionSchema,
   grupoParamSchema,
   grupoSchema,
+  guardarGruposSchema,
   idParamSchema,
   modificadorParamSchema,
   modificadorSchema,
@@ -70,6 +71,8 @@ platosRouter.get(
   platosCtrl.listar,
 );
 platosRouter.post('/', dueno, validate({ body: platoSchema }), platosCtrl.crear);
+// Antes de '/:id' para que "orden" no se tome como id.
+platosRouter.patch('/orden', dueno, validate({ body: ordenSchema }), platosCtrl.ordenar);
 platosRouter.get('/:id', personalMenu, conId, platosCtrl.obtener);
 platosRouter.patch(
   '/:id',
@@ -78,6 +81,7 @@ platosRouter.patch(
   platosCtrl.actualizar,
 );
 platosRouter.delete('/:id', dueno, conId, platosCtrl.eliminar);
+platosRouter.post('/:id/duplicar', dueno, conId, platosCtrl.duplicar);
 platosRouter.patch(
   '/:id/agotado',
   personalMenu,
@@ -88,6 +92,12 @@ platosRouter.patch(
 // /platos/:platoId/grupos-modificadores[/:grupoId[/modificadores[/:modificadorId]]]
 const g = '/:platoId/grupos-modificadores';
 platosRouter.get(g, dueno, validate({ params: platoParamSchema }), m.listarGrupos);
+platosRouter.put(
+  g,
+  dueno,
+  validate({ params: platoParamSchema, body: guardarGruposSchema }),
+  platosCtrl.guardarGrupos,
+);
 platosRouter.post(
   g,
   dueno,

@@ -24,7 +24,7 @@ Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por e
 | 3.2  | Imágenes: StorageDriver local/R2, POST /uploads/imagen, sharp 320/960 WebP, borrar viejas, logo        | ✅     |
 | 3.3  | Horarios por turno, zonaHoraria, cerradoManual, promoción (platoDestacadoId, textos, precioPromo); 423 | ✅     |
 | 3.4  | Panel del dueño: layout (sidebar / nav inferior) + Inicio con accesos rápidos                          | ✅     |
-| 3.5  | Panel: Menú (categorías/platos, dnd, formulario con cámara, modificadores, vista previa)               | ⬜     |
+| 3.5  | Panel: Menú (categorías/platos, dnd, formulario con cámara, modificadores, vista previa)               | ✅     |
 | 3.6  | Panel: Mesas y QR (PDF), Personal (temporal, último acceso), Ajustes (contraste del acento)            | ⬜     |
 | 3.7  | Dispositivos con PIN (vincular 6 dígitos, token de dispositivo, PIN 4 dígitos, bloqueo, revocar)       | ⬜     |
 | 3.8  | Reportes agregados en SQL + vistas de platos + recharts + CSV                                          | ⬜     |
@@ -60,6 +60,14 @@ zona, cerradoManual)` con Intl (sin librerías). Cerrado → 423 (antes 409) sol
   EstadoVacio, ErrorCarga, Etiqueta), `panel/InicioPage.tsx` (indicadores, accesos rápidos, se refresca
   por socket). Se borró DuenoPage: el modo de confirmación vuelve en Ajustes (3.6). /dueno → /panel.
   Login con el estilo nuevo. Secciones aún vacías muestran "En preparación" (componente temporal).
+- 3.5: API PATCH /platos/orden, POST /platos/:id/duplicar (copia inactiva y SIN foto), PUT
+  /platos/:platoId/grupos-modificadores (upsert: con id actualiza, sin id crea, el resto se borra; ids
+  validados contra el plato). `avisarMenu()` emite menu:actualizado en todo cambio de menú (el comensal
+  refresca en segundos). Zod en español global (`z.config(z.locales.es())` en shared) + mensajes propios.
+  Panel: `panel/menu/` (MenuPanelPage con dnd-kit —sin @dnd-kit/utilities, transform a mano—,
+  PlatoForm con subir/arrastrar/"Tomar foto" capture=environment, EditorGrupos, vista previa con
+  DishCard/ModifierGroup de @menu-qr/ui en ES/EN, avisos de foto/inglés faltante). Errores Zod por campo
+  con `erroresDe`. En la BD de desarrollo quedó un plato de prueba "Casado con pescado" (con foto).
 - Propuestas sin objeción: HEIC solo si sharp puede leerlo (si no, error claro pidiendo JPG/PNG);
   fotos del seed generadas con sharp; los campos `horaApertura/horaCierre` y `Plato.destacado`
   se reemplazan por `HorarioRestaurante` y `platoDestacadoId` (migrando los datos).

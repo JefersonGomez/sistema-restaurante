@@ -53,6 +53,15 @@ export const platosCtrl = {
     const categoriaId = (req.query as { categoriaId?: string }).categoriaId;
     res.json(await platos.listar(restauranteDe(req), categoriaId));
   },
+  ordenar: async (req: Request, res: Response) => {
+    res.json(await platos.ordenar(restauranteDe(req), req.body));
+  },
+  duplicar: async (req: ConId, res: Response) => {
+    res.status(201).json(await platos.duplicar(restauranteDe(req), req.params.id));
+  },
+  guardarGrupos: async (req: ConPlato, res: Response) => {
+    res.json(await platos.guardarGrupos(restauranteDe(req), req.params.platoId, req.body));
+  },
   agotado: async (req: ConId, res: Response) => {
     res.json(await platos.marcarAgotado(restauranteDe(req), req.params.id, req.body.agotado));
   },

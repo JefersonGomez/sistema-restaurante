@@ -248,6 +248,15 @@ Al reemplazar o quitar la foto de un plato o el logo se borran los archivos viej
 archivos de la carpeta del propio restaurante. `DELETE /uploads/imagen { url }` borra una imagen
 subida y descartada (409 si está en uso).
 
+## Panel del dueño
+
+`http://localhost:5181/panel` (rol DUENO): barra lateral en computadora y navegación inferior en el
+celular. **Inicio** con las ventas de hoy y accesos rápidos; **Menú** con categorías y platos que se
+ordenan arrastrando (también con teclado), interruptores de agotado/visible, duplicar y eliminar con
+confirmación, y un formulario de plato con foto (subir, arrastrar o tomarla con la cámara), nombres y
+descripciones ES/EN, alérgenos, editor de modificadores y vista previa en vivo del celular del cliente.
+Cualquier cambio llega al menú del comensal en segundos (`menu:actualizado`).
+
 ## Frontend del comensal
 
 Diseño basado en [`prototipo_front/prototipo-menu.html`](prototipo_front/prototipo-menu.html) y

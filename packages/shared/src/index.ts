@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { HORA_REGEX, zonaHorariaValida } from './horario';
 
+// Mensajes de validación en español (API y formularios del panel).
+z.config(z.locales.es());
+
 export const rolSchema = z.enum(['SUPERADMIN', 'DUENO', 'MESERO', 'COCINA', 'CAJA']);
 export type Rol = z.infer<typeof rolSchema>;
 
@@ -14,7 +17,8 @@ export type Idioma = z.infer<typeof idiomaSchema>;
 // Sin .default() en los esquemas: con .partial() se aplicarían también al actualizar.
 // Los valores por defecto los pone la base de datos.
 
-const texto = (max = 120) => z.string().trim().min(1).max(max);
+const texto = (max = 120) =>
+  z.string().trim().min(1, 'Este campo es obligatorio').max(max, `Máximo ${max} caracteres`);
 const textoOpcional = (max = 500) => z.string().trim().max(max).nullable().optional();
 const urlOpcional = z.url().max(500).nullable().optional();
 const centimos = z.number().int().min(0).max(1_000_000_000);
@@ -174,6 +178,48 @@ export const turnoSchema = z.object({
 });
 export const horariosSchema = z.object({ turnos: z.array(turnoSchema).max(28) });
 export type HorariosInput = z.infer<typeof horariosSchema>;
+
+// Editor de modificadores del panel: guarda todos los grupos de un plato de una vez.
+// Con id se actualiza, sin id se crea; los que no vienen se borran.
+const modificadorEditorSchema = z.object({
+  id: z.uuid().optional(),
+  nombreEs: texto(),
+  nombreEn: texto(),
+  precioExtra: centimos,
+});
+export const grupoEditorSchema = z
+  .object({
+    id: z.uuid().optional(),
+    nombreEs: texto(),
+    nombreEn: texto(),
+    obligatorio: z.boolean(),
+    minimo: z.number().int().min(0).max(50),
+    maximo: z.number().int().min(1).max(50),
+    modificadores: z.array(modificadorEditorSchema).min(1, 'Agregue al menos una opción').max(30),
+  })
+  .superRefine((g, ctx) => {
+    if (g.minimo > g.maximo)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['minimo'],
+        message: 'El mínimo no puede ser mayor que el máximo',
+      });
+    if (g.obligatorio && g.minimo < 1)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['minimo'],
+        message: 'Un grupo obligatorio necesita mínimo 1',
+      });
+    if (g.minimo > g.modificadores.length)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['minimo'],
+        message: 'Hay menos opciones que el mínimo',
+      });
+  });
+export const guardarGruposSchema = z.object({ grupos: z.array(grupoEditorSchema).max(15) });
+export type GrupoEditorInput = z.infer<typeof grupoEditorSchema>;
+export type GuardarGruposInput = z.infer<typeof guardarGruposSchema>;
 
 // --- Mesas ---
 
