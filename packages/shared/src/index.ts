@@ -123,7 +123,8 @@ export const platoSchema = z.object({
   descripcionEs: textoOpcional(),
   descripcionEn: textoOpcional(),
   precio: centimos,
-  fotoUrl: urlOpcional,
+  fotoUrl: urlOpcional, // 960 px (POST /uploads/imagen → url960)
+  fotoMiniUrl: urlOpcional, // 320 px (url320)
   agotado: z.boolean().optional(),
   activo: z.boolean().optional(),
   orden: z.number().int().min(0).optional(),
@@ -202,6 +203,7 @@ export type PlatoPublico = {
   descripcionEn: string | null;
   precio: number;
   fotoUrl: string | null;
+  fotoMiniUrl: string | null;
   agotado: boolean;
   destacado: boolean;
   alergenos: string[];

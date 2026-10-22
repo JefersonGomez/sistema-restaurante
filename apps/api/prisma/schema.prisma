@@ -195,7 +195,8 @@ model Plato {
   descripcionEs String?
   descripcionEn String?
   precio        Int // céntimos
-  fotoUrl       String?
+  fotoUrl       String? // 960 px (detalle)
+  fotoMiniUrl   String? // 320 px (lista)
   agotado       Boolean  @default(false)
   activo        Boolean  @default(true)
   orden         Int      @default(0)

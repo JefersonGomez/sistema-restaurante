@@ -26,7 +26,6 @@ import {
   estacionesCtrl,
   modificadoresCtrl as m,
   platosCtrl,
-  uploadsCtrl,
 } from './menu.controller';
 
 const dueno = requireRole('DUENO');
@@ -125,7 +124,3 @@ platosRouter.delete(
   validate({ params: modificadorParamSchema }),
   m.eliminarModificador,
 );
-
-// /uploads
-export const uploadsRouter = Router();
-uploadsRouter.post('/firma', autenticar, dueno, tenant, uploadsCtrl.firma);

@@ -2,6 +2,7 @@ import type { ActualizarPlatoInput, PlatoInput } from '@menu-qr/shared';
 import { prisma } from '../../lib/prisma';
 import { noExiste } from '../../middlewares/errorHandler';
 import { emitToRestaurant } from '../../realtime';
+import { borrarImagenes } from '../uploads/uploads.service';
 
 const conGrupos = {
   grupos: {
@@ -45,14 +46,23 @@ export async function crear(restauranteId: string, data: PlatoInput) {
 }
 
 export async function actualizar(restauranteId: string, id: string, data: ActualizarPlatoInput) {
-  await obtener(restauranteId, id);
+  const previo = await obtener(restauranteId, id);
   await validarReferencias(restauranteId, data);
-  return prisma.plato.update({ where: { id }, data });
+  const plato = await prisma.plato.update({ where: { id }, data });
+  // Foto reemplazada o quitada: se borran los archivos viejos.
+  await borrarImagenes(restauranteId, [
+    data.fotoUrl !== undefined && data.fotoUrl !== previo.fotoUrl ? previo.fotoUrl : null,
+    data.fotoMiniUrl !== undefined && data.fotoMiniUrl !== previo.fotoMiniUrl
+      ? previo.fotoMiniUrl
+      : null,
+  ]);
+  return plato;
 }
 
 export async function eliminar(restauranteId: string, id: string) {
-  await obtener(restauranteId, id);
+  const previo = await obtener(restauranteId, id);
   await prisma.plato.delete({ where: { id } });
+  await borrarImagenes(restauranteId, [previo.fotoUrl, previo.fotoMiniUrl]);
 }
 
 export async function marcarAgotado(restauranteId: string, id: string, agotado: boolean) {

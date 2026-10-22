@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
+import { MulterError } from 'multer';
 import { ZodError, z } from 'zod';
 import { Prisma } from '../generated/prisma/client';
 import { env } from '../lib/env';
@@ -35,6 +36,11 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   else if (esPrisma(err, 'P2003'))
     e = new HttpError(409, 'EN_USO', 'No se puede borrar: otros registros dependen de este');
   else if (esPrisma(err, 'P2025')) e = new HttpError(404, 'NO_ENCONTRADO', 'Recurso no encontrado');
+  else if (err instanceof MulterError)
+    e =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? new HttpError(413, 'ARCHIVO_GRANDE', 'La imagen pesa más de 8 MB')
+        : new HttpError(400, 'ARCHIVO_INVALIDO', 'Envíe un solo archivo en el campo "imagen"');
   else if (err?.type === 'entity.parse.failed')
     e = new HttpError(400, 'JSON_INVALIDO', 'El cuerpo no es JSON válido');
   else {

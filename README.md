@@ -97,18 +97,22 @@ docs/       Especificaciones
 
 Todas viven en el `.env` de la raíz (ver `.env.example`). Los frontends solo leen las `VITE_*`.
 
-| Variable               | Ejemplo                                                  | Descripción                               |
-| ---------------------- | -------------------------------------------------------- | ----------------------------------------- |
-| `DATABASE_URL`         | `postgresql://menuqr:menuqr@localhost:5433/menu_qr`      | BD de desarrollo                          |
-| `DATABASE_URL_TEST`    | `postgresql://menuqr:menuqr@localhost:5433/menu_qr_test` | BD de tests (se vacía en cada test)       |
-| `PORT`                 | `4000`                                                   | Puerto de la API                          |
-| `NODE_ENV`             | `development`                                            | `production` oculta el detalle de errores |
-| `JWT_ACCESS_SECRET`    | _(cadena aleatoria de 32+ caracteres)_                   | Firma del access token                    |
-| `JWT_ACCESS_TTL`       | `15m`                                                    | Vida del access token                     |
-| `JWT_REFRESH_TTL_DIAS` | `7`                                                      | Vida del refresh token (días)             |
-| `CORS_ORIGINS`         | `http://localhost:5180,http://localhost:5181`            | Orígenes permitidos (separados por coma)  |
-| `MENU_PUBLIC_URL`      | `http://localhost:5180`                                  | Base de la URL que codifica el QR         |
-| `VITE_API_URL`         | `http://localhost:4000`                                  | URL de la API para los frontends          |
+| Variable                                                                                  | Ejemplo                                                  | Descripción                                                   |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------- |
+| `DATABASE_URL`                                                                            | `postgresql://menuqr:menuqr@localhost:5433/menu_qr`      | BD de desarrollo                                              |
+| `DATABASE_URL_TEST`                                                                       | `postgresql://menuqr:menuqr@localhost:5433/menu_qr_test` | BD de tests (se vacía en cada test)                           |
+| `PORT`                                                                                    | `4000`                                                   | Puerto de la API                                              |
+| `NODE_ENV`                                                                                | `development`                                            | `production` oculta el detalle de errores                     |
+| `JWT_ACCESS_SECRET`                                                                       | _(cadena aleatoria de 32+ caracteres)_                   | Firma del access token                                        |
+| `JWT_ACCESS_TTL`                                                                          | `15m`                                                    | Vida del access token                                         |
+| `JWT_REFRESH_TTL_DIAS`                                                                    | `7`                                                      | Vida del refresh token (días)                                 |
+| `CORS_ORIGINS`                                                                            | `http://localhost:5180,http://localhost:5181`            | Orígenes permitidos (separados por coma)                      |
+| `MENU_PUBLIC_URL`                                                                         | `http://localhost:5180`                                  | Base de la URL que codifica el QR                             |
+| `VITE_API_URL`                                                                            | `http://localhost:4000`                                  | URL de la API para los frontends                              |
+| `STORAGE_DRIVER`                                                                          | `local`                                                  | `local` (disco, servido en `/uploads`) o `r2` (Cloudflare R2) |
+| `UPLOADS_DIR`                                                                             | `apps/api/uploads`                                       | Carpeta de imágenes con `local`                               |
+| `API_PUBLIC_URL`                                                                          | `http://localhost:4000`                                  | Base de las URLs de imágenes locales                          |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL` | —                                                        | Obligatorias con `STORAGE_DRIVER=r2`                          |
 
 Generar un secreto: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`.
 
@@ -223,6 +227,21 @@ Eventos (siempre después del commit; cada uno trae `updatedAt`): `pedido:nuevo`
 `llamada:atendida`, `cuenta:solicitada`, `cuenta:actualizada`, `cuenta:cerrada`, `menu:actualizado`,
 `ping` → `pong`. La base de datos es la fuente de verdad: los clientes usan el evento como aviso y
 vuelven a pedir el estado por REST, también en cada reconexión.
+
+## Imágenes
+
+`POST /uploads/imagen?destino=plato|logo` (multipart, campo `imagen`, rol DUENO). Acepta JPG, PNG,
+WEBP y HEIC (si el servidor puede decodificarlo; el iPhone suele enviar JPEG) de hasta 8 MB; el tipo
+se valida por los bytes del archivo. Con sharp se gira según EXIF, se quitan los metadatos y se
+convierte a WebP (calidad 78):
+
+- **plato:** cuadrado centrado de 320 px (`url320` → `fotoMiniUrl`, lista) y 960 px (`url960` →
+  `fotoUrl`, detalle), en `restaurantes/{restauranteId}/platos/{uuid}-{tamaño}.webp`.
+- **logo:** sin recorte, máximo 512 px (`url` → `logoUrl`).
+
+Al reemplazar o quitar la foto de un plato o el logo se borran los archivos viejos; solo se borran
+archivos de la carpeta del propio restaurante. `DELETE /uploads/imagen { url }` borra una imagen
+subida y descartada (409 si está en uso).
 
 ## Frontend del comensal
 

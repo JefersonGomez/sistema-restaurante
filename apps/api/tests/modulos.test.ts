@@ -208,10 +208,6 @@ describe('dueño', () => {
     expect((await request(app).get(`/public/mesa/${nuevo.body.tokenQr}`)).status).toBe(200);
   });
 
-  it('uploads/firma responde 501', async () => {
-    expect((await como(dueno).post('/uploads/firma')).status).toBe(501);
-  });
-
   it('id con formato inválido → 400', async () => {
     expect((await como(dueno).get('/platos/no-es-uuid')).status).toBe(400);
   });

@@ -84,15 +84,3 @@ export const modificadoresCtrl = {
     res.status(204).end();
   },
 };
-
-export const uploadsCtrl = {
-  // TODO(Fase 2): URL firmada para subir fotos a Cloudflare R2.
-  firma: (_req: Request, res: Response) => {
-    res.status(501).json({
-      error: {
-        code: 'NO_IMPLEMENTADO',
-        message: 'La subida de imágenes llega en una fase posterior',
-      },
-    });
-  },
-};

@@ -5,12 +5,8 @@ import helmet from 'helmet';
 import { env } from './lib/env';
 import { errorHandler, noEncontrado } from './middlewares/errorHandler';
 import { authRouter } from './modules/auth/auth.routes';
-import {
-  categoriasRouter,
-  estacionesRouter,
-  platosRouter,
-  uploadsRouter,
-} from './modules/menu/menu.routes';
+import { categoriasRouter, estacionesRouter, platosRouter } from './modules/menu/menu.routes';
+import { uploadsRouter } from './modules/uploads/uploads.routes';
 import { mesasRouter } from './modules/mesas/mesas.routes';
 import { operacionRouter } from './modules/operacion/operacion.routes';
 import { health } from './modules/public/public.controller';
@@ -25,6 +21,18 @@ app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGINS, credentials: true }));
 app.use(express.json({ limit: '100kb' }));
 app.use(cookieParser());
+
+// Imágenes en disco (STORAGE_DRIVER=local). Con R2 las sirve Cloudflare.
+if (env.STORAGE_DRIVER === 'local')
+  app.use(
+    '/uploads',
+    express.static(env.UPLOADS_DIR, {
+      maxAge: '1y',
+      immutable: true, // cada versión tiene un uuid nuevo
+      // helmet pone same-origin; el menú (otro puerto/dominio) tiene que poder cargarlas.
+      setHeaders: (res) => res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'),
+    }),
+  );
 
 app.get('/health', health);
 app.use('/auth', authRouter);

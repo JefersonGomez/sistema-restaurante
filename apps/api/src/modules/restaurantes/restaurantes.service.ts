@@ -6,6 +6,7 @@ import type {
 } from '@menu-qr/shared';
 import { prisma } from '../../lib/prisma';
 import { noExiste } from '../../middlewares/errorHandler';
+import { borrarImagenes } from '../uploads/uploads.service';
 
 // --- Superadmin ---
 
@@ -41,5 +42,10 @@ export async function obtenerPropio(restauranteId: string) {
   return r;
 }
 
-export const actualizarPropio = (restauranteId: string, data: RestauranteConfigInput) =>
-  prisma.restaurante.update({ where: { id: restauranteId }, data });
+export async function actualizarPropio(restauranteId: string, data: RestauranteConfigInput) {
+  const previo = await obtenerPropio(restauranteId);
+  const r = await prisma.restaurante.update({ where: { id: restauranteId }, data });
+  if (data.logoUrl !== undefined && data.logoUrl !== previo.logoUrl)
+    await borrarImagenes(restauranteId, [previo.logoUrl]);
+  return r;
+}

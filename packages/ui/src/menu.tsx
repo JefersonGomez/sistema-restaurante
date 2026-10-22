@@ -247,7 +247,7 @@ export function DishCard({
       className={`flex w-full items-center gap-3.5 rounded-md bg-surface p-3 text-left ${p.agotado ? 'cursor-not-allowed opacity-55' : ''}`}
     >
       <FotoPlato
-        fotoUrl={p.fotoUrl}
+        fotoUrl={p.fotoMiniUrl ?? p.fotoUrl}
         icono={icono}
         tam={84}
         clase="size-[84px] shrink-0 rounded-[14px]"

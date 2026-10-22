@@ -43,6 +43,7 @@ export async function menu(slug: string): Promise<MenuPublico> {
           descripcionEn: true,
           precio: true,
           fotoUrl: true,
+          fotoMiniUrl: true,
           agotado: true,
           destacado: true,
           alergenos: true,

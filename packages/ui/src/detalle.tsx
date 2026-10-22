@@ -249,7 +249,7 @@ export function DishSheet({
       nombreEs: p.nombreEs,
       nombreEn: p.nombreEn,
       icono,
-      fotoUrl: p.fotoUrl,
+      fotoUrl: p.fotoMiniUrl ?? p.fotoUrl, // el carrito usa la foto chica
       cantidad,
       nota: nota.trim(),
       modificadores: elegidos,

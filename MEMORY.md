@@ -21,7 +21,7 @@ Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por e
 | #    | Sub-fase                                                                                               | Estado |
 | ---- | ------------------------------------------------------------------------------------------------------ | ------ |
 | 3.1  | Tokens compartidos (packages/ui: tokens CSS + componentes del menú reutilizables)                      | ✅     |
-| 3.2  | Imágenes: StorageDriver local/R2, POST /uploads/imagen, sharp 320/960 WebP, borrar viejas, logo        | ⬜     |
+| 3.2  | Imágenes: StorageDriver local/R2, POST /uploads/imagen, sharp 320/960 WebP, borrar viejas, logo        | ✅     |
 | 3.3  | Horarios por turno, zonaHoraria, cerradoManual, promoción (platoDestacadoId, textos, precioPromo); 423 | ⬜     |
 | 3.4  | Panel del dueño: layout (sidebar / nav inferior) + Inicio con accesos rápidos                          | ⬜     |
 | 3.5  | Panel: Menú (categorías/platos, dnd, formulario con cámara, modificadores, vista previa)               | ⬜     |
@@ -41,6 +41,13 @@ Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por e
   util (formatoPrecio, pasoPedido…), componentes del menú (DishSheet, ModifierGroup, QuantityStepper,
   Modal, FotoPlato, DishCard, CategoryGrid, SearchBar, PromoBanner, Header, Pastilla) y `UiProvider`
   (idioma + textos por contexto; el comensal lo alimenta desde Zustand, el personal usa 'es').
+- 3.2: `lib/storage.ts` (StorageDriver, LocalDriver, R2Driver; `claveDeUrl` evita salir de la
+  carpeta), módulo `uploads` (POST/DELETE /uploads/imagen, multer en memoria 8 MB). Plato tiene
+  `fotoUrl` (960) y `fotoMiniUrl` (320, migración `20261022130000_foto_mini`). Se borra solo lo que
+  está bajo `restaurantes/{restauranteId}/`. /uploads con `Cross-Origin-Resource-Policy: cross-origin`
+  (helmet pone same-origin y el menú está en otro origen). Tests usan UPLOADS_DIR temporal.
+  sharp prebuilt NO decodifica HEIC/HEVC → 415 "Súbala en JPG o PNG". Pendiente 3.5: al duplicar un
+  plato NO copiar las URLs de foto (borrar una borraría la del otro).
 - Propuestas sin objeción: HEIC solo si sharp puede leerlo (si no, error claro pidiendo JPG/PNG);
   fotos del seed generadas con sharp; los campos `horaApertura/horaCierre` y `Plato.destacado`
   se reemplazan por `HorarioRestaurante` y `platoDestacadoId` (migrando los datos).
