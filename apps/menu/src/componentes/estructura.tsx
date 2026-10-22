@@ -12,26 +12,27 @@ import { NavLink } from 'react-router-dom';
 import { useAvisos } from '../estado/avisos';
 import { useTextos } from '../estado/idioma';
 
-// Columna tipo teléfono (máx. 420px): centrada con bordes y sombra en pantallas anchas,
-// a todo lo ancho y sin bordes en el celular. Respeta las áreas seguras (notch).
+// Ocupa toda la pantalla (celular, tablet o PC). Respeta las áreas seguras (notch).
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-dvh bg-bg py-6 pr-[max(16px,env(safe-area-inset-right))] pl-[max(16px,env(safe-area-inset-left))] max-[480px]:p-0">
-      <div className="relative mx-auto flex min-h-[calc(100dvh-48px)] max-w-[420px] flex-col overflow-hidden rounded-[32px] bg-app shadow-app max-[480px]:min-h-dvh max-[480px]:rounded-none max-[480px]:pt-[env(safe-area-inset-top)] max-[480px]:shadow-none">
-        {children}
-      </div>
+    <div className="min-h-dvh bg-app pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]">
+      <div className="relative flex min-h-dvh flex-col">{children}</div>
     </div>
   );
 }
 
 export function Main({ children }: { children: ReactNode }) {
-  return <main className="flex flex-1 flex-col gap-[22px] px-5 pt-[22px] pb-7">{children}</main>;
+  return (
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-[22px] px-5 pt-[22px] pb-7 md:px-8 md:pt-8">
+      {children}
+    </main>
+  );
 }
 
 function Insignia({ n }: { n: number }) {
   if (!n) return null;
   return (
-    <span className="absolute top-0 left-[calc(50%+6px)] grid h-[18px] min-w-[18px] place-items-center rounded-full bg-amber px-[5px] text-[10px] font-bold text-on-amber">
+    <span className="absolute top-0 left-[calc(50%+6px)] grid md:static h-[18px] min-w-[18px] place-items-center rounded-full bg-amber px-[5px] text-[10px] font-bold text-on-amber">
       {n}
     </span>
   );
@@ -55,7 +56,7 @@ export function BottomNav({
   return (
     <nav
       aria-label={t.menu}
-      className="sticky bottom-0 z-10 mt-auto grid grid-cols-3 border-t border-line bg-app px-3 pt-2.5 pb-[calc(10px+env(safe-area-inset-bottom))]"
+      className="sticky bottom-0 z-10 mt-auto grid grid-cols-3 border-t border-line bg-app px-3 pt-2.5 pb-[calc(10px+env(safe-area-inset-bottom))] md:top-0 md:bottom-auto md:order-first md:mt-0 md:flex md:justify-center md:gap-2 md:border-t-0 md:border-b md:py-2"
     >
       {enlaces.map(({ a, texto, Icono, n, fin }) => (
         <NavLink
@@ -64,7 +65,7 @@ export function BottomNav({
           end={fin}
           replace
           className={({ isActive }) =>
-            `relative flex min-h-11 flex-col items-center gap-1 rounded-xl py-1.5 text-[11.5px] ${
+            `relative flex min-h-11 flex-col items-center gap-1 rounded-xl py-1.5 text-[11.5px] md:flex-row md:gap-2 md:px-5 md:text-sm md:hover:bg-surface ${
               isActive ? 'font-semibold text-purple' : 'text-muted'
             }`
           }
@@ -85,7 +86,7 @@ export function Toast() {
     <div
       key={id}
       role="status"
-      className="anim-aparecer fixed bottom-[calc(96px+env(safe-area-inset-bottom))] left-1/2 z-40 max-w-[calc(100%-32px)] -translate-x-1/2 rounded-[14px] bg-fg px-[18px] py-3 text-center text-[13.5px] text-app"
+      className="anim-aparecer fixed bottom-[calc(96px+env(safe-area-inset-bottom))] left-1/2 md:bottom-8 z-40 max-w-[calc(100%-32px)] -translate-x-1/2 rounded-[14px] bg-fg px-[18px] py-3 text-center text-[13.5px] text-app"
     >
       {texto}
     </div>

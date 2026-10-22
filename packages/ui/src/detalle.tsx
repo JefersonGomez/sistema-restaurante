@@ -190,7 +190,7 @@ export function Modal({
   }, []);
   return (
     <div
-      className="anim-aparecer fixed inset-0 z-30 flex items-end justify-center bg-scrim"
+      className="anim-aparecer fixed inset-0 z-30 flex items-end justify-center bg-scrim sm:items-center sm:p-6"
       onClick={onCerrar}
     >
       <div
@@ -199,7 +199,7 @@ export function Modal({
         aria-modal="true"
         aria-label={etiqueta}
         onClick={(e) => e.stopPropagation()}
-        className="anim-subir max-h-[92dvh] w-full max-w-[420px] overflow-auto rounded-t-[26px] bg-app px-5 pb-[calc(20px+env(safe-area-inset-bottom))]"
+        className="anim-subir max-h-[92dvh] w-full max-w-[420px] overflow-auto rounded-t-[26px] bg-app sm:max-h-[90dvh] sm:max-w-[560px] sm:rounded-[26px] px-5 pb-[calc(20px+env(safe-area-inset-bottom))]"
       >
         {children}
       </div>
@@ -261,7 +261,7 @@ export function DishSheet({
 
   return (
     <Modal etiqueta={nombreEn(p, idioma)} onCerrar={onCerrar}>
-      <div className="relative -mx-5 h-[190px] overflow-hidden bg-surface-2">
+      <div className="relative -mx-5 h-[190px] overflow-hidden bg-surface-2 sm:h-[260px]">
         <FotoPlato fotoUrl={p.fotoUrl} icono={icono} tam={190} clase="h-full w-full text-[96px]" />
         <button
           type="button"
@@ -316,9 +316,21 @@ export function DishSheet({
           disabled={!puedePedir || p.agotado}
           className="flex h-14 flex-1 items-center justify-center gap-2.5 rounded-md bg-purple text-[15.5px] font-semibold text-on-accent disabled:opacity-60"
         >
-          {p.agotado ? t.agotado : `${t.agregar} · ${precio(unidad * cantidad)}`}
+          {p.agotado
+            ? t.agotado
+            : puedePedir
+              ? `${t.agregar} · ${precio(unidad * cantidad)}`
+              : t.cerrado}
         </button>
       </div>
+      {!puedePedir && (
+        <p
+          role="status"
+          className="mt-3 rounded-md bg-danger-soft px-4 py-3 text-[13px] text-danger"
+        >
+          {t.cerradoBanner}
+        </p>
+      )}
     </Modal>
   );
 }

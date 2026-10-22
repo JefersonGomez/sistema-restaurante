@@ -270,8 +270,9 @@ temporalmente".
 Diseño basado en [`prototipo_front/prototipo-menu.html`](prototipo_front/prototipo-menu.html) y
 [`docs/especificacion-frontend-menu.md`](docs/especificacion-frontend-menu.md). Los colores son
 variables CSS (`apps/menu/src/index.css`) con modo claro y oscuro según `prefers-color-scheme`,
-expuestos a Tailwind 4 con `@theme`. Fuente Poppins. Columna de 420 px; en el celular ocupa todo el
-ancho y respeta las áreas seguras. PWA básica (`manifest.webmanifest`, sin service worker).
+expuestos a Tailwind 4 con `@theme`. Fuente Poppins. Responsivo: ocupa toda la pantalla; en el celular navegación abajo y
+platos en una columna, en tablet/PC navegación arriba, platos en 2–3 columnas, carrito y cuenta con
+los totales a la derecha y el detalle del plato como ventana centrada. Respeta las áreas seguras. PWA básica (`manifest.webmanifest`, sin service worker).
 
 - **Datos:** TanStack Query (mesa, menú, cuenta); al volver a la pestaña o reconectar el socket se
   vuelve a pedir la cuenta. Los eventos con `updatedAt` más viejo que el último visto se ignoran.

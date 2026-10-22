@@ -77,6 +77,10 @@ zona, cerradoManual)` con Intl (sin librerías). Cerrado → 423 (antes 409) sol
   CambiarPasswordPage, que bloquea toda la app mientras debeCambiarPassword. El menú del comensal pisa
   --purple/--purple-soft con colorAcento (también en modo oscuro). Quedan "En preparación":
   dispositivos y reportes.
+- Pedido del usuario (después de 3.6): el menú del comensal deja la columna de 420 px de la spec del
+  frontend y es responsivo (celular / tablet / PC, ver README). El detalle del plato, si el restaurante
+  está cerrado, dice "Cerrado" y explica por qué (antes solo se veía el botón apagado). Ojo al probar:
+  el horario se evalúa en America/Costa_Rica (Git Bash no tiene esa zona; usar la hora UTC − 6).
 - Propuestas sin objeción: HEIC solo si sharp puede leerlo (si no, error claro pidiendo JPG/PNG);
   fotos del seed generadas con sharp; los campos `horaApertura/horaCierre` y `Plato.destacado`
   se reemplazan por `HorarioRestaurante` y `platoDestacadoId` (migrando los datos).

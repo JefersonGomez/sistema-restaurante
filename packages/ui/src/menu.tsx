@@ -124,7 +124,7 @@ export function PromoBanner({
     <button
       type="button"
       onClick={onAbrir}
-      className="relative flex min-h-[150px] w-full items-center overflow-hidden rounded-lg bg-banner p-5 text-left text-banner-fg before:absolute before:-top-[30px] before:-right-10 before:h-[260px] before:w-[190px] before:rotate-[24deg] before:bg-amber before:opacity-95 before:content-['']"
+      className="relative flex min-h-[150px] w-full items-center overflow-hidden rounded-lg bg-banner p-5 md:min-h-[190px] md:px-8 md:before:w-[340px] text-left text-banner-fg before:absolute before:-top-[30px] before:-right-10 before:h-[260px] before:w-[190px] before:rotate-[24deg] before:bg-amber before:opacity-95 before:content-['']"
     >
       <span className="relative z-[1] flex max-w-[60%] flex-col gap-0.5">
         <small className="text-[15px] opacity-90">{texto || t.destacado}</small>
@@ -171,7 +171,7 @@ export function CategoryGrid({
 }) {
   const { idioma } = useUi();
   return (
-    <div className="grid grid-cols-4 gap-x-2.5 gap-y-3.5">
+    <div className="grid grid-cols-4 gap-x-2.5 gap-y-3.5 sm:grid-cols-[repeat(auto-fill,minmax(96px,1fr))]">
       {categorias.map((c) => {
         const on = c.id === activa;
         return (

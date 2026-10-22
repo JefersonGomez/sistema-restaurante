@@ -37,7 +37,7 @@ export function CartScreen() {
         <button
           type="button"
           onClick={irAlMenu}
-          className="flex h-14 w-full items-center justify-center rounded-md bg-purple text-[15.5px] font-semibold text-on-accent"
+          className="flex h-14 w-full items-center justify-center rounded-md bg-purple text-[15.5px] font-semibold text-on-accent md:mx-auto md:w-80"
         >
           {t.verMenu}
         </button>
@@ -47,43 +47,47 @@ export function CartScreen() {
   return (
     <Main>
       <BarraTitulo titulo={t.miCarrito} onVolver={irAlMenu} />
-      <div className="flex flex-col gap-3">
-        {lineas.map((l) => (
-          <CartItem
-            key={l.clave}
-            linea={l}
-            agotado={agotados.has(l.platoId)}
+      <div className="flex flex-col gap-[22px] md:grid md:grid-cols-[minmax(0,1fr)_360px] md:items-start md:gap-8">
+        <div className="flex flex-col gap-3">
+          {lineas.map((l) => (
+            <CartItem
+              key={l.clave}
+              linea={l}
+              agotado={agotados.has(l.platoId)}
+              precio={precio}
+              onCantidad={(n) => cambiarCantidad(l.clave, n)}
+              onQuitar={() => quitar(l.clave)}
+              onNota={(nota) => cambiarNota(l.clave, nota)}
+            />
+          ))}
+        </div>
+        <div className="flex flex-col gap-[22px] md:sticky md:top-20">
+          <TotalsSummary
+            totales={estimado}
+            config={r}
             precio={precio}
-            onCantidad={(n) => cambiarCantidad(l.clave, n)}
-            onQuitar={() => quitar(l.clave)}
-            onNota={(nota) => cambiarNota(l.clave, nota)}
+            etiquetaTotal={t.total}
+            estimado
           />
-        ))}
+          {(error || hayAgotados) && (
+            <p role="alert" className="rounded-md bg-danger-soft px-4 py-3 text-[13px] text-danger">
+              {hayAgotados ? t.hayAgotados : error!.texto}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={enviar}
+            disabled={enviando || hayAgotados || !r.abierto}
+            className="flex h-14 w-full items-center justify-center gap-2.5 rounded-md bg-purple text-[15.5px] font-semibold text-on-accent disabled:opacity-60"
+          >
+            {enviando
+              ? t.enviando
+              : error?.reintentable
+                ? t.reintentar
+                : `${t.enviar} · ${precio(estimado.total)}`}
+          </button>
+        </div>
       </div>
-      <TotalsSummary
-        totales={estimado}
-        config={r}
-        precio={precio}
-        etiquetaTotal={t.total}
-        estimado
-      />
-      {(error || hayAgotados) && (
-        <p role="alert" className="rounded-md bg-danger-soft px-4 py-3 text-[13px] text-danger">
-          {hayAgotados ? t.hayAgotados : error!.texto}
-        </p>
-      )}
-      <button
-        type="button"
-        onClick={enviar}
-        disabled={enviando || hayAgotados || !r.abierto}
-        className="flex h-14 w-full items-center justify-center gap-2.5 rounded-md bg-purple text-[15.5px] font-semibold text-on-accent disabled:opacity-60"
-      >
-        {enviando
-          ? t.enviando
-          : error?.reintentable
-            ? t.reintentar
-            : `${t.enviar} · ${precio(estimado.total)}`}
-      </button>
     </Main>
   );
 }

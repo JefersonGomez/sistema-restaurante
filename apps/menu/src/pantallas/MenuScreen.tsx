@@ -75,7 +75,7 @@ export function MenuScreen() {
       <h2 className="text-[17px] font-semibold">
         {nombreCategoria ? nombreEn(nombreCategoria, idioma) : t.todo}
       </h2>
-      <div className="flex flex-col gap-3">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {platos.length ? (
           platos.map((p) => (
             <DishCard
@@ -88,7 +88,7 @@ export function MenuScreen() {
             />
           ))
         ) : (
-          <p className="px-2.5 py-8 text-center text-muted">{t.sinResultados}</p>
+          <p className="col-span-full px-2.5 py-8 text-center text-muted">{t.sinResultados}</p>
         )}
       </div>
 

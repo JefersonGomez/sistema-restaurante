@@ -36,12 +36,12 @@ export function AccountScreen() {
       ) : pedidos.length === 0 ? (
         <>
           <p className="px-2.5 py-8 text-center text-muted">{t.sinPedidos}</p>
-          <button type="button" onClick={irAlMenu} className={`${boton} bg-purple text-on-accent`}>
+          <button type="button" onClick={irAlMenu} className={`${boton} bg-purple text-on-accent md:mx-auto md:w-80`}>
             {t.verMenu}
           </button>
         </>
       ) : (
-        <>
+        <div className="flex flex-col gap-[22px] md:grid md:grid-cols-[minmax(0,1fr)_360px] md:items-start md:gap-8">
           <div className="flex flex-col gap-3">
             {/* El más reciente arriba; el número sigue el orden en que se hicieron. */}
             {pedidos
@@ -51,29 +51,36 @@ export function AccountScreen() {
                 <OrderCard key={p.id} pedido={p} numero={n} precio={precio} />
               ))}
           </div>
-          <TotalsSummary totales={cuenta} config={r} precio={precio} etiquetaTotal={t.totalMesa} />
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={llamar}
-              className={`${boton} bg-surface text-[14px] text-fg`}
-            >
-              <Hand className="size-4" aria-hidden /> {t.llamarMesero}
-            </button>
-            <button
-              type="button"
-              onClick={pedirCuenta}
-              disabled={cuentaPedida}
-              className={`${boton} bg-amber text-[14px] text-on-amber`}
-            >
-              <ReceiptText className="size-4" aria-hidden />{' '}
-              {cuentaPedida ? t.cuentaPedida : t.pedirCuenta}
+          <div className="flex flex-col gap-[22px] md:sticky md:top-20">
+            <TotalsSummary
+              totales={cuenta}
+              config={r}
+              precio={precio}
+              etiquetaTotal={t.totalMesa}
+            />
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={llamar}
+                className={`${boton} bg-surface text-[14px] text-fg`}
+              >
+                <Hand className="size-4" aria-hidden /> {t.llamarMesero}
+              </button>
+              <button
+                type="button"
+                onClick={pedirCuenta}
+                disabled={cuentaPedida}
+                className={`${boton} bg-amber text-[14px] text-on-amber`}
+              >
+                <ReceiptText className="size-4" aria-hidden />{' '}
+                {cuentaPedida ? t.cuentaPedida : t.pedirCuenta}
+              </button>
+            </div>
+            <button type="button" onClick={irAlMenu} className={`${boton} bg-surface text-fg`}>
+              <Plus className="size-4" aria-hidden /> {t.pedirMas}
             </button>
           </div>
-          <button type="button" onClick={irAlMenu} className={`${boton} bg-surface text-fg`}>
-            <Plus className="size-4" aria-hidden /> {t.pedirMas}
-          </button>
-        </>
+        </div>
       )}
     </Main>
   );
