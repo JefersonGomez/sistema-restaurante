@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useAuth } from './auth';
+import { Boton, Campo } from './panel/comunes';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -22,47 +23,46 @@ export function LoginPage() {
   };
 
   return (
-    <main className="grid min-h-dvh place-items-center p-4">
+    <main className="grid min-h-dvh place-items-center bg-bg p-4">
       <form
         onSubmit={enviar}
-        className="w-full max-w-sm space-y-4 rounded-xl bg-white p-6 shadow-sm"
+        className="w-full max-w-sm space-y-4 rounded-[26px] bg-app p-6 shadow-app"
         aria-describedby={error ? 'error-login' : undefined}
       >
-        <h1 className="text-xl font-semibold text-stone-800">Ingreso del personal</h1>
-        <label className="block text-sm">
-          <span className="text-stone-700">Email</span>
-          <input
-            type="email"
-            required
-            autoComplete="username"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 focus:border-teal-600 focus:outline-none"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="text-stone-700">Contraseña</span>
-          <input
-            type="password"
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 focus:border-teal-600 focus:outline-none"
-          />
-        </label>
+        <div>
+          <h1 className="text-[22px] font-semibold">Ingreso del personal</h1>
+          <p className="mt-1 text-sm text-muted">
+            Use el correo y la contraseña que le dio el dueño.
+          </p>
+        </div>
+        <Campo
+          etiqueta="Correo"
+          type="email"
+          required
+          autoComplete="username"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <Campo
+          etiqueta="Contraseña"
+          type="password"
+          required
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
         {error && (
-          <p id="error-login" role="alert" className="text-sm text-red-700">
+          <p
+            id="error-login"
+            role="alert"
+            className="rounded-md bg-danger-soft p-3 text-sm text-danger"
+          >
             {error}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={enviando}
-          className="w-full rounded-md bg-teal-700 py-2 font-medium text-white hover:bg-teal-800 disabled:opacity-60"
-        >
+        <Boton type="submit" disabled={enviando} className="h-14 w-full text-[15.5px]">
           {enviando ? 'Ingresando…' : 'Ingresar'}
-        </button>
+        </Boton>
       </form>
     </main>
   );

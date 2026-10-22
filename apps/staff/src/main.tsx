@@ -1,20 +1,24 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import type { Rol } from '@menu-qr/shared';
 import { AuthProvider, useAuth } from './auth';
 import { CajaPage } from './CajaPage';
-import { DuenoPage } from './DuenoPage';
 import { EstacionPage } from './EstacionPage';
 import { LoginPage } from './LoginPage';
 import { MeseroPage } from './MeseroPage';
+import { UiProvider } from '@menu-qr/ui';
+import { InicioPage } from './panel/InicioPage';
+import { PanelLayout } from './panel/PanelLayout';
+import { EstadoVacio, TituloPagina } from './panel/comunes';
 import { Encabezado } from './ui';
 import './index.css';
 
 // Pantalla de inicio por rol.
 const INICIO: Record<Rol, string> = {
   SUPERADMIN: '/admin',
-  DUENO: '/dueno',
+  DUENO: '/panel',
   MESERO: '/mesero',
   COCINA: '/cocina',
   CAJA: '/caja',
@@ -36,6 +40,21 @@ function Admin() {
   );
 }
 
+// ponytail: secciones del panel que se completan en las próximas sub-fases de la Fase 3.
+function EnPreparacion({ seccion }: { seccion: string }) {
+  return (
+    <>
+      <TituloPagina titulo={seccion[0]!.toUpperCase() + seccion.slice(1)} />
+      <EstadoVacio
+        titulo="En preparación"
+        detalle="Esta sección del panel llega en la próxima entrega."
+      />
+    </>
+  );
+}
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 15_000 } } });
+
 function App() {
   const { usuario, cargando } = useAuth();
   if (cargando) return <p className="p-6 text-stone-500">Cargando…</p>;
@@ -51,14 +70,20 @@ function App() {
           </Solo>
         }
       />
+      <Route path="/dueno" element={<Navigate to="/panel" replace />} />
       <Route
-        path="/dueno"
+        path="/panel"
         element={
           <Solo roles={['DUENO']}>
-            <DuenoPage />
+            <PanelLayout />
           </Solo>
         }
-      />
+      >
+        <Route index element={<InicioPage />} />
+        {['menu', 'mesas', 'personal', 'dispositivos', 'reportes', 'ajustes'].map((seccion) => (
+          <Route key={seccion} path={seccion} element={<EnPreparacion seccion={seccion} />} />
+        ))}
+      </Route>
       <Route
         path="/cocina"
         element={
@@ -90,10 +115,14 @@ function App() {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <UiProvider idioma="es">
+        <BrowserRouter>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </BrowserRouter>
+      </UiProvider>
+    </QueryClientProvider>
   </StrictMode>,
 );

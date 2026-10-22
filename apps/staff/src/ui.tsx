@@ -30,7 +30,7 @@ export function Conexion({ conectado }: { conectado: boolean }) {
 }
 
 const PANTALLAS_DUENO = [
-  { ruta: '/dueno', texto: 'Hoy' },
+  { ruta: '/panel', texto: 'Panel' },
   { ruta: '/cocina', texto: 'Cocina/Bar' },
   { ruta: '/mesero', texto: 'Mesero' },
   { ruta: '/caja', texto: 'Caja' },
