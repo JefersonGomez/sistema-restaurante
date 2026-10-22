@@ -24,7 +24,7 @@ export function Conexion({ conectado }: { conectado: boolean }) {
       }`}
     >
       <span className={`h-2 w-2 rounded-full ${conectado ? 'bg-emerald-600' : 'bg-red-600'}`} />
-      {conectado ? 'Conectado' : 'Reconectando…'}
+      <span className="max-sm:sr-only">{conectado ? 'Conectado' : 'Reconectando…'}</span>
     </span>
   );
 }
@@ -84,7 +84,7 @@ export function BotonSonido({ activo, onActivar }: { activo: boolean; onActivar:
       onClick={onActivar}
       className="animate-pulse rounded-md bg-amber-500 px-3 py-1.5 text-sm font-semibold text-white"
     >
-      🔔 Activar sonido
+      🔔 <span className="max-sm:sr-only">Activar sonido</span>
     </button>
   );
 }

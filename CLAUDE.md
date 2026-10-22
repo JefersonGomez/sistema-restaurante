@@ -7,7 +7,8 @@ SaaS multi-restaurante de pedidos por QR (Costa Rica). Monorepo pnpm: `apps/api`
 
 1. Leer `MEMORY.md` (estado actual, decisiones, pendientes).
 2. Si la tarea toca alcance, leer la spec de la fase en curso (fuente de verdad):
-   `docs/especificacion-fase1.md` (hecha) y `docs/especificacion-fase2.md` (en curso).
+   `docs/especificacion-fase1.md`, `docs/especificacion-fase2.md`, `docs/especificacion-frontend-menu.md`
+   (hechas) y `docs/especificacion-fase3.md` (en curso).
 
 ## Después de cada cambio
 
@@ -26,8 +27,8 @@ SaaS multi-restaurante de pedidos por QR (Costa Rica). Monorepo pnpm: `apps/api`
   Express, Socket.IO, PostgreSQL 16, Prisma, Zod, JWT, bcrypt, React, Vite, Tailwind, Vitest,
   Supertest, ESLint, Prettier. Las librerías ya aprobadas están listadas en `MEMORY.md`.
 - No implementar nada de la sección "Fuera de alcance" de la spec de la fase en curso
-  (Fase 2: pagos en línea, SINPE/pasarelas, facturación de Hacienda, impresión térmica directa,
-  push, offline completo, dividir cuenta, reservas, reportes avanzados, despliegue).
+  (Fase 3: pagos en línea, SINPE automático, factura electrónica, impresión térmica directa, panel
+  del superadmin, cobro de mensualidades, despliegue, traducción automática con IA, inventario).
 - Código mínimo y directo. Sin abstracciones "para después".
 
 ## Convenciones de código

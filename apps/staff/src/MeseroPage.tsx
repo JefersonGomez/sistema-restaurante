@@ -33,6 +33,12 @@ const COLOR_MESA: Record<EstadoMesa, string> = {
   PIDIO_CUENTA: 'bg-violet-100 border-violet-500 text-violet-900',
   LLAMADA: 'bg-red-100 border-red-600 text-red-900 animate-pulse',
 };
+const ESTADO_ITEM: Record<ItemDetalle['estado'], string> = {
+  PENDIENTE: 'en cocina',
+  EN_PREPARACION: 'en preparación',
+  LISTO: 'listo',
+  ENTREGADO: 'entregado',
+};
 const TEXTO_MESA: Record<EstadoMesa, string> = {
   LIBRE: 'Libre',
   OCUPADA: 'Ocupada',
@@ -302,7 +308,7 @@ export function MeseroPage() {
                             ? 'por confirmar'
                             : i.cancelado
                               ? 'cancelado'
-                              : i.estado.toLowerCase().replace('_', ' ')}
+                              : ESTADO_ITEM[i.estado]}
                         </span>
                       </span>
                       {!i.cancelado &&

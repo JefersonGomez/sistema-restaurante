@@ -61,6 +61,9 @@ function useWakeLock() {
   }, []);
 }
 
+// "todas": un usuario de cocina sin estación asignada (o el dueño) ve cocina y bar juntos.
+const TODAS = 'todas';
+
 export function EstacionPage() {
   const [estaciones, setEstaciones] = useState<Estacion[]>([]);
   const [estacionId, setEstacionId] = useState<string | null>(leerEstacion);
@@ -77,7 +80,11 @@ export function EstacionPage() {
       (lista) => {
         setEstaciones(lista);
         setEstacionId((actual) =>
-          lista.some((e) => e.id === actual) ? actual : (lista[0]?.id ?? null),
+          (actual === TODAS && lista.length > 1) || lista.some((e) => e.id === actual)
+            ? actual
+            : lista.length > 1
+              ? TODAS
+              : (lista[0]?.id ?? null),
         );
       },
       (e: Error) => setError(e.message),
@@ -95,14 +102,26 @@ export function EstacionPage() {
   }, [estacionId]);
 
   const cargar = useCallback(async () => {
-    if (!estacionId) return;
+    if (!estacionId || estaciones.length === 0) return;
+    const ids = estacionId === TODAS ? estaciones.map((e) => e.id) : [estacionId];
     try {
-      setPedidos(await api<PedidoEstacion[]>(`/operacion/estaciones/${estacionId}/items`));
+      const listas = await Promise.all(
+        ids.map((id) => api<PedidoEstacion[]>(`/operacion/estaciones/${id}/items`)),
+      );
+      // Un mismo pedido puede tener ítems de cocina y de bar: se juntan en una tarjeta.
+      const porPedido = new Map<string, PedidoEstacion>();
+      for (const p of listas.flat()) {
+        const previo = porPedido.get(p.pedidoId);
+        porPedido.set(p.pedidoId, previo ? { ...previo, items: [...previo.items, ...p.items] } : p);
+      }
+      setPedidos(
+        [...porPedido.values()].sort((a, b) => a.confirmadoEn.localeCompare(b.confirmadoEn)),
+      );
       setError(null);
     } catch (e) {
       setError((e as Error).message);
     }
-  }, [estacionId]);
+  }, [estacionId, estaciones]);
   useEffect(() => {
     cargar();
   }, [cargar]);
@@ -116,7 +135,7 @@ export function EstacionPage() {
     {
       // Llega solo a las salas de estación correspondientes; el dueño recibe las de todas.
       'pedido:confirmado': (p: { items: ItemDetalle[] }) => {
-        if (p.items.some((i) => i.estacionId === estacionId)) sonar(3);
+        if (estacionId === TODAS || p.items.some((i) => i.estacionId === estacionId)) sonar(3);
         refrescar();
       },
       'item:estado': refrescar,
@@ -150,7 +169,10 @@ export function EstacionPage() {
     cargarPlatos();
   };
 
-  const nombreEstacion = estaciones.find((e) => e.id === estacionId)?.nombre ?? 'Estación';
+  const nombreEstacion =
+    estacionId === TODAS
+      ? 'todas las estaciones'
+      : (estaciones.find((e) => e.id === estacionId)?.nombre ?? 'Estación');
   return (
     <div className="min-h-dvh bg-stone-100">
       <Encabezado titulo={`Pantalla de ${nombreEstacion}`}>
@@ -161,6 +183,7 @@ export function EstacionPage() {
             className="rounded-md border border-stone-300 px-2 py-1.5 text-sm"
             aria-label="Estación"
           >
+            <option value={TODAS}>Todas</option>
             {estaciones.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.nombre}
@@ -195,7 +218,10 @@ export function EstacionPage() {
           <h2 className="mb-2 font-semibold">Marcar platos agotados</h2>
           <div className="flex flex-wrap gap-2">
             {platos
-              .filter((p) => p.activo && (!estacionId || p.estacionId === estacionId))
+              .filter(
+                (p) =>
+                  p.activo && (!estacionId || estacionId === TODAS || p.estacionId === estacionId),
+              )
               .map((p) => (
                 <button
                   key={p.id}

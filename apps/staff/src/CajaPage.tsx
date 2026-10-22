@@ -152,7 +152,7 @@ export function CajaPage() {
                 <tbody className="divide-y">
                   {items.map((i) => (
                     <tr key={i.id}>
-                      <td className="py-1.5 pr-2 tabular-nums">{i.cantidad}×</td>
+                      <td className="w-10 py-1.5 pr-2 align-top tabular-nums">{i.cantidad}×</td>
                       <td className="py-1.5">
                         {i.nombreEs}
                         {i.modificadores.length > 0 && (
@@ -162,7 +162,7 @@ export function CajaPage() {
                           </span>
                         )}
                       </td>
-                      <td className="py-1.5 text-right tabular-nums">
+                      <td className="w-28 py-1.5 text-right align-top tabular-nums">
                         {precio(i.precioUnitario * i.cantidad)}
                       </td>
                     </tr>

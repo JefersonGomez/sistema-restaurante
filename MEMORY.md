@@ -8,9 +8,37 @@
 - **Fecha última actualización:** 2026-10-20
 - **Fase 1 completa y subida** (commit `a202fd9`).
 - **Fase 2 completa y subida** (commit `a0317b7`).
-- **Frontend del comensal (spec `docs/especificacion-frontend-menu.md`, guía visual
-  `prototipo_front/prototipo-menu.html`):** implementado y verificado 2026-10-21, pendiente de validar commit.
+- **Frontend del comensal completo y subido** (commit `5869078`, 2026-10-21).
+- **Próxima sesión — pendientes conocidos:** revisión visual del usuario en su celular; el
+  frontend del personal (apps/staff) aún usa el estilo básico de la Fase 2 (no el del prototipo);
+  sin UI para administrar menú/mesas (solo API); platos sin foto usan el ícono de la categoría.
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
+
+## Plan de la Fase 3 (sub-fases) — esperando aprobación del usuario
+
+Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por el usuario.
+
+| #    | Sub-fase                                                                                               | Estado |
+| ---- | ------------------------------------------------------------------------------------------------------ | ------ |
+| 3.1  | Tokens compartidos (packages/ui: tokens CSS + componentes del menú reutilizables)                      | ⬜     |
+| 3.2  | Imágenes: StorageDriver local/R2, POST /uploads/imagen, sharp 320/960 WebP, borrar viejas, logo        | ⬜     |
+| 3.3  | Horarios por turno, zonaHoraria, cerradoManual, promoción (platoDestacadoId, textos, precioPromo); 423 | ⬜     |
+| 3.4  | Panel del dueño: layout (sidebar / nav inferior) + Inicio con accesos rápidos                          | ⬜     |
+| 3.5  | Panel: Menú (categorías/platos, dnd, formulario con cámara, modificadores, vista previa)               | ⬜     |
+| 3.6  | Panel: Mesas y QR (PDF), Personal (temporal, último acceso), Ajustes (contraste del acento)            | ⬜     |
+| 3.7  | Dispositivos con PIN (vincular 6 dígitos, token de dispositivo, PIN 4 dígitos, bloqueo, revocar)       | ⬜     |
+| 3.8  | Reportes agregados en SQL + vistas de platos + recharts + CSV                                          | ⬜     |
+| 3.9  | Rediseño de estación, mesero y caja con la identidad visual                                            | ⬜     |
+| 3.10 | Tests obligatorios, seed (fotos generadas, horarios, promo, dispositivo, 30 días), README              | ⬜     |
+
+### Decisiones de la Fase 3 (respondidas por el usuario 2026-10-22)
+
+- Promoción: si el plato es el destacado y hay `precioPromo`, el servidor **cobra el precio de promo**.
+- Tablets: **PIN por usuario** (4 dígitos, hash); en la tablet se elige el nombre y se pone el PIN.
+- Commits: uno por sub-fase.
+- Propuestas sin objeción: HEIC solo si sharp puede leerlo (si no, error claro pidiendo JPG/PNG);
+  fotos del seed generadas con sharp; los campos `horaApertura/horaCierre` y `Plato.destacado`
+  se reemplazan por `HorarioRestaurante` y `platoDestacadoId` (migrando los datos).
 
 ## Plan de la Fase 2 (sub-fases)
 
@@ -230,3 +258,7 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
 - 2026-10-21: frontend del comensal según prototipo (claro/oscuro, PWA), nueva regla de impuestos,
   horario/destacado/ícono (migración), tests: shared 15, API 74, menu 16. Recorrido en vivo en el
   navegador OK (pedido, estado en vivo, agotado sin recargar, pantalla de agradecimiento).
+- 2026-10-22: revisión previa a Fase 3 en el navegador (app del personal): cocina sin estación
+  asignada abría en "Bar" vacía → opción "Todas" (por defecto) que junta ítems de todas las
+  estaciones; estados con tildes en mesero; columnas de la tabla de caja; encabezado compacto en
+  celular. Spec de la Fase 3 guardada en docs/especificacion-fase3.md.
