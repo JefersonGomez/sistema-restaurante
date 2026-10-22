@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { HORA_REGEX } from './horario';
+import { HORA_REGEX, zonaHorariaValida } from './horario';
 
 export const rolSchema = z.enum(['SUPERADMIN', 'DUENO', 'MESERO', 'COCINA', 'CAJA']);
 export type Rol = z.infer<typeof rolSchema>;
@@ -48,9 +48,15 @@ export const restauranteConfigSchema = z
     porcentajeServicio: porcentaje,
     preciosIncluyenImpuestos: z.boolean(),
     modoConfirmacion: modoConfirmacionSchema,
-    // Horario en hora de Costa Rica ("HH:MM"); null = siempre abierto.
-    horaApertura: z.string().regex(HORA_REGEX, 'Hora HH:MM').nullable(),
-    horaCierre: z.string().regex(HORA_REGEX, 'Hora HH:MM').nullable(),
+    zonaHoraria: z
+      .string()
+      .refine(zonaHorariaValida, 'Zona horaria inválida (ej. America/Costa_Rica)'),
+    cerradoManual: z.boolean(), // "Cerrar temporalmente"
+    // Promoción del banner: con precioPromo, ese es el precio que se cobra por el plato.
+    platoDestacadoId: z.uuid().nullable(),
+    textoPromoEs: z.string().trim().max(80).nullable(),
+    textoPromoEn: z.string().trim().max(80).nullable(),
+    precioPromo: centimos.nullable(),
   })
   .partial();
 export type RestauranteConfigInput = z.infer<typeof restauranteConfigSchema>;
@@ -129,7 +135,6 @@ export const platoSchema = z.object({
   activo: z.boolean().optional(),
   orden: z.number().int().min(0).optional(),
   alergenos: z.array(texto(40)).max(20).optional(),
-  destacado: z.boolean().optional(), // aparece en el banner del menú
 });
 export const actualizarPlatoSchema = platoSchema.partial();
 export type PlatoInput = z.infer<typeof platoSchema>;
@@ -160,6 +165,15 @@ export const modificadorSchema = z.object({
 export const actualizarModificadorSchema = modificadorSchema.partial();
 export type ModificadorInput = z.infer<typeof modificadorSchema>;
 export type ActualizarModificadorInput = z.infer<typeof actualizarModificadorSchema>;
+
+// Turnos de atención (PUT /restaurante/horarios reemplaza todos).
+export const turnoSchema = z.object({
+  diaSemana: z.number().int().min(0).max(6), // 0 = domingo
+  abre: z.string().regex(HORA_REGEX, 'Hora HH:mm'),
+  cierra: z.string().regex(HORA_REGEX, 'Hora HH:mm'),
+});
+export const horariosSchema = z.object({ turnos: z.array(turnoSchema).max(28) });
+export type HorariosInput = z.infer<typeof horariosSchema>;
 
 // --- Mesas ---
 
@@ -205,7 +219,7 @@ export type PlatoPublico = {
   fotoUrl: string | null;
   fotoMiniUrl: string | null;
   agotado: boolean;
-  destacado: boolean;
+  precioAntes: number | null; // precio normal si el plato está en promoción (precio = el de promo)
   alergenos: string[];
   grupos: GrupoPublico[];
 };
@@ -220,10 +234,18 @@ export type MenuPublico = {
     porcentajeIva: number;
     porcentajeServicio: number;
     preciosIncluyenImpuestos: boolean;
-    horaApertura: string | null;
-    horaCierre: string | null;
-    abierto: boolean; // calculado por el servidor en hora de Costa Rica
+    zonaHoraria: string;
+    abierto: boolean; // calculado por el servidor (horario + cierre manual)
+    cerradoManual: boolean;
+    horarioHoy: { abre: string; cierra: string }[];
   };
+  promocion: {
+    platoId: string;
+    textoEs: string | null;
+    textoEn: string | null;
+    precio: number;
+    precioAntes: number | null;
+  } | null;
   categorias: {
     id: string;
     nombreEs: string;

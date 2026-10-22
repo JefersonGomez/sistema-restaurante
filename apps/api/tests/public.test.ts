@@ -63,7 +63,8 @@ describe('GET /public/:slug/menu', () => {
     );
     expect(agotado.agotado).toBe(true);
     expect(res.body.categorias[0]).toHaveProperty('icono');
-    expect(agotado).toMatchObject({ destacado: false });
+    expect(agotado).toMatchObject({ precioAntes: null });
+    expect(res.body.promocion).toBeNull();
     expect(res.body.restaurante).toMatchObject({ abierto: true });
   });
 

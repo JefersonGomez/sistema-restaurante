@@ -4,8 +4,8 @@ export const es = {
   abierto: 'Abierto',
   cerrado: 'Cerrado',
   horario: (de: string, a: string) => `${de} a ${a}`,
-  cerradoBanner: (de: string, a: string) =>
-    `Estamos cerrados. Atendemos de ${de} a ${a}; puede ver el menú pero no hacer pedidos.`,
+  cerradoBanner: 'Estamos cerrados: puede ver el menú, pero no hacer pedidos por ahora.',
+  cerradoTemporal: 'Cerramos temporalmente: puede ver el menú, pero no hacer pedidos por ahora.',
   mesa: 'Mesa',
   cambiarIdioma: 'Cambiar a inglés',
   idiomaCorto: 'EN',

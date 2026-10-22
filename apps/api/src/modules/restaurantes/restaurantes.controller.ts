@@ -18,6 +18,10 @@ export const obtenerPropio = async (req: Request, res: Response) => {
   res.json(await service.obtenerPropio(restauranteDe(req)));
 };
 
+export const guardarHorarios = async (req: Request, res: Response) => {
+  res.json(await service.guardarHorarios(restauranteDe(req), req.body));
+};
+
 export const actualizarPropio = async (req: Request, res: Response) => {
   res.json(await service.actualizarPropio(restauranteDe(req), req.body));
 };

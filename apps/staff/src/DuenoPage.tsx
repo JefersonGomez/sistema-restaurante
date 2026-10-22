@@ -21,8 +21,7 @@ const MODOS: { id: ModoConfirmacion; titulo: string; detalle: string }[] = [
 type Config = {
   modoConfirmacion: ModoConfirmacion;
   moneda: Moneda;
-  horaApertura: string | null;
-  horaCierre: string | null;
+  cerradoManual: boolean;
 };
 
 export function DuenoPage() {
@@ -129,46 +128,19 @@ export function DuenoPage() {
         </section>
 
         <section className="rounded-xl bg-white p-4 shadow-sm">
-          <h2 className="mb-1 font-semibold">Horario de atención (hora de Costa Rica)</h2>
+          <h2 className="mb-1 font-semibold">Atención al público</h2>
           <p className="mb-3 text-sm text-stone-500">
-            Fuera de este horario el menú se ve como cerrado y los comensales no pueden pedir; el
-            mesero sí puede tomar pedidos. Vacío = siempre abierto.
+            {config?.cerradoManual
+              ? 'Cerrado temporalmente: los comensales ven el menú pero no pueden pedir.'
+              : 'Abierto según el horario. Cerrar temporalmente bloquea los pedidos de los comensales.'}
           </p>
-          <form
-            key={`${config?.horaApertura}-${config?.horaCierre}`}
-            className="flex flex-wrap items-end gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const f = new FormData(e.currentTarget);
-              const hora = (k: string) => (f.get(k) as string) || null;
-              guardarAjuste({ horaApertura: hora('apertura'), horaCierre: hora('cierre') });
-            }}
+          <button
+            type="button"
+            onClick={() => guardarAjuste({ cerradoManual: !config?.cerradoManual })}
+            className="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white"
           >
-            <label className="text-sm">
-              Abre
-              <input
-                type="time"
-                name="apertura"
-                defaultValue={config?.horaApertura ?? ''}
-                className="mt-1 block rounded-md border border-stone-300 px-2 py-1.5"
-              />
-            </label>
-            <label className="text-sm">
-              Cierra
-              <input
-                type="time"
-                name="cierre"
-                defaultValue={config?.horaCierre ?? ''}
-                className="mt-1 block rounded-md border border-stone-300 px-2 py-1.5"
-              />
-            </label>
-            <button
-              type="submit"
-              className="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white"
-            >
-              Guardar horario
-            </button>
-          </form>
+            {config?.cerradoManual ? 'Volver a abrir' : 'Cerrar temporalmente'}
+          </button>
         </section>
       </main>
     </div>

@@ -22,7 +22,7 @@ Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por e
 | ---- | ------------------------------------------------------------------------------------------------------ | ------ |
 | 3.1  | Tokens compartidos (packages/ui: tokens CSS + componentes del menú reutilizables)                      | ✅     |
 | 3.2  | Imágenes: StorageDriver local/R2, POST /uploads/imagen, sharp 320/960 WebP, borrar viejas, logo        | ✅     |
-| 3.3  | Horarios por turno, zonaHoraria, cerradoManual, promoción (platoDestacadoId, textos, precioPromo); 423 | ⬜     |
+| 3.3  | Horarios por turno, zonaHoraria, cerradoManual, promoción (platoDestacadoId, textos, precioPromo); 423 | ✅     |
 | 3.4  | Panel del dueño: layout (sidebar / nav inferior) + Inicio con accesos rápidos                          | ⬜     |
 | 3.5  | Panel: Menú (categorías/platos, dnd, formulario con cámara, modificadores, vista previa)               | ⬜     |
 | 3.6  | Panel: Mesas y QR (PDF), Personal (temporal, último acceso), Ajustes (contraste del acento)            | ⬜     |
@@ -48,6 +48,12 @@ Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por e
   (helmet pone same-origin y el menú está en otro origen). Tests usan UPLOADS_DIR temporal.
   sharp prebuilt NO decodifica HEIC/HEVC → 415 "Súbala en JPG o PNG". Pendiente 3.5: al duplicar un
   plato NO copiar las URLs de foto (borrar una borraría la del otro).
+- 3.3: migración `20261022140000_horarios_promocion` (pasa el horario único a 7 turnos y
+  Plato.destacado → Restaurante.platoDestacadoId, y borra los campos viejos). `estaAbierto(turnos, ahora,
+zona, cerradoManual)` con Intl (sin librerías). Cerrado → 423 (antes 409) solo para CLIENTE; el MESERO
+  puede pedir. Promo: el menú público reemplaza `precio` por `precioPromo` y da `precioAntes`; el servidor
+  cobra lo mismo (prepararItem). PUT /restaurante/horarios reemplaza todos los turnos. La edición de
+  turnos en el panel llega en 3.6; por ahora DuenoPage tiene "Cerrar temporalmente".
 - Propuestas sin objeción: HEIC solo si sharp puede leerlo (si no, error claro pidiendo JPG/PNG);
   fotos del seed generadas con sharp; los campos `horaApertura/horaCierre` y `Plato.destacado`
   se reemplazan por `HorarioRestaurante` y `platoDestacadoId` (migrando los datos).

@@ -68,7 +68,12 @@ type PlatoConGrupos = Prisma.PlatoGetPayload<{
 }>;
 
 // Valida disponibilidad y modificadores; el precio sale de la BD, nunca del cliente.
-function prepararItem(plato: PlatoConGrupos | undefined, platoId: string, modIds: string[]) {
+function prepararItem(
+  plato: PlatoConGrupos | undefined,
+  platoId: string,
+  modIds: string[],
+  precioPromo: number | null, // si el plato es el de la promoción
+) {
   if (!plato || !plato.activo || !plato.categoria.activa)
     throw new HttpError(409, 'PLATO_NO_DISPONIBLE', 'Un plato ya no está disponible', {
       platoId,
@@ -114,7 +119,8 @@ function prepararItem(plato: PlatoConGrupos | undefined, platoId: string, modIds
       },
     );
 
-  const precioUnitario = plato.precio + usados.reduce((s, m) => s + m.precioExtra, 0);
+  const base = precioPromo ?? plato.precio;
+  const precioUnitario = base + usados.reduce((s, m) => s + m.precioExtra, 0);
   return { estacionId: plato.estacionId, precioUnitario, modificadores: usados };
 }
 
@@ -145,18 +151,33 @@ export async function crearPedido(p: NuevoPedido) {
         where: { id: p.cuentaId, restauranteId: p.restauranteId },
         include: {
           mesa: { select: { numero: true } },
-          restaurante: { select: { modoConfirmacion: true, horaApertura: true, horaCierre: true } },
+          restaurante: {
+            select: {
+              modoConfirmacion: true,
+              zonaHoraria: true,
+              cerradoManual: true,
+              platoDestacadoId: true,
+              precioPromo: true,
+              horarios: { select: { diaSemana: true, abre: true, cierra: true } },
+            },
+          },
         },
       });
       if (!cuenta) throw noExiste('Cuenta');
       if (cuenta.estado === 'CERRADA') throw cuentaCerrada();
-      // Fuera de horario el comensal no puede pedir; el mesero sí (p. ej. últimos pedidos).
-      const { horaApertura, horaCierre } = cuenta.restaurante;
-      if (p.origen === 'CLIENTE' && !estaAbierto(horaApertura, horaCierre))
+      // Cerrado (fuera de horario o cierre manual): el comensal no puede pedir; el mesero sí
+      // (p. ej. últimos pedidos de una mesa que sigue atendida).
+      const r = cuenta.restaurante;
+      if (
+        p.origen === 'CLIENTE' &&
+        !estaAbierto(r.horarios, new Date(), r.zonaHoraria, r.cerradoManual)
+      )
         throw new HttpError(
-          409,
+          423,
           'RESTAURANTE_CERRADO',
-          `El restaurante atiende de ${horaApertura} a ${horaCierre}`,
+          r.cerradoManual
+            ? 'El restaurante cerró temporalmente. Consulte al personal.'
+            : 'El restaurante está cerrado en este momento. Vea el horario en el menú.',
         );
 
       const ids = [...new Set(p.input.items.map((i) => i.platoId))];
@@ -173,6 +194,7 @@ export async function crearPedido(p: NuevoPedido) {
           porId.get(i.platoId),
           i.platoId,
           i.modificadores,
+          i.platoId === r.platoDestacadoId ? r.precioPromo : null,
         );
         return {
           platoId: i.platoId,

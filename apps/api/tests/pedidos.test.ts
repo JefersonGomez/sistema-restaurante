@@ -272,20 +272,25 @@ describe('llamar y pedir la cuenta', () => {
 });
 
 describe('horario del restaurante', () => {
-  // Un rango de una hora que nunca incluye "ahora" en Costa Rica.
-  const rangoCerrado = () => {
+  // Un turno de una hora, todos los días, que nunca incluye "ahora" en Costa Rica.
+  const turnosCerrados = () => {
     const h = (new Date(Date.now() - 6 * 3600_000).getUTCHours() + 2) % 24;
     const hh = (n: number) => String(n % 24).padStart(2, '0') + ':00';
-    return { horaApertura: hh(h), horaCierre: hh(h + 1) };
+    return [0, 1, 2, 3, 4, 5, 6].map((d) => ({
+      restauranteId,
+      diaSemana: d,
+      abre: hh(h),
+      cierra: hh(h + 1),
+    }));
   };
 
-  it('fuera de horario el comensal no puede pedir (409) pero el mesero sí', async () => {
-    await prisma.restaurante.update({ where: { id: restauranteId }, data: rangoCerrado() });
+  it('fuera de horario el comensal no puede pedir (423) pero el mesero sí', async () => {
+    await prisma.horarioRestaurante.createMany({ data: turnosCerrados() });
     const menu = await request(app).get('/public/resto-a/menu');
     expect(menu.body.restaurante.abierto).toBe(false);
 
     const res = await pedir(sesion.token, pedido([casado()]));
-    expect(res.status).toBe(409);
+    expect(res.status).toBe(423);
     expect(res.body.error.code).toBe('RESTAURANTE_CERRADO');
 
     await crearUsuario('mesero@resto-a.test', 'MESERO', restauranteId);
@@ -296,8 +301,82 @@ describe('horario del restaurante', () => {
     expect(delMesero.status).toBe(201);
   });
 
+  it('cerrar temporalmente bloquea los pedidos aunque esté en horario (423)', async () => {
+    await prisma.restaurante.update({
+      where: { id: restauranteId },
+      data: { cerradoManual: true },
+    });
+    const menu = await request(app).get('/public/resto-a/menu');
+    expect(menu.body.restaurante).toMatchObject({ abierto: false, cerradoManual: true });
+    const res = await pedir(sesion.token, pedido([casado()]));
+    expect(res.status).toBe(423);
+    expect(res.body.error.message).toMatch(/temporalmente/);
+  });
+
   it('sin horario configurado siempre está abierto', async () => {
     const menu = await request(app).get('/public/resto-a/menu');
-    expect(menu.body.restaurante).toMatchObject({ abierto: true, horaApertura: null });
+    expect(menu.body.restaurante).toMatchObject({ abierto: true, horarioHoy: [] });
+  });
+
+  it('el dueño guarda turnos (varios por día) y el menú muestra los de hoy', async () => {
+    const dueno = await tokenDe('dueno@resto-a.test');
+    const turnos = [0, 1, 2, 3, 4, 5, 6].flatMap((d) => [
+      { diaSemana: d, abre: '11:00', cierra: '15:00' },
+      { diaSemana: d, abre: '18:00', cierra: '02:00' },
+    ]);
+    const res = await request(app)
+      .put('/restaurante/horarios')
+      .set('Authorization', `Bearer ${dueno}`)
+      .send({ turnos });
+    expect(res.status).toBe(200);
+    expect(res.body.horarios).toHaveLength(14);
+    const malo = await request(app)
+      .put('/restaurante/horarios')
+      .set('Authorization', `Bearer ${dueno}`)
+      .send({ turnos: [{ diaSemana: 7, abre: '25:00', cierra: '10:00' }] });
+    expect(malo.status).toBe(400);
+    const menu = await request(app).get('/public/resto-a/menu');
+    expect(menu.body.restaurante.horarioHoy).toEqual([
+      { abre: '11:00', cierra: '15:00' },
+      { abre: '18:00', cierra: '02:00' },
+    ]);
+  });
+});
+
+describe('promoción', () => {
+  it('el plato en promoción se muestra y se cobra al precio de promo', async () => {
+    const dueno = await tokenDe('dueno@resto-a.test');
+    const cfg = await request(app)
+      .patch('/restaurante')
+      .set('Authorization', `Bearer ${dueno}`)
+      .send({ platoDestacadoId: m.casado, textoPromoEs: 'Martes de casado', precioPromo: 400000 });
+    expect(cfg.status).toBe(200);
+
+    const menu = (await request(app).get('/public/resto-a/menu')).body;
+    expect(menu.promocion).toMatchObject({
+      platoId: m.casado,
+      textoEs: 'Martes de casado',
+      precio: 400000,
+      precioAntes: 480000,
+    });
+    const plato = menu.categorias[0].platos.find((p: { id: string }) => p.id === m.casado);
+    expect(plato).toMatchObject({ precio: 400000, precioAntes: 480000 });
+
+    // Se cobra la promo + los extras.
+    const res = await pedir(
+      sesion.token,
+      pedido([casado({ modificadores: [m.termino[0], m.extras[0]] })]),
+    );
+    expect(res.body.items[0].precioUnitario).toBe(450000);
+  });
+
+  it('no se puede promocionar un plato de otro restaurante', async () => {
+    const b = await crearRestaurante('resto-b');
+    const mb = await sembrarMenu(b.restaurante.id);
+    const res = await request(app)
+      .patch('/restaurante')
+      .set('Authorization', `Bearer ${await tokenDe('dueno@resto-a.test')}`)
+      .send({ platoDestacadoId: mb.casado });
+    expect(res.status).toBe(404);
   });
 });

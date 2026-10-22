@@ -9,7 +9,6 @@ import {
   Header,
   PromoBanner,
   SearchBar,
-  formatoHora,
   formatoPrecio,
   nombreEn,
   normalizar,
@@ -42,9 +41,10 @@ export function MenuScreen() {
     .filter((c) => !categoria || c.id === categoria)
     .flatMap((c) => c.platos)
     .filter((p) => !q || normalizar(`${p.nombreEs} ${p.nombreEn}`).includes(q));
-  const destacado = menu!.categorias
-    .flatMap((c) => c.platos)
-    .find((p) => p.destacado && !p.agotado);
+  const promo = menu!.promocion;
+  const destacado = promo
+    ? menu!.categorias.flatMap((c) => c.platos).find((p) => p.id === promo.platoId && !p.agotado)
+    : undefined;
   const nombreCategoria = menu!.categorias.find((c) => c.id === categoria);
 
   return (
@@ -56,14 +56,15 @@ export function MenuScreen() {
         onCambiarIdioma={alternarIdioma}
       />
       <SearchBar valor={busqueda} onCambio={setBusqueda} />
-      {!r.abierto && r.horaApertura && r.horaCierre && (
+      {!r.abierto && (
         <p role="status" className="rounded-md bg-danger-soft px-4 py-3 text-[13px] text-danger">
-          {t.cerradoBanner(formatoHora(r.horaApertura, idioma), formatoHora(r.horaCierre, idioma))}
+          {r.cerradoManual ? t.cerradoTemporal : t.cerradoBanner}
         </p>
       )}
       {!q && destacado && (
         <PromoBanner
           plato={destacado}
+          texto={(idioma === 'en' ? promo?.textoEn : promo?.textoEs) ?? null}
           icono={iconoDe.get(destacado.id) ?? null}
           precio={precio}
           onAbrir={() => setAbierto(destacado)}

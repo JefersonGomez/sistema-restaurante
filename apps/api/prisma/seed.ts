@@ -53,8 +53,6 @@ async function crearRestauranteDemo(tx: Prisma.TransactionClient) {
       moneda: 'CRC',
       colorPrimario: '#b45309',
       preciosIncluyenImpuestos: true,
-      horaApertura: '07:00',
-      horaCierre: '21:00',
     },
   });
   const restauranteId = restaurante.id;
@@ -98,7 +96,6 @@ async function crearRestauranteDemo(tx: Prisma.TransactionClient) {
     descripcionEn: string;
     precio: number; // colones
     alergenos?: string[];
-    destacado?: boolean;
     grupos?: GrupoDemo[];
   };
 
@@ -202,7 +199,6 @@ async function crearRestauranteDemo(tx: Prisma.TransactionClient) {
       categoriaId: bocas.id,
       estacionId: cocina.id,
       nombreEs: 'Chifrijo',
-      destacado: true,
       nombreEn: 'Chifrijo',
       descripcionEs: 'Arroz, frijoles, chicharrón, pico de gallo y tortillas tostadas.',
       descripcionEn: 'Rice, beans, fried pork, pico de gallo and tortilla chips.',
@@ -294,6 +290,33 @@ async function crearRestauranteDemo(tx: Prisma.TransactionClient) {
       });
     }
   }
+
+  // Horario: lunes a sábado 7:00–21:00, domingo 8:00–15:00 (hora de Costa Rica).
+  await tx.horarioRestaurante.createMany({
+    data: [
+      ...[1, 2, 3, 4, 5, 6].map((diaSemana) => ({
+        restauranteId,
+        diaSemana,
+        abre: '07:00',
+        cierra: '21:00',
+      })),
+      { restauranteId, diaSemana: 0, abre: '08:00', cierra: '15:00' },
+    ],
+  });
+
+  // Promoción activa del banner: chifrijo a ₡3 500 (normal ₡3 900).
+  const chifrijo = await tx.plato.findFirstOrThrow({
+    where: { restauranteId, nombreEs: 'Chifrijo' },
+  });
+  await tx.restaurante.update({
+    where: { id: restauranteId },
+    data: {
+      platoDestacadoId: chifrijo.id,
+      textoPromoEs: 'Jueves de',
+      textoPromoEn: 'Thursday special',
+      precioPromo: colones(3500),
+    },
+  });
 
   await tx.mesa.createMany({
     data: Array.from({ length: 8 }, (_, i) => ({

@@ -81,21 +81,28 @@ model Restaurante {
   activo                   Boolean          @default(true)
   plan                     String           @default("basico")
   modoConfirmacion         ModoConfirmacion @default(PRIMER_PEDIDO)
-  horaApertura             String? // "HH:MM" hora de Costa Rica; null = siempre abierto
-  horaCierre               String?
+  zonaHoraria              String           @default("America/Costa_Rica")
+  cerradoManual            Boolean          @default(false) // "Cerrar temporalmente"
+  // Promoción del banner: si hay precioPromo, es el precio que se cobra por ese plato.
+  platoDestacadoId         String?          @db.Uuid
+  textoPromoEs             String?
+  textoPromoEn             String?
+  precioPromo              Int? // céntimos
   createdAt                DateTime         @default(now())
   updatedAt                DateTime         @updatedAt
 
-  usuarios      Usuario[]
-  estaciones    Estacion[]
-  mesas         Mesa[]
-  categorias    Categoria[]
-  platos        Plato[]
-  grupos        GrupoModificadores[]
-  modificadores Modificador[]
-  cuentas       Cuenta[]
-  pedidos       Pedido[]
-  llamadas      Llamada[]
+  usuarios       Usuario[]
+  estaciones     Estacion[]
+  mesas          Mesa[]
+  categorias     Categoria[]
+  platos         Plato[]
+  platoDestacado Plato?               @relation("PlatoDestacado", fields: [platoDestacadoId], references: [id], onDelete: SetNull)
+  horarios       HorarioRestaurante[]
+  grupos         GrupoModificadores[]
+  modificadores  Modificador[]
+  cuentas        Cuenta[]
+  pedidos        Pedido[]
+  llamadas       Llamada[]
 }
 
 model Usuario {
@@ -201,11 +208,11 @@ model Plato {
   activo        Boolean  @default(true)
   orden         Int      @default(0)
   alergenos     String[] @default([])
-  destacado     Boolean  @default(false) // banner de promoción del menú
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   restaurante Restaurante          @relation(fields: [restauranteId], references: [id])
+  destacadoEn Restaurante[]        @relation("PlatoDestacado")
   categoria   Categoria            @relation(fields: [categoriaId], references: [id])
   estacion    Estacion             @relation(fields: [estacionId], references: [id])
   grupos      GrupoModificadores[]
@@ -383,4 +390,19 @@ model SesionCliente {
   cuenta Cuenta @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
 
   @@index([cuentaId])
+}
+
+// Turnos de atención. Varios por día; si cierra < abre, el turno pasa de la medianoche.
+model HorarioRestaurante {
+  id            String   @id @default(uuid()) @db.Uuid
+  restauranteId String   @db.Uuid
+  diaSemana     Int // 0 = domingo … 6 = sábado
+  abre          String // "HH:mm"
+  cierra        String // "HH:mm"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+
+  @@index([restauranteId])
 }

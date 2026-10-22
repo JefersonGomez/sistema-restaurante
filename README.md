@@ -131,7 +131,8 @@ Restaurante demo: **Soda La Esquina** (`soda-la-esquina`): estaciones Cocina y B
 natural) y 8 mesas. El usuario de cocina no tiene estación asignada, así que ve cocina y bar; si
 el dueño le asigna una (`PATCH /usuarios/:id { estacionId }`), solo ve y opera esa.
 
-Horario 7:00 a. m. a 9:00 p. m., un ícono por categoría y el chifrijo como plato destacado (banner).
+Horario de lunes a sábado 7:00–21:00 y domingo 8:00–15:00, un ícono por categoría y la promoción
+"Jueves de chifrijo" a ₡3 500 (normal ₡3 900).
 
 El seed es idempotente: si el restaurante demo ya existe no lo modifica.
 
@@ -148,10 +149,14 @@ cobra sobre el servicio.
   Ej.: ₡4 800 → base ₡4 247,79 · IVA ₡552,21 · servicio ₡424,78 · total ₡5 224,78.
 - Precios **sin** impuestos: `servicio = subtotal × 10%`, `IVA = subtotal × 13%`, `total = suma`.
 
-**Horario** (`horaApertura`/`horaCierre`, hora de Costa Rica; el dueño lo edita en "Hoy"): fuera
-de horario el menú se muestra "Cerrado" y la API rechaza los pedidos de comensales (409
-`RESTAURANTE_CERRADO`); el mesero sí puede tomar pedidos. Sin horario = siempre abierto. Se
-admiten horarios que cruzan la medianoche (p. ej. 18:00–02:00).
+**Horario y promoción** (`PUT /restaurante/horarios`, `PATCH /restaurante`): turnos por día de la
+semana (`HorarioRestaurante`, varios por día; si `cierra < abre` el turno pasa de la medianoche) en la
+`zonaHoraria` del restaurante (default `America/Costa_Rica`), más `cerradoManual` ("Cerrar
+temporalmente"). `estaAbierto()` vive en `packages/shared/src/horario.ts`. El menú público trae
+`abierto`, `horarioHoy` y `promocion`. Cerrado → la API rechaza los pedidos de comensales con **423**
+`RESTAURANTE_CERRADO` (el mesero sí puede). Sin turnos = siempre abierto. La promoción es un plato
+(`platoDestacadoId`) con textos ES/EN y `precioPromo` opcional: si lo tiene, el menú lo muestra y el
+servidor **lo cobra** a ese precio.
 
 **Confirmación** (`modoConfirmacion`, el dueño lo cambia en "Hoy"): `PRIMER_PEDIDO` (default: el
 mesero confirma el primero y la cuenta queda verificada), `SIEMPRE` o `NUNCA`. Los pedidos que

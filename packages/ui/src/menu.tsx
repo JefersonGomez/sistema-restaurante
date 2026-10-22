@@ -38,10 +38,12 @@ export function Header({
 }) {
   const { t } = useUi();
   const { idioma } = useUi();
-  const horario =
-    r.horaApertura && r.horaCierre
-      ? t.horario(formatoHora(r.horaApertura, idioma), formatoHora(r.horaCierre, idioma))
-      : null;
+  // Turnos de hoy: "7:00 a. m. a 9:00 p. m." (varios turnos separados por " · ").
+  const horario = r.horarioHoy.length
+    ? r.horarioHoy
+        .map((h) => t.horario(formatoHora(h.abre, idioma), formatoHora(h.cierra, idioma)))
+        .join(' · ')
+    : null;
   return (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -104,11 +106,14 @@ export function SearchBar({ valor, onCambio }: { valor: string; onCambio: (v: st
 
 export function PromoBanner({
   plato,
+  texto,
   icono,
   precio,
   onAbrir,
 }: {
   plato: PlatoPublico;
+  texto: string | null; // texto de la promoción en el idioma actual
+
   icono: string | null;
   precio: (c: number) => string;
   onAbrir: () => void;
@@ -122,12 +127,17 @@ export function PromoBanner({
       className="relative flex min-h-[150px] w-full items-center overflow-hidden rounded-lg bg-banner p-5 text-left text-banner-fg before:absolute before:-top-[30px] before:-right-10 before:h-[260px] before:w-[190px] before:rotate-[24deg] before:bg-amber before:opacity-95 before:content-['']"
     >
       <span className="relative z-[1] flex max-w-[60%] flex-col gap-0.5">
-        <small className="text-[15px] opacity-90">{t.destacado}</small>
+        <small className="text-[15px] opacity-90">{texto || t.destacado}</small>
         <strong className="text-[23px] leading-[1.1] font-bold tracking-[0.02em] uppercase">
           {nombreEn(plato, idioma)}
         </strong>
         <span className="mt-2.5 self-start rounded-lg border border-dashed border-amber bg-banner-chip px-3.5 py-1 text-[21px] font-bold text-banner-price tabular-nums">
           {precio(plato.precio)}
+          {plato.precioAntes != null && (
+            <s className="ml-2 text-[13px] font-medium text-banner-fg opacity-70">
+              {precio(plato.precioAntes)}
+            </s>
+          )}
         </span>
       </span>
       {plato.fotoUrl ? (
@@ -258,7 +268,12 @@ export function DishCard({
           <p className="line-clamp-2 text-[12.5px] leading-[1.45] text-muted">{descripcion}</p>
         )}
         <span className="mt-1 flex items-center justify-between">
-          <span className="font-semibold tabular-nums">{precio(p.precio)}</span>
+          <span className="font-semibold tabular-nums">
+            {precio(p.precio)}
+            {p.precioAntes != null && (
+              <s className="ml-1.5 text-xs font-normal text-muted">{precio(p.precioAntes)}</s>
+            )}
+          </span>
           {p.agotado ? (
             <span className="rounded-full bg-danger-soft px-[9px] py-[3px] text-[11.5px] font-semibold text-danger">
               {t.agotado}

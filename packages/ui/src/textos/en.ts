@@ -4,8 +4,8 @@ export const en: Textos = {
   abierto: 'Open',
   cerrado: 'Closed',
   horario: (de, a) => `${de} to ${a}`,
-  cerradoBanner: (de, a) =>
-    `We are closed. Opening hours are ${de} to ${a}; you can browse the menu but not order.`,
+  cerradoBanner: 'We are closed: you can browse the menu, but ordering is not available right now.',
+  cerradoTemporal: 'We are temporarily closed: you can browse the menu, but not order right now.',
   mesa: 'Table',
   cambiarIdioma: 'Switch to Spanish',
   idiomaCorto: 'ES',

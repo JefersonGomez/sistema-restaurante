@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   adminRestaurantePatchSchema,
   crearRestauranteSchema,
+  horariosSchema,
   idParamSchema,
   restauranteConfigSchema,
 } from '@menu-qr/shared';
@@ -27,3 +28,4 @@ export const restauranteRouter = Router();
 restauranteRouter.use(autenticar, requireRole('DUENO'), tenant);
 restauranteRouter.get('/', c.obtenerPropio);
 restauranteRouter.patch('/', validate({ body: restauranteConfigSchema }), c.actualizarPropio);
+restauranteRouter.put('/horarios', validate({ body: horariosSchema }), c.guardarHorarios);

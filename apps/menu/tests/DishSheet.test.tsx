@@ -15,7 +15,7 @@ const casadoBistec: PlatoPublico = {
   fotoUrl: null,
   fotoMiniUrl: null,
   agotado: false,
-  destacado: false,
+  precioAntes: null,
   alergenos: [],
   grupos: [
     {
