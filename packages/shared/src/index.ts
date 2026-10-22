@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { acentoLegible } from './color';
 import { HORA_REGEX, zonaHorariaValida } from './horario';
 
 // Mensajes de validación en español (API y formularios del panel).
@@ -36,6 +37,11 @@ export const loginSchema = z.object({
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
+export const cambiarPasswordSchema = z.object({
+  actual: z.string().min(1).max(200),
+  nueva: password,
+});
+
 // --- Restaurante ---
 
 export const modoConfirmacionSchema = z.enum(['SIEMPRE', 'PRIMER_PEDIDO', 'NUNCA']);
@@ -45,7 +51,12 @@ export const restauranteConfigSchema = z
   .object({
     nombre: texto(),
     logoUrl: urlOpcional,
-    colorPrimario: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Color hex, ej. #0f766e'),
+    // Acento del menú del comensal (null = morado del diseño). Lleva texto blanco encima.
+    colorAcento: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/, 'Color hex, ej. #5b2db5')
+      .refine(acentoLegible, 'Ese color no contrasta con el texto blanco; elija uno más oscuro')
+      .nullable(),
     moneda: monedaSchema,
     idiomas: z.array(idiomaSchema).min(1).max(2),
     porcentajeIva: porcentaje,
@@ -274,7 +285,7 @@ export type MenuPublico = {
     nombre: string;
     slug: string;
     logoUrl: string | null;
-    colorPrimario: string;
+    colorAcento: string | null;
     moneda: Moneda;
     idiomas: Idioma[];
     porcentajeIva: number;
@@ -438,3 +449,4 @@ export type ReporteHoy = {
 export * from './totales';
 export * from './seleccion';
 export * from './horario';
+export * from './color';

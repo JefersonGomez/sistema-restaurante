@@ -19,6 +19,7 @@ const usuarioPublico = {
   email: true,
   rol: true,
   restauranteId: true,
+  debeCambiarPassword: true,
   restaurante: { select: { id: true, nombre: true, slug: true } },
 } as const;
 
@@ -46,6 +47,7 @@ export async function login({ email, password }: LoginInput) {
   if (!u || !ok || !puedeEntrar(u))
     throw new HttpError(401, 'CREDENCIALES_INVALIDAS', 'Email o contraseña incorrectos');
 
+  await prisma.usuario.update({ where: { id: u.id }, data: { ultimoAcceso: new Date() } });
   const tokens = await emitirTokens(u);
   const usuario = await prisma.usuario.findUniqueOrThrow({
     where: { id: u.id },
@@ -88,6 +90,19 @@ export async function logout(refreshToken: string | undefined) {
   await prisma.refreshToken.updateMany({
     where: { tokenHash: hashToken(refreshToken) },
     data: { revocado: true },
+  });
+}
+
+// El usuario cambia su propia contraseña (obligatorio si el dueño le dio una temporal).
+export async function cambiarPassword(usuarioId: string, actual: string, nueva: string) {
+  const u = await prisma.usuario.findUniqueOrThrow({ where: { id: usuarioId } });
+  if (!(await bcrypt.compare(actual, u.passwordHash)))
+    throw new HttpError(400, 'PASSWORD_INCORRECTA', 'La contraseña actual no es correcta');
+  if (actual === nueva)
+    throw new HttpError(400, 'PASSWORD_REPETIDA', 'La nueva contraseña tiene que ser distinta');
+  await prisma.usuario.update({
+    where: { id: usuarioId },
+    data: { passwordHash: await bcrypt.hash(nueva, 10), debeCambiarPassword: false },
   });
 }
 

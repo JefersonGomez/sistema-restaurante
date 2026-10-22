@@ -51,7 +51,6 @@ async function crearRestauranteDemo(tx: Prisma.TransactionClient) {
       nombre: 'Soda La Esquina',
       slug: SLUG,
       moneda: 'CRC',
-      colorPrimario: '#b45309',
       preciosIncluyenImpuestos: true,
     },
   });

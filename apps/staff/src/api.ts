@@ -120,3 +120,23 @@ export async function subirImagen<T>(archivo: File, destino: 'plato' | 'logo'): 
     throw new ErrorApi(res.status, datos?.error?.code ?? 'ERROR', datos?.error?.message ?? 'Error');
   return datos as T;
 }
+
+// Descarga un archivo autenticado (p. ej. el PDF de los QR) y lo guarda con `nombre`.
+export async function descargar(ruta: string, nombre: string) {
+  const pedir = () =>
+    fetch(`${API}${ruta}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+  let res = await pedir();
+  if (res.status === 401 && (await refrescar())) res = await pedir();
+  if (!res.ok) {
+    const datos = await res.json().catch(() => null);
+    throw new ErrorApi(
+      res.status,
+      datos?.error?.code ?? 'ERROR',
+      datos?.error?.message ?? 'No se pudo descargar',
+    );
+  }
+  const url = URL.createObjectURL(await res.blob());
+  const a = Object.assign(document.createElement('a'), { href: url, download: nombre });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}

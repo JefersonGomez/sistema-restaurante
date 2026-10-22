@@ -58,13 +58,13 @@ type PlatoApi = {
 };
 
 // "4800" o "4 800,50" (colones) → céntimos. null si no es un monto válido.
-const aCentimos = (texto: string) => {
+export const aCentimos = (texto: string) => {
   const limpio = texto.replace(/[\s₡]/g, '').replace(',', '.');
   if (!limpio) return 0;
   if (!/^\d+(\.\d{1,2})?$/.test(limpio)) return null;
   return Math.round(Number(limpio) * 100);
 };
-const aColones = (c: number) =>
+export const aColones = (c: number) =>
   c % 100 ? (c / 100).toFixed(2).replace('.', ',') : String(c / 100);
 
 export function PlatoForm() {

@@ -18,3 +18,8 @@ usuariosRouter.patch(
   c.actualizar,
 );
 usuariosRouter.delete('/:id', validate({ params: idParamSchema }), c.eliminar);
+usuariosRouter.post(
+  '/:id/restablecer-password',
+  validate({ params: idParamSchema }),
+  c.restablecer,
+);

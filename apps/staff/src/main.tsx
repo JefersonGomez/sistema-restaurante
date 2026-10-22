@@ -13,6 +13,10 @@ import { InicioPage } from './panel/InicioPage';
 import { MenuPanelPage } from './panel/menu/MenuPanelPage';
 import { PlatoForm } from './panel/menu/PlatoForm';
 import { PanelLayout } from './panel/PanelLayout';
+import { AjustesPage } from './panel/AjustesPage';
+import { MesasPage } from './panel/MesasPage';
+import { PersonalPage } from './panel/PersonalPage';
+import { CambiarPasswordPage } from './CambiarPasswordPage';
 import { EstadoVacio, TituloPagina } from './panel/comunes';
 import { Encabezado } from './ui';
 import './index.css';
@@ -60,6 +64,7 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 15
 function App() {
   const { usuario, cargando } = useAuth();
   if (cargando) return <p className="p-6 text-stone-500">Cargando…</p>;
+  if (usuario?.debeCambiarPassword) return <CambiarPasswordPage />;
   const inicio = usuario ? INICIO[usuario.rol] : '/login';
   return (
     <Routes>
@@ -84,7 +89,10 @@ function App() {
         <Route index element={<InicioPage />} />
         <Route path="menu" element={<MenuPanelPage />} />
         <Route path="menu/plato/:id" element={<PlatoForm />} />
-        {['mesas', 'personal', 'dispositivos', 'reportes', 'ajustes'].map((seccion) => (
+        <Route path="mesas" element={<MesasPage />} />
+        <Route path="personal" element={<PersonalPage />} />
+        <Route path="ajustes" element={<AjustesPage />} />
+        {['dispositivos', 'reportes'].map((seccion) => (
           <Route key={seccion} path={seccion} element={<EnPreparacion seccion={seccion} />} />
         ))}
       </Route>

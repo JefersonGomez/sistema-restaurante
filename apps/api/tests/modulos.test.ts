@@ -88,12 +88,19 @@ describe('dueño', () => {
   it('lee y actualiza la configuración de su restaurante (sin tocar slug ni plan)', async () => {
     const res = await como(dueno)
       .patch('/restaurante')
-      .send({ colorPrimario: '#123456', porcentajeIva: 13, slug: 'otro', plan: 'gratis' });
+      .send({ colorAcento: '#123456', porcentajeIva: 13, slug: 'otro', plan: 'gratis' });
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ colorPrimario: '#123456', slug: 'resto-a', plan: 'basico' });
-    expect((await como(dueno).patch('/restaurante').send({ colorPrimario: 'rojo' })).status).toBe(
+    expect(res.body).toMatchObject({ colorAcento: '#123456', slug: 'resto-a', plan: 'basico' });
+    expect((await como(dueno).patch('/restaurante').send({ colorAcento: 'rojo' })).status).toBe(
       400,
     );
+    // Un acento claro no deja leer el texto blanco de los botones: se rechaza.
+    const claro = await como(dueno).patch('/restaurante').send({ colorAcento: '#ffd200' });
+    expect(claro.status).toBe(400);
+    expect(JSON.stringify(claro.body.error.details)).toMatch(/contrasta/);
+    expect(
+      (await como(dueno).patch('/restaurante').send({ colorAcento: null })).body.colorAcento,
+    ).toBeNull();
   });
 
   it('gestiona usuarios y no puede auto-desactivarse', async () => {

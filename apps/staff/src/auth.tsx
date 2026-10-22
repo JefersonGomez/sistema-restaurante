@@ -7,6 +7,7 @@ export type Usuario = {
   nombre: string;
   email: string;
   rol: Rol;
+  debeCambiarPassword: boolean;
   restaurante: { id: string; nombre: string; slug: string } | null;
 };
 
@@ -15,6 +16,7 @@ type Sesion = {
   cargando: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  recargar: () => Promise<void>;
 };
 
 const Ctx = createContext<Sesion | null>(null);
@@ -45,7 +47,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsuario(null);
   };
 
-  return <Ctx.Provider value={{ usuario, cargando, login, logout }}>{children}</Ctx.Provider>;
+  const recargar = async () =>
+    setUsuario((await api.api<{ usuario: Usuario }>('/auth/me')).usuario);
+
+  return (
+    <Ctx.Provider value={{ usuario, cargando, login, logout, recargar }}>{children}</Ctx.Provider>
+  );
 }
 
 export const useAuth = () => useContext(Ctx)!;

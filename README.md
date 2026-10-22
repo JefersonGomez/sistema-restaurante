@@ -257,6 +257,14 @@ confirmación, y un formulario de plato con foto (subir, arrastrar o tomarla con
 descripciones ES/EN, alérgenos, editor de modificadores y vista previa en vivo del celular del cliente.
 Cualquier cambio llega al menú del comensal en segundos (`menu:actualizado`).
 
+**Mesas y QR**: crear mesas por rango, activar/desactivar, cambiar el QR de una mesa (el impreso deja
+de servir) y descargar el PDF tamaño carta (6 tarjetas por hoja o una por hoja para acrílico).
+**Personal**: crear/editar usuarios, rol y estación de cocina, desactivar (no a uno mismo), último
+acceso y restablecer contraseña: se muestra una temporal una sola vez y la persona debe cambiarla al
+entrar. **Ajustes**: nombre y logo, color del menú (solo colores que contrasten con texto blanco),
+idiomas, moneda, impuestos, confirmación de pedidos, promoción, horario por turnos y "Cerrar
+temporalmente".
+
 ## Frontend del comensal
 
 Diseño basado en [`prototipo_front/prototipo-menu.html`](prototipo_front/prototipo-menu.html) y

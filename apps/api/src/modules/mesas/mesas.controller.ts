@@ -34,3 +34,19 @@ export const qr = async (req: ConId, res: Response) => {
   const { tipo, cuerpo } = await service.qr(restauranteDe(req), req.params.id, formato);
   res.type(tipo).send(cuerpo);
 };
+
+export const crearLote = async (req: Request, res: Response) => {
+  res.status(201).json(await service.crearLote(restauranteDe(req), req.body));
+};
+
+export const pdfQr = async (req: Request, res: Response) => {
+  const { ids, formato } = req.query as unknown as {
+    ids?: string[];
+    formato: 'tarjetas' | 'acrilico';
+  };
+  const pdf = await service.pdfQr(restauranteDe(req), ids, formato);
+  res
+    .type('application/pdf')
+    .setHeader('Content-Disposition', 'attachment; filename="qr-mesas.pdf"')
+    .send(pdf);
+};

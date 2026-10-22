@@ -20,6 +20,10 @@ export const actualizar = async (req: ConId, res: Response) => {
   res.json(await service.actualizar(restauranteDe(req), req.usuario!.id, req.params.id, req.body));
 };
 
+export const restablecer = async (req: ConId, res: Response) => {
+  res.json(await service.restablecerPassword(restauranteDe(req), req.params.id));
+};
+
 export const eliminar = async (req: ConId, res: Response) => {
   await service.eliminar(restauranteDe(req), req.usuario!.id, req.params.id);
   res.status(204).end();

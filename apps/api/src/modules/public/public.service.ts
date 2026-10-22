@@ -13,7 +13,7 @@ export async function menu(slug: string): Promise<MenuPublico> {
       nombre: true,
       slug: true,
       logoUrl: true,
-      colorPrimario: true,
+      colorAcento: true,
       moneda: true,
       idiomas: true,
       porcentajeIva: true,

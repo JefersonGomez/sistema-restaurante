@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import type { ActualizarUsuarioInput, CrearUsuarioInput } from '@menu-qr/shared';
 import { prisma } from '../../lib/prisma';
@@ -10,6 +11,8 @@ const campos = {
   rol: true,
   estacionId: true,
   activo: true,
+  debeCambiarPassword: true,
+  ultimoAcceso: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -60,6 +63,19 @@ export async function actualizar(
   if (data.activo === false || password)
     await prisma.refreshToken.updateMany({ where: { usuarioId: id }, data: { revocado: true } });
   return u;
+}
+
+// Contraseña temporal fácil de dictar (sin 0/O ni 1/l); el usuario tendrá que cambiarla al entrar.
+export async function restablecerPassword(restauranteId: string, id: string) {
+  await obtener(restauranteId, id);
+  const letras = 'abcdefghjkmnpqrstuvwxyz23456789';
+  const temporal = Array.from(randomBytes(10), (b) => letras[b % letras.length]).join('');
+  await prisma.usuario.update({
+    where: { id },
+    data: { passwordHash: await bcrypt.hash(temporal, 10), debeCambiarPassword: true },
+  });
+  await prisma.refreshToken.updateMany({ where: { usuarioId: id }, data: { revocado: true } });
+  return { passwordTemporal: temporal };
 }
 
 export async function eliminar(restauranteId: string, yoId: string, id: string) {

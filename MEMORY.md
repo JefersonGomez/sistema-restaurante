@@ -25,7 +25,7 @@ Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por e
 | 3.3  | Horarios por turno, zonaHoraria, cerradoManual, promoción (platoDestacadoId, textos, precioPromo); 423 | ✅     |
 | 3.4  | Panel del dueño: layout (sidebar / nav inferior) + Inicio con accesos rápidos                          | ✅     |
 | 3.5  | Panel: Menú (categorías/platos, dnd, formulario con cámara, modificadores, vista previa)               | ✅     |
-| 3.6  | Panel: Mesas y QR (PDF), Personal (temporal, último acceso), Ajustes (contraste del acento)            | ⬜     |
+| 3.6  | Panel: Mesas y QR (PDF), Personal (temporal, último acceso), Ajustes (contraste del acento)            | ✅     |
 | 3.7  | Dispositivos con PIN (vincular 6 dígitos, token de dispositivo, PIN 4 dígitos, bloqueo, revocar)       | ⬜     |
 | 3.8  | Reportes agregados en SQL + vistas de platos + recharts + CSV                                          | ⬜     |
 | 3.9  | Rediseño de estación, mesero y caja con la identidad visual                                            | ⬜     |
@@ -68,6 +68,15 @@ zona, cerradoManual)` con Intl (sin librerías). Cerrado → 423 (antes 409) sol
   PlatoForm con subir/arrastrar/"Tomar foto" capture=environment, EditorGrupos, vista previa con
   DishCard/ModifierGroup de @menu-qr/ui en ES/EN, avisos de foto/inglés faltante). Errores Zod por campo
   con `erroresDe`. En la BD de desarrollo quedó un plato de prueba "Casado con pescado" (con foto).
+- 3.6: migración `20261022150000_acento_personal` (colorPrimario → colorAcento nullable con refine de
+  contraste ≥4.5 contra blanco en `shared/color.ts`; Usuario.debeCambiarPassword y ultimoAcceso). API:
+  POST /mesas/lote (salta las que existen), GET /mesas/qr.pdf?ids=&formato=tarjetas|acrilico (pdfkit,
+  carta, 6 por hoja o 1), POST /usuarios/:id/restablecer-password (temporal de 10, se muestra una vez),
+  POST /auth/cambiar-password. Staff: MesasPage, PersonalPage, AjustesPage (horario por turnos, cerrar
+  temporalmente, impuestos, modo de confirmación, logo, acento con vista previa, promoción) y
+  CambiarPasswordPage, que bloquea toda la app mientras debeCambiarPassword. El menú del comensal pisa
+  --purple/--purple-soft con colorAcento (también en modo oscuro). Quedan "En preparación":
+  dispositivos y reportes.
 - Propuestas sin objeción: HEIC solo si sharp puede leerlo (si no, error claro pidiendo JPG/PNG);
   fotos del seed generadas con sharp; los campos `horaApertura/horaCierre` y `Plato.destacado`
   se reemplazan por `HorarioRestaurante` y `platoDestacadoId` (migrando los datos).

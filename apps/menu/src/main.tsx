@@ -30,7 +30,15 @@ function Mesa() {
   const enviar = useEnviarPedido();
 
   useEffect(() => {
-    if (menu) document.title = menu.restaurante.nombre;
+    if (!menu) return;
+    document.title = menu.restaurante.nombre;
+    // Color propio del restaurante (validado con contraste suficiente para texto blanco).
+    const acento = menu.restaurante.colorAcento;
+    const raiz = document.documentElement.style;
+    if (acento) {
+      raiz.setProperty('--purple', acento);
+      raiz.setProperty('--purple-soft', `color-mix(in srgb, ${acento} 14%, transparent)`);
+    }
   }, [menu]);
 
   // Si quedó un envío a medias (se cayó la red o se recargó la página), se reintenta solo.

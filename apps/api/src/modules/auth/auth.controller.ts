@@ -29,6 +29,11 @@ export async function logout(req: Request, res: Response) {
     .end();
 }
 
+export async function cambiarPassword(req: Request, res: Response) {
+  await service.cambiarPassword(req.usuario!.id, req.body.actual, req.body.nueva);
+  res.status(204).end();
+}
+
 export async function me(req: Request, res: Response) {
   res.json({ usuario: await service.yo(req.usuario!.id) });
 }

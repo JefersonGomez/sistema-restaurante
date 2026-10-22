@@ -72,7 +72,7 @@ model Restaurante {
   nombre                   String
   slug                     String           @unique
   logoUrl                  String?
-  colorPrimario            String           @default("#0f766e")
+  colorAcento              String? // acento del menú del comensal; null = morado del diseño
   moneda                   Moneda           @default(CRC)
   idiomas                  Idioma[]         @default([es, en])
   porcentajeIva            Int              @default(13)
@@ -106,16 +106,18 @@ model Restaurante {
 }
 
 model Usuario {
-  id            String   @id @default(uuid()) @db.Uuid
-  restauranteId String?  @db.Uuid // null solo para SUPERADMIN
-  nombre        String
-  email         String   @unique
-  passwordHash  String
-  rol           Rol
-  estacionId    String?  @db.Uuid // COCINA: su estación; null = todas
-  activo        Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                  String    @id @default(uuid()) @db.Uuid
+  restauranteId       String?   @db.Uuid // null solo para SUPERADMIN
+  nombre              String
+  email               String    @unique
+  passwordHash        String
+  debeCambiarPassword Boolean   @default(false) // tras restablecerla el dueño
+  ultimoAcceso        DateTime?
+  rol                 Rol
+  estacionId          String?   @db.Uuid // COCINA: su estación; null = todas
+  activo              Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   restaurante        Restaurante?   @relation(fields: [restauranteId], references: [id])
   estacion           Estacion?      @relation(fields: [estacionId], references: [id], onDelete: SetNull)
