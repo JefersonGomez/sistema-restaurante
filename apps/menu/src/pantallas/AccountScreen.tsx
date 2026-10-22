@@ -36,7 +36,11 @@ export function AccountScreen() {
       ) : pedidos.length === 0 ? (
         <>
           <p className="px-2.5 py-8 text-center text-muted">{t.sinPedidos}</p>
-          <button type="button" onClick={irAlMenu} className={`${boton} bg-purple text-on-accent md:mx-auto md:w-80`}>
+          <button
+            type="button"
+            onClick={irAlMenu}
+            className={`${boton} bg-purple text-on-accent md:mx-auto md:w-80`}
+          >
             {t.verMenu}
           </button>
         </>

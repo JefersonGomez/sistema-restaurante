@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { registrarVista } from '../api';
 import type { PlatoPublico } from '@menu-qr/shared';
 import { useLlamadas } from '../datos/acciones';
 import { useMesa } from '../datos/mesa';
@@ -27,6 +28,15 @@ export function MenuScreen() {
   const [busqueda, setBusqueda] = useState('');
   const [categoria, setCategoria] = useState<string | null>(null);
   const [abierto, setAbierto] = useState<PlatoPublico | null>(null);
+  // Una vista por plato y por visita a la página (abrir y cerrar varias veces cuenta una).
+  const vistos = useRef(new Set<string>());
+  const abrir = (p: PlatoPublico) => {
+    setAbierto(p);
+    if (!vistos.current.has(p.id)) {
+      vistos.current.add(p.id);
+      registrarVista(mesa!.token, p.id);
+    }
+  };
 
   const r = menu!.restaurante;
   const precio = formatoPrecio(r.moneda);
@@ -67,7 +77,7 @@ export function MenuScreen() {
           texto={(idioma === 'en' ? promo?.textoEn : promo?.textoEs) ?? null}
           icono={iconoDe.get(destacado.id) ?? null}
           precio={precio}
-          onAbrir={() => setAbierto(destacado)}
+          onAbrir={() => abrir(destacado)}
         />
       )}
       <h2 className="text-[17px] font-semibold">{t.categorias}</h2>
@@ -84,7 +94,7 @@ export function MenuScreen() {
               icono={iconoDe.get(p.id) ?? null}
               precio={precio}
               puedePedir={r.abierto}
-              onAbrir={() => setAbierto(p)}
+              onAbrir={() => abrir(p)}
             />
           ))
         ) : (

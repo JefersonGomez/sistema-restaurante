@@ -448,6 +448,36 @@ export type PedidoEstacion = {
   items: ItemDetalle[];
 };
 
+// --- Reportes ---
+
+// Un pedido es "demorado" si tarda más que esto en quedar listo (igual que el rojo de cocina).
+export const MINUTOS_DEMORA = 20;
+
+const fechaLocal = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha AAAA-MM-DD');
+// Días locales del restaurante, ambos incluidos.
+export const reporteQuerySchema = z
+  .object({ desde: fechaLocal, hasta: fechaLocal })
+  .refine((r) => r.desde <= r.hasta, 'La fecha inicial no puede ser después de la final')
+  .refine(
+    (r) => (Date.parse(r.hasta) - Date.parse(r.desde)) / 86_400_000 <= 366,
+    'El rango máximo es de un año',
+  );
+export type ReporteQuery = z.infer<typeof reporteQuerySchema>;
+
+export type Reporte = {
+  desde: string;
+  hasta: string;
+  resumen: { totalVendido: number; cuentas: number; ticketPromedio: number };
+  porDia: { dia: string; total: number; cuentas: number }[];
+  porHora: { hora: number; total: number; cuentas: number }[];
+  porMetodo: { metodo: string; total: number; cuentas: number }[];
+  porCategoria: { categoria: string; cantidad: number; total: number }[];
+  topPlatos: { platoId: string; nombre: string; cantidad: number; total: number }[];
+  vistasVsPedidos: { platoId: string; nombre: string; vistas: number; pedidos: number }[];
+  preparacion: { estacion: string; items: number; promedioSeg: number; demorados: number }[];
+  cancelaciones: { motivo: string; items: number }[];
+};
+
 export type ReporteHoy = {
   desde: string;
   totalVendido: number;

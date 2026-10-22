@@ -69,3 +69,7 @@ export const llamarMesero = (sesion: string) =>
 
 export const pedirCuenta = (sesion: string) =>
   llamar('/public/cuenta/solicitar', { method: 'POST', sesion });
+
+// Vista del detalle de un plato (anónima, para reportes). Si falla no importa.
+export const registrarVista = (sesion: string, platoId: string) =>
+  llamar(`/public/cuenta/vistas/${platoId}`, { method: 'POST', sesion }).catch(() => {});

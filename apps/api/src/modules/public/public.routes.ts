@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   crearPedidoSchema,
+  idParamSchema,
   llamarSchema,
   slugParamSchema,
   tokenParamSchema,
@@ -23,4 +24,5 @@ cuenta.get('/', c.verCuenta);
 cuenta.post('/pedidos', validate({ body: crearPedidoSchema }), c.pedir);
 cuenta.post('/llamar', validate({ body: llamarSchema }), c.llamar);
 cuenta.post('/solicitar', c.solicitar);
+cuenta.post('/vistas/:id', validate({ params: idParamSchema }), c.vista);
 publicRouter.use('/cuenta', cuenta);

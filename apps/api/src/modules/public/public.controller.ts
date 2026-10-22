@@ -3,6 +3,7 @@ import { prisma } from '../../lib/prisma';
 import { clienteDe } from '../../middlewares/cliente';
 import * as comensal from './comensal.service';
 import * as service from './public.service';
+import { registrarVista } from '../reportes/reportes.service';
 
 export const menu = async (req: Request<{ slug: string }>, res: Response) => {
   res.json(await service.menu(req.params.slug));
@@ -34,4 +35,10 @@ export const solicitar = async (req: Request, res: Response) => {
 export const health = async (_req: Request, res: Response) => {
   await prisma.$queryRaw`SELECT 1`;
   res.json({ ok: true });
+};
+
+// Vista anónima del detalle de un plato (para "vistos vs. pedidos" en reportes).
+export const vista = async (req: Request<{ id: string }>, res: Response) => {
+  await registrarVista(clienteDe(req).restauranteId, req.params.id);
+  res.status(204).end();
 };

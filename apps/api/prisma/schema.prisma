@@ -93,6 +93,7 @@ model Restaurante {
 
   usuarios       Usuario[]
   dispositivos   Dispositivo[]
+  vistasPlatos   VistaPlato[]
   estaciones     Estacion[]
   mesas          Mesa[]
   categorias     Categoria[]
@@ -224,6 +225,7 @@ model Plato {
   estacion    Estacion             @relation(fields: [estacionId], references: [id])
   grupos      GrupoModificadores[]
   pedidoItems PedidoItem[]
+  vistas      VistaPlato[]
 
   @@index([restauranteId])
   @@index([categoriaId])
@@ -300,6 +302,7 @@ model Cuenta {
 
   @@index([restauranteId])
   @@index([mesaId])
+  @@index([restauranteId, estado, cerradaEn]) // reportes por rango de fechas
 }
 
 model Pedido {
@@ -434,4 +437,21 @@ model Dispositivo {
   estacion    Estacion    @relation(fields: [estacionId], references: [id], onDelete: Cascade)
 
   @@index([restauranteId])
+}
+
+// Vistas del detalle de un plato en el menú público: anónimas y agregadas por día local.
+model VistaPlato {
+  id            String   @id @default(uuid()) @db.Uuid
+  restauranteId String   @db.Uuid
+  platoId       String   @db.Uuid
+  dia           DateTime @db.Date
+  vistas        Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  plato       Plato       @relation(fields: [platoId], references: [id], onDelete: Cascade)
+
+  @@unique([platoId, dia])
+  @@index([restauranteId, dia])
 }

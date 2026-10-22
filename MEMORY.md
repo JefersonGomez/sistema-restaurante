@@ -27,7 +27,7 @@ Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por e
 | 3.5  | Panel: Menú (categorías/platos, dnd, formulario con cámara, modificadores, vista previa)               | ✅     |
 | 3.6  | Panel: Mesas y QR (PDF), Personal (temporal, último acceso), Ajustes (contraste del acento)            | ✅     |
 | 3.7  | Dispositivos con PIN (vincular 6 dígitos, token de dispositivo, PIN 4 dígitos, bloqueo, revocar)       | ✅     |
-| 3.8  | Reportes agregados en SQL + vistas de platos + recharts + CSV                                          | ⬜     |
+| 3.8  | Reportes agregados en SQL + vistas de platos + recharts + CSV                                          | ✅     |
 | 3.9  | Rediseño de estación, mesero y caja con la identidad visual                                            | ⬜     |
 | 3.10 | Tests obligatorios, seed (fotos generadas, horarios, promo, dispositivo, 30 días), README              | ⬜     |
 
@@ -94,6 +94,11 @@ zona, cerradoManual)` con Intl (sin librerías). Cerrado → 423 (antes 409) sol
   PIN 20 fallidos/15 min por tablet. Staff: /tablet (vincular, quién, teclado PIN), panel/Dispositivos
   (código con cuenta regresiva, se refresca cada 3 s mientras espera), PIN en Personal. El token del
   dispositivo y la sesión de la tablet se guardan en localStorage. Seed: Lucía PIN 1234.
+- 3.8: migración `20261022170000_reportes` (VistaPlato por plato+día local; índice Cuenta(restauranteId,estado,cerradaEn)).
+  GET /reportes?desde&hasta (días locales, zonaHoraria del restaurante, todo en SQL con $queryRaw; ~130 ms).
+  POST /public/cuenta/vistas/:id (el menú registra 1 vista por plato por visita). MINUTOS_DEMORA=20 en shared.
+  Staff: panel/reportes (recharts lazy, tablas con barra, CSV armado en el navegador con los mismos datos).
+  PENDIENTE próxima sesión: 3.9 rediseño estación/mesero/caja y 3.10 seed (30 días) + README.
 - Propuestas sin objeción: HEIC solo si sharp puede leerlo (si no, error claro pidiendo JPG/PNG);
   fotos del seed generadas con sharp; los campos `horaApertura/horaCierre` y `Plato.destacado`
   se reemplazan por `HorarioRestaurante` y `platoDestacadoId` (migrando los datos).

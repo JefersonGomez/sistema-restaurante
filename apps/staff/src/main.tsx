@@ -18,9 +18,9 @@ import { MesasPage } from './panel/MesasPage';
 import { PersonalPage } from './panel/PersonalPage';
 import { CambiarPasswordPage } from './CambiarPasswordPage';
 import { DispositivosPage } from './panel/DispositivosPage';
+import { ReportesPage } from './panel/reportes/ReportesPage';
 import { TabletPage } from './TabletPage';
 import { tokenTablet } from './api';
-import { EstadoVacio, TituloPagina } from './panel/comunes';
 import { Encabezado } from './ui';
 import './index.css';
 
@@ -46,19 +46,6 @@ function Admin() {
       <Encabezado titulo="Administración de restaurantes" />
       <main className="p-6 text-stone-500">Próximamente.</main>
     </div>
-  );
-}
-
-// ponytail: secciones del panel que se completan en las próximas sub-fases de la Fase 3.
-function EnPreparacion({ seccion }: { seccion: string }) {
-  return (
-    <>
-      <TituloPagina titulo={seccion[0]!.toUpperCase() + seccion.slice(1)} />
-      <EstadoVacio
-        titulo="En preparación"
-        detalle="Esta sección del panel llega en la próxima entrega."
-      />
-    </>
   );
 }
 
@@ -98,9 +85,7 @@ function App() {
         <Route path="personal" element={<PersonalPage />} />
         <Route path="ajustes" element={<AjustesPage />} />
         <Route path="dispositivos" element={<DispositivosPage />} />
-        {['reportes'].map((seccion) => (
-          <Route key={seccion} path={seccion} element={<EnPreparacion seccion={seccion} />} />
-        ))}
+        <Route path="reportes" element={<ReportesPage />} />
       </Route>
       <Route
         path="/cocina"
