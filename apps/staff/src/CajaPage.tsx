@@ -1,4 +1,5 @@
 import { Printer } from 'lucide-react';
+import { IconoMesa } from '@menu-qr/ui';
 import { useCallback, useEffect, useState } from 'react';
 import type { CuentaDetalle, MenuPublico, MesaOperacion, MetodoPago } from '@menu-qr/shared';
 import { api, obtenerMenu } from './api';
@@ -125,7 +126,7 @@ export function CajaPage() {
               type="button"
               onClick={() => setSeleccion(m.cuenta!.id)}
               aria-pressed={seleccion === m.cuenta!.id}
-              className={`flex min-h-16 w-full items-center justify-between rounded-lg border-2 bg-app p-3 text-left shadow-tarjeta ${
+              className={`anim-entrar flex min-h-16 w-full items-center justify-between gap-3 rounded-lg border-2 bg-app p-3 text-left shadow-tarjeta hover:-translate-y-0.5 hover:shadow-app ${
                 seleccion === m.cuenta!.id
                   ? 'border-purple'
                   : m.cuenta!.estado === 'PIDIO_CUENTA'
@@ -133,7 +134,8 @@ export function CajaPage() {
                     : 'border-transparent'
               }`}
             >
-              <span>
+              <IconoMesa className="size-7 shrink-0 text-purple" />
+              <span className="flex-1">
                 <span className="font-semibold">Mesa {m.numero}</span>
                 {m.cuenta!.estado === 'PIDIO_CUENTA' && (
                   <span className="ml-2 rounded-full bg-amber px-2 py-0.5 text-xs font-semibold text-on-amber">

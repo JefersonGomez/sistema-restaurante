@@ -2,6 +2,7 @@ import type { EstadoItem } from '@menu-qr/shared';
 
 export const es = {
   abierto: 'Abierto',
+  cargandoMenu: 'Abriendo el menú…',
   cerrado: 'Cerrado',
   horario: (de: string, a: string) => `${de} a ${a}`,
   cerradoBanner: 'Estamos cerrados: puede ver el menú, pero no hacer pedidos por ahora.',

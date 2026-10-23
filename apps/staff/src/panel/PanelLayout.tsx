@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { useState, type ComponentType } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { BotonSonido, Campana } from '../ui';
 
@@ -95,6 +95,7 @@ function Navegacion({ onIr }: { onIr?: () => void }) {
 // Barra lateral en escritorio y tablet; navegación inferior + menú "Más" en el celular.
 export function PanelLayout() {
   const [masAbierto, setMasAbierto] = useState(false);
+  const { pathname } = useLocation();
   return (
     <div className="min-h-dvh bg-bg md:grid md:grid-cols-[240px_1fr]">
       <aside className="sticky top-0 hidden h-dvh overflow-y-auto border-r border-line bg-app md:block">
@@ -106,7 +107,9 @@ export function PanelLayout() {
           <BotonSonido />
           <Campana />
         </div>
-        <Outlet />
+        <div key={pathname} className="anim-entrar">
+          <Outlet />
+        </div>
       </main>
 
       <nav

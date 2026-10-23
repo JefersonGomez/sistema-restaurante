@@ -10,7 +10,7 @@ import { CajaPage } from './CajaPage';
 import { EstacionPage } from './EstacionPage';
 import { LoginPage } from './LoginPage';
 import { MeseroPage } from './MeseroPage';
-import { UiProvider } from '@menu-qr/ui';
+import { Cargando, UiProvider } from '@menu-qr/ui';
 import { InicioPage } from './panel/InicioPage';
 import { MenuPanelPage } from './panel/menu/MenuPanelPage';
 import { PlatoForm } from './panel/menu/PlatoForm';
@@ -39,7 +39,7 @@ function Solo({ roles, children }: { roles: Rol[]; children: ReactNode }) {
   const { usuario } = useAuth();
   if (!usuario) return <Navigate to={tokenTablet() ? '/tablet' : '/login'} replace />;
   if (!roles.includes(usuario.rol)) return <Navigate to={INICIO[usuario.rol]} replace />;
-  return children;
+  return <div className="anim-entrar">{children}</div>;
 }
 
 function Admin() {
@@ -55,7 +55,7 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 15
 
 function App() {
   const { usuario, cargando } = useAuth();
-  if (cargando) return <p className="min-h-dvh bg-bg p-6 text-muted">Cargando…</p>;
+  if (cargando) return <Cargando texto="Cargando…" />;
   if (usuario?.debeCambiarPassword) return <CambiarPasswordPage />;
   // Una tablet vinculada vuelve a la pantalla de PIN, no al login con correo.
   const inicio = usuario ? INICIO[usuario.rol] : tokenTablet() ? '/tablet' : '/login';

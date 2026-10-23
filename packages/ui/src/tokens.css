@@ -155,6 +155,77 @@ body {
   background: var(--surface-2);
   animation: brillo 1.4s ease-in-out infinite;
 }
+/* Entrada de pantallas y tarjetas nuevas. */
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.anim-entrar {
+  animation: entrar 0.28s ease-out;
+}
+
+/* Transiciones suaves por defecto en todo lo que se toca; al presionar, se hunde un poco. */
+button,
+a,
+[role='switch'],
+input,
+select,
+textarea {
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    border-color 0.15s,
+    box-shadow 0.2s,
+    opacity 0.15s,
+    scale 0.12s,
+    translate 0.15s;
+}
+button:not(:disabled):active,
+a:active {
+  scale: 0.97;
+}
+
+/* Cargando: tenedor y cuchillo se separan y se cruzan. */
+@keyframes tenedor {
+  0%,
+  100% {
+    transform: rotate(-32deg);
+  }
+  50% {
+    transform: rotate(-4deg) translateX(-6px);
+  }
+}
+@keyframes cuchillo {
+  0%,
+  100% {
+    transform: rotate(32deg);
+  }
+  50% {
+    transform: rotate(4deg) translateX(6px);
+  }
+}
+.cubiertos-tenedor,
+.cubiertos-cuchillo {
+  transform-box: view-box;
+  transform-origin: 32px 40px;
+}
+.cubiertos-tenedor {
+  animation: tenedor 1.3s ease-in-out infinite;
+}
+.cubiertos-cuchillo {
+  animation: cuchillo 1.3s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cubiertos-tenedor {
+    transform: rotate(-32deg);
+  }
+  .cubiertos-cuchillo {
+    transform: rotate(32deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

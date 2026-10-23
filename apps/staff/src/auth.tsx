@@ -49,8 +49,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setCargando(false));
   }, []);
 
-  const login = async (email: string, password: string) =>
-    setUsuario(await api.login(email, password));
+  // La animación de "entrando" se ve al menos un momento (si el login falla, el error sale ya).
+  const login = async (email: string, password: string) => {
+    const [u] = await Promise.all([
+      api.login(email, password),
+      new Promise((r) => setTimeout(r, 700)),
+    ]);
+    setUsuario(u);
+  };
   const logout = async () => {
     await api.logout();
     setUsuario(null);

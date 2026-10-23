@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, Printer, RefreshCw, TriangleAlert } from 'lucide-react';
+import { IconoMesa } from '@menu-qr/ui';
 import { useState } from 'react';
 import type { EstadoMesa, MesaOperacion } from '@menu-qr/shared';
 import { api, descargar, type ErrorApi } from '../api';
@@ -230,6 +231,7 @@ export function MesasPage() {
                       />
                     </td>
                     <td className="p-3 font-semibold">
+                      <IconoMesa className="mr-2 inline size-5 align-[-4px] text-purple" />
                       Mesa {m.numero}
                       {m.nombre && <span className="ml-2 font-normal text-muted">{m.nombre}</span>}
                     </td>

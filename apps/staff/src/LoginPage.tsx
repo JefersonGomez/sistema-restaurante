@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { Cargando } from '@menu-qr/ui';
 import { useAuth } from './auth';
 import { Boton, Campo } from './panel/comunes';
 
@@ -25,6 +26,11 @@ export function LoginPage() {
 
   return (
     <main className="grid min-h-dvh place-items-center bg-bg p-4">
+      {enviando && (
+        <div className="anim-aparecer fixed inset-0 z-50">
+          <Cargando texto="Entrando…" />
+        </div>
+      )}
       <form
         onSubmit={enviar}
         className="w-full max-w-sm space-y-4 rounded-[26px] bg-app p-6 shadow-app"

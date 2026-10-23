@@ -355,7 +355,7 @@ export function EstacionPage() {
                 return (
                   <article
                     key={p.pedidoId}
-                    className={`rounded-lg border-2 bg-app shadow-tarjeta ${borde}`}
+                    className={`anim-entrar rounded-lg border-2 bg-app shadow-tarjeta ${borde}`}
                   >
                     <header className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
                       <span className="text-3xl font-bold tracking-tight">

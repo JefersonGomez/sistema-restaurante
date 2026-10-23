@@ -1,3 +1,4 @@
+export * from './cargando';
 export * from './contexto';
 export * from './detalle';
 export * from './menu';

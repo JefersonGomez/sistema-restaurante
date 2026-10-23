@@ -105,41 +105,6 @@ export function SinConexion() {
   );
 }
 
-// Esqueletos con la forma del menú (sin spinner de pantalla completa).
-export function EsqueletoMenu() {
-  return (
-    <Main>
-      <div aria-busy="true" className="flex items-start justify-between gap-3">
-        <div className="space-y-3">
-          <div className="esqueleto h-6 w-48 rounded-lg" />
-          <div className="esqueleto h-6 w-36 rounded-full" />
-        </div>
-        <div className="esqueleto size-[42px] rounded-[14px]" />
-      </div>
-      <div className="esqueleto h-[52px] rounded-md" />
-      <div className="esqueleto h-[150px] rounded-lg" />
-      <div className="grid grid-cols-4 gap-x-2.5 gap-y-3.5">
-        {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="flex flex-col items-center gap-2">
-            <div className="esqueleto aspect-square w-full max-w-[76px] rounded-[20px]" />
-            <div className="esqueleto h-3 w-12 rounded" />
-          </div>
-        ))}
-      </div>
-      {Array.from({ length: 4 }, (_, i) => (
-        <div key={i} className="flex items-center gap-3.5 rounded-md bg-surface p-3">
-          <div className="esqueleto size-[84px] shrink-0 rounded-[14px]" />
-          <div className="flex-1 space-y-2">
-            <div className="esqueleto h-4 w-3/4 rounded" />
-            <div className="esqueleto h-3 w-full rounded" />
-            <div className="esqueleto h-3 w-1/3 rounded" />
-          </div>
-        </div>
-      ))}
-    </Main>
-  );
-}
-
 function PantallaCentro({
   icono,
   titulo,

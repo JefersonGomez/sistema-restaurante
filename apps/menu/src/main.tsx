@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Outlet, Route, Routes, useParams } from 'react-router-dom';
+import { BrowserRouter, Outlet, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { useEnviarPedido } from './datos/acciones';
 import { envioPendiente } from './datos/envio';
 import { MesaProvider, useMesa } from './datos/mesa';
@@ -9,14 +9,13 @@ import {
   AppShell,
   BottomNav,
   ErrorScreen,
-  EsqueletoMenu,
   SinConexion,
   ThankYouScreen,
   Toast,
 } from './componentes/estructura';
 import { useCarrito } from './estado/carrito';
-import { useIdioma } from './estado/idioma';
-import { pasoPedido, UiProvider } from '@menu-qr/ui';
+import { useIdioma, useTextos } from './estado/idioma';
+import { Cargando, pasoPedido, UiProvider } from '@menu-qr/ui';
 import { AccountScreen } from './pantallas/AccountScreen';
 import { CartScreen } from './pantallas/CartScreen';
 import { MenuScreen } from './pantallas/MenuScreen';
@@ -28,6 +27,8 @@ function Mesa() {
   const { estado, mesa, menu, cuenta, conectado, tokenQr, reintentar } = useMesa();
   const enCarrito = useCarrito((s) => s.lineas.reduce((n, l) => n + l.cantidad, 0));
   const enviar = useEnviarPedido();
+  const t = useTextos();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     if (!menu) return;
@@ -53,7 +54,7 @@ function Mesa() {
   if (estado === 'cerrada') return <ThankYouScreen />;
   if (estado === 'noEncontrado') return <ErrorScreen tipo="noEncontrado" />;
   if (estado === 'error') return <ErrorScreen tipo="error" onReintentar={reintentar} />;
-  if (estado === 'cargando') return <EsqueletoMenu />;
+  if (estado === 'cargando') return <Cargando texto={t.cargandoMenu} />;
 
   const sinEntregar = (cuenta?.pedidos ?? []).filter((p) => {
     const paso = pasoPedido(p);
@@ -62,7 +63,10 @@ function Mesa() {
   return (
     <>
       {!conectado && <SinConexion />}
-      <Outlet />
+      {/* Cada pantalla entra con una transición suave. */}
+      <div key={pathname} className="anim-entrar flex flex-1 flex-col">
+        <Outlet />
+      </div>
       <BottomNav base={`/m/${tokenQr}`} enCarrito={enCarrito} sinEntregar={sinEntregar} />
       <Toast />
     </>

@@ -20,7 +20,7 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
 | Paso | Qué                                                                                                                                                   | Estado |
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | 4.1  | Alertas: arreglar sonido de llamada al mesero; cocina >10 min sin empezar (rojo animado); listos sin entregar (verde animado); un solo aviso agrupado | ✅     |
-| 4.2  | Animación de carga (cuchillo y tenedor), transiciones generales, ícono de mesa + hover                                                                | ⬜     |
+| 4.2  | Animación de carga (cuchillo y tenedor), transiciones generales, ícono de mesa + hover                                                                | ✅     |
 | 4.3  | Navegación: barra lateral que se esconde, menú desplegable en el celular                                                                              | ⬜     |
 | 4.4  | Cantidad de personas al escanear el QR (y cómo se une alguien a una cuenta abierta)                                                                   | ⬜     |
 | 4.5  | Caja: pagar junto o separado, grupos de ítems con su método de pago y comprobante                                                                     | ⬜     |
@@ -40,6 +40,13 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
   `alerta-roja`. Mesero: ítem LISTO con updatedAt >5 min → `alerta-verde` en la bandeja y la mesa.
   Aviso agrupado (`avisoAgrupado` en shared, con test): un aviso por tanda, solo con ids nuevos.
   Ojo dev: al cambiar `packages/shared` el `tsx watch` de la API se cayó una vez; reiniciar `pnpm dev`.
+- 4.2: `packages/ui/src/cargando.tsx`: `Cargando` (tenedor y cuchillo SVG que se cruzan, CSS en
+  tokens.css) e `IconoMesa`. Se usa al abrir la mesa en el menú (reemplaza al esqueleto, que se
+  borró), al restaurar la sesión del staff y como overlay "Entrando…" en el login (el login dura al
+  menos 0,7 s si sale bien). Transiciones: `.anim-entrar` en cada pantalla (key = ruta) y en tarjetas
+  nuevas (cocina, bandeja, caja, mesas); transiciones por defecto en botones/enlaces/campos y
+  `scale: .97` al presionar (tokens.css); hover que levanta las tarjetas de mesa. Todo respeta la
+  regla global de "reducir movimiento".
 
 ## Plan de la Fase 3 (sub-fases) — aprobado 2026-10-22; el usuario autorizó commit + push al cerrar cada sub-fase
 

@@ -2,6 +2,7 @@ import type { Textos } from './es';
 
 export const en: Textos = {
   abierto: 'Open',
+  cargandoMenu: 'Opening the menu…',
   cerrado: 'Closed',
   horario: (de, a) => `${de} to ${a}`,
   cerradoBanner: 'We are closed: you can browse the menu, but ordering is not available right now.',

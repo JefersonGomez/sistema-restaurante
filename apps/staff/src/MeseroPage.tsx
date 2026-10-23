@@ -9,7 +9,7 @@ import type {
   PedidoDetalle,
 } from '@menu-qr/shared';
 import { avisoAgrupado } from '@menu-qr/shared';
-import { Modal } from '@menu-qr/ui';
+import { IconoMesa, Modal } from '@menu-qr/ui';
 import { avisar } from './avisos';
 import { api, obtenerMenu } from './api';
 import { useAuth } from './auth';
@@ -242,10 +242,13 @@ export function MeseroPage() {
                 type="button"
                 onClick={() => abrirMesa(m)}
                 aria-label={`Mesa ${m.numero}: ${TEXTO_MESA[m.estado]}`}
-                className={`flex min-h-28 flex-col items-start gap-1 rounded-lg border-2 p-3 text-left ${b.esperando ? 'alerta-verde' : ''} ${COLOR_MESA[m.estado]}`}
+                className={`anim-entrar flex min-h-28 flex-col items-start gap-1 rounded-lg border-2 p-3 text-left hover:-translate-y-0.5 hover:shadow-app ${b.esperando ? 'alerta-verde' : ''} ${COLOR_MESA[m.estado]}`}
               >
                 <span className="flex w-full items-baseline justify-between">
-                  <span className="text-3xl font-bold text-fg">{m.numero}</span>
+                  <span className="flex items-center gap-2">
+                    <IconoMesa className="size-7 opacity-80" />
+                    <span className="text-3xl font-bold text-fg">{m.numero}</span>
+                  </span>
                   {m.cuenta && (
                     <span className="text-xs text-muted tabular-nums">
                       {precio(m.cuenta.total)}
@@ -300,7 +303,7 @@ export function MeseroPage() {
             e.tipo === 'llamada' ? (
               <article
                 key={e.llamada.id}
-                className="flex items-center gap-3 rounded-lg border-l-4 border-danger bg-app p-3 shadow-tarjeta"
+                className="anim-entrar flex items-center gap-3 rounded-lg border-l-4 border-danger bg-app p-3 shadow-tarjeta"
               >
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-danger-soft text-danger">
                   {e.llamada.tipo === 'CUENTA' ? (
@@ -327,7 +330,7 @@ export function MeseroPage() {
             ) : e.tipo === 'pedido' ? (
               <article
                 key={e.pedido.id}
-                className="rounded-lg border-l-4 border-amber bg-app p-3 shadow-tarjeta"
+                className="anim-entrar rounded-lg border-l-4 border-amber bg-app p-3 shadow-tarjeta"
               >
                 <p className="font-semibold">
                   Mesa {e.pedido.mesa.numero} · pedido por confirmar
@@ -374,7 +377,7 @@ export function MeseroPage() {
             ) : (
               <article
                 key={e.item.id}
-                className={`flex items-center gap-3 rounded-lg border-l-4 border-ok bg-app p-3 shadow-tarjeta ${esperando.includes(e.item.id) ? 'alerta-verde' : ''}`}
+                className={`anim-entrar flex items-center gap-3 rounded-lg border-l-4 border-ok bg-app p-3 shadow-tarjeta ${esperando.includes(e.item.id) ? 'alerta-verde' : ''}`}
               >
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-ok-soft font-bold text-ok">
                   {e.item.mesa.numero}
