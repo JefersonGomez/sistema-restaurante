@@ -27,6 +27,7 @@ export const es = {
   ingresoBloqueadoAviso: 'La mesa no acepta a nadie más porque hubo varios intentos de entrar.',
   desbloquear: 'Desbloquear',
   encuentrenos: 'Encuéntrenos',
+  menuDelDia: 'Menú del día',
   comoLlegar: 'Cómo llegar',
   mapaDe: (nombre: string) => `Mapa de ${nombre}`,
   cerrado: 'Cerrado',

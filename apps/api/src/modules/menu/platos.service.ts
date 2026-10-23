@@ -52,9 +52,17 @@ async function validarReferencias(
     throw noExiste('Estación');
 }
 
+// La fecha del menú del día llega como "AAAA-MM-DD" (columna DATE).
+const conFecha = <T extends { fechaMenu?: string | null }>({ fechaMenu, ...d }: T) => ({
+  ...d,
+  ...(fechaMenu !== undefined && {
+    fechaMenu: fechaMenu ? new Date(`${fechaMenu}T00:00:00Z`) : null,
+  }),
+});
+
 export async function crear(restauranteId: string, data: PlatoInput) {
   await validarReferencias(restauranteId, data);
-  const plato = await prisma.plato.create({ data: { ...data, restauranteId } });
+  const plato = await prisma.plato.create({ data: { ...conFecha(data), restauranteId } });
   avisarMenu(restauranteId);
   return plato;
 }
@@ -62,7 +70,7 @@ export async function crear(restauranteId: string, data: PlatoInput) {
 export async function actualizar(restauranteId: string, id: string, data: ActualizarPlatoInput) {
   const previo = await obtener(restauranteId, id);
   await validarReferencias(restauranteId, data);
-  const plato = await prisma.plato.update({ where: { id }, data });
+  const plato = await prisma.plato.update({ where: { id }, data: conFecha(data) });
   // Foto reemplazada o quitada: se borran los archivos viejos.
   await borrarImagenes(restauranteId, [
     data.fotoUrl !== undefined && data.fotoUrl !== previo.fotoUrl ? previo.fotoUrl : null,

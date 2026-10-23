@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { estaAbierto, turnosDeHoy, zonaHorariaValida, type Turno } from './horario';
+import {
+  estaAbierto,
+  fechaLocal,
+  menuDelDiaHoy,
+  turnosDeHoy,
+  zonaHorariaValida,
+  type Turno,
+} from './horario';
 
 const CR = 'America/Costa_Rica'; // UTC−6, sin horario de verano
 // 2026-10-19 es lunes. `cr('lun', '07:00')` = ese momento en hora de Costa Rica.
@@ -79,5 +86,24 @@ describe('turnosDeHoy y zonaHorariaValida', () => {
   it('valida zonas horarias IANA', () => {
     expect(zonaHorariaValida('America/Costa_Rica')).toBe(true);
     expect(zonaHorariaValida('Marte/Olympus')).toBe(false);
+  });
+});
+
+describe('menuDelDiaHoy', () => {
+  const zona = 'America/Costa_Rica';
+  // Jueves 22 oct 2026, 23:30 en Costa Rica = viernes 23 oct 05:30 UTC.
+  const juevesNoche = new Date('2026-10-23T05:30:00Z');
+  it('por día de la semana, en la hora local (no la UTC)', () => {
+    expect(menuDelDiaHoy({ diasSemana: [4], fechaMenu: null }, juevesNoche, zona)).toBe(true);
+    expect(menuDelDiaHoy({ diasSemana: [5], fechaMenu: null }, juevesNoche, zona)).toBe(false);
+  });
+  it('a mano para una fecha puntual', () => {
+    expect(menuDelDiaHoy({ diasSemana: [], fechaMenu: '2026-10-22' }, juevesNoche, zona)).toBe(
+      true,
+    );
+    expect(menuDelDiaHoy({ diasSemana: [], fechaMenu: '2026-10-23' }, juevesNoche, zona)).toBe(
+      false,
+    );
+    expect(fechaLocal(juevesNoche, zona)).toBe('2026-10-22');
   });
 });

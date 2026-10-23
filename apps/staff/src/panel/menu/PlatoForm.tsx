@@ -51,6 +51,9 @@ type PlatoApi = {
   agotado: boolean;
   activo: boolean;
   alergenos: string[];
+  menuDelDia: boolean;
+  diasSemana: number[];
+  fechaMenu: string | null;
   grupos: (Omit<GrupoForm, 'clave' | 'modificadores'> & {
     id: string;
     modificadores: { id: string; nombreEs: string; nombreEn: string; precioExtra: number }[];
@@ -66,6 +69,18 @@ export const aCentimos = (texto: string) => {
 };
 export const aColones = (c: number) =>
   c % 100 ? (c / 100).toFixed(2).replace('.', ',') : String(c / 100);
+
+// Días de la semana en el orden de Costa Rica (lunes primero); el valor es 0 = domingo.
+const DIAS = [
+  { n: 1, texto: 'Lun' },
+  { n: 2, texto: 'Mar' },
+  { n: 3, texto: 'Mié' },
+  { n: 4, texto: 'Jue' },
+  { n: 5, texto: 'Vie' },
+  { n: 6, texto: 'Sáb' },
+  { n: 0, texto: 'Dom' },
+];
+const hoyLocal = () => new Intl.DateTimeFormat('en-CA').format(new Date());
 
 export function PlatoForm() {
   const { id } = useParams();
@@ -116,6 +131,9 @@ export function PlatoForm() {
     agotado: false,
     activo: true,
     alergenos: [] as string[],
+    menuDelDia: params.get('menuDelDia') === '1',
+    diasSemana: [] as number[],
+    fechaMenu: '',
   });
   const [grupos, setGrupos] = useState<GrupoForm[]>([]);
   const [errores, setErrores] = useState<Record<string, string>>({});
@@ -147,6 +165,9 @@ export function PlatoForm() {
       agotado: p.agotado,
       activo: p.activo,
       alergenos: p.alergenos,
+      menuDelDia: p.menuDelDia,
+      diasSemana: p.diasSemana,
+      fechaMenu: p.fechaMenu?.slice(0, 10) ?? '',
     });
     setGrupos(
       p.grupos.map((g) => ({
@@ -219,6 +240,9 @@ export function PlatoForm() {
         agotado: f.agotado,
         activo: f.activo,
         alergenos: f.alergenos,
+        menuDelDia: f.menuDelDia,
+        diasSemana: f.menuDelDia ? f.diasSemana : [],
+        fechaMenu: f.menuDelDia && f.fechaMenu ? f.fechaMenu : null,
       };
       const gruposCuerpo = {
         grupos: grupos.map(({ clave: _c, modificadores, ...g }) => ({
@@ -238,6 +262,8 @@ export function PlatoForm() {
       };
       if (precio === null || !f.precio.trim())
         errs.precio = 'Escriba el precio en colones, por ejemplo 4800';
+      if (f.menuDelDia && !f.diasSemana.length && !f.fechaMenu)
+        errs.diasSemana = 'Elija al menos un día de la semana o una fecha';
       setErrores(errs);
       if (Object.keys(errs).length) throw new Error('Revise los campos marcados');
 
@@ -301,7 +327,15 @@ export function PlatoForm() {
   return (
     <>
       <TituloPagina
-        titulo={nuevo ? 'Nuevo plato' : 'Editar plato'}
+        titulo={
+          f.menuDelDia
+            ? nuevo
+              ? 'Nuevo menú del día'
+              : 'Editar menú del día'
+            : nuevo
+              ? 'Nuevo plato'
+              : 'Editar plato'
+        }
         acciones={
           <>
             <Link
@@ -338,6 +372,58 @@ export function PlatoForm() {
                 ))}
               </ul>
             </div>
+          )}
+
+          {f.menuDelDia && (
+            <Tarjeta className="space-y-3 border border-amber">
+              <div>
+                <h2 className="font-semibold">¿Qué días se ofrece?</h2>
+                <p className="text-sm text-muted">
+                  Se repite cada semana en los días marcados, o solo en una fecha. Fijo: escriba lo
+                  que incluye en la descripción. Con opciones: agregue grupos abajo (p. ej. «Carne»
+                  o «Fresco») para que el cliente elija.
+                </p>
+              </div>
+              <div role="group" aria-label="Días de la semana" className="flex flex-wrap gap-2">
+                {DIAS.map((d) => {
+                  const on = f.diasSemana.includes(d.n);
+                  return (
+                    <button
+                      key={d.n}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() =>
+                        poner(
+                          'diasSemana',
+                          on ? f.diasSemana.filter((x) => x !== d.n) : [...f.diasSemana, d.n],
+                        )
+                      }
+                      className={`min-h-11 min-w-14 rounded-md px-3 text-sm font-semibold ${on ? 'bg-amber text-on-amber' : 'bg-surface hover:bg-surface-2'}`}
+                    >
+                      {d.texto}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex flex-wrap items-end gap-2">
+                <Campo
+                  etiqueta="O solo en una fecha"
+                  type="date"
+                  className="w-48"
+                  value={f.fechaMenu}
+                  onChange={(e) => poner('fechaMenu', e.target.value)}
+                />
+                <Boton variante="suave" onClick={() => poner('fechaMenu', hoyLocal())}>
+                  Solo hoy
+                </Boton>
+                {f.fechaMenu && (
+                  <Boton variante="suave" onClick={() => poner('fechaMenu', '')}>
+                    Quitar fecha
+                  </Boton>
+                )}
+              </div>
+              {errores.diasSemana && <p className="text-sm text-danger">{errores.diasSemana}</p>}
+            </Tarjeta>
           )}
 
           <Tarjeta className="space-y-3">

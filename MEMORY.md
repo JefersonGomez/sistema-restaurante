@@ -29,7 +29,7 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
 | 4.7  | Personalización: ubicación (Google Maps), logo, eslogan, banner; vista bonita para el cliente                                                         | ✅     |
 | 4.8  | Tests, seed y README de la Fase 4                                                                                                                     | ✅     |
 | 4.9  | Promoción del día en Panel → Menú (sale de Ajustes) + color de fondo del banner                                                                       | ✅     |
-| 4.10 | Menús del día (combos fijos o con opciones), por día de la semana o a mano; sección para el cliente                                                   | ⬜     |
+| 4.10 | Menús del día (combos fijos o con opciones), por día de la semana o a mano; sección para el cliente                                                   | ✅     |
 
 - 4.1: causas de "no suena la llamada": (a) el audio del navegador queda bloqueado al recargar
   hasta tocar "Activar sonido" → ahora el primer toque/tecla en cualquier parte lo activa
@@ -97,6 +97,15 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
   contraste que colorAcento). `MenuPublico.promocion.color`; `PromoBanner` acepta `color`. La
   promoción salió de Ajustes: `panel/menu/PromocionDia.tsx` arriba de Panel → Menú (resumen, editar,
   quitar, vista previa con el banner real).
+- 4.10: migración `20261023150000_menu_del_dia` (Plato.menuDelDia, diasSemana Int[], fechaMenu DATE).
+  Un menú del día es un Plato más (así sirven pedidos, cocina, cuentas separadas y reportes sin
+  cambios): fijo = lo que incluye va en la descripción; con opciones = grupos de modificadores.
+  `menuDelDiaHoy` / `fechaLocal` en shared/horario (hora local, con test). Menú público: salen de su
+  categoría y van en `MenuPublico.menuDelDia` solo si tocan hoy (con el icono de su categoría); pedirlo
+  otro día → 409 PLATO_NO_DISPONIBLE motivo `no_es_hoy`. Panel → Menú: `MenusDelDia.tsx` (lista con
+  "Hoy" y "Agregar menú del día" → PlatoForm con ?menuDelDia=1: días Lun–Dom, fecha o "Solo hoy").
+  Cliente y mesero (TomarPedido): `SeccionMenuDelDia` (ui) arriba de las categorías. En la BD de
+  desarrollo quedó un "Almuerzo del día" de prueba (Lun–Vie, ₡4 500).
 
 ## Plan de la Fase 3 (sub-fases) — aprobado 2026-10-22; el usuario autorizó commit + push al cerrar cada sub-fase
 

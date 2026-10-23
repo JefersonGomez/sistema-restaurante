@@ -9,6 +9,7 @@ import {
   DishCard,
   Header,
   InfoLocal,
+  SeccionMenuDelDia,
   PromoBanner,
   SearchBar,
   formatoPrecio,
@@ -44,6 +45,7 @@ export function MenuScreen() {
   const iconoDe = useMemo(() => {
     const m = new Map<string, string | null>();
     for (const c of menu!.categorias) for (const p of c.platos) m.set(p.id, c.icono);
+    for (const p of menu!.menuDelDia) m.set(p.id, p.icono);
     return m;
   }, [menu]);
 
@@ -80,6 +82,14 @@ export function MenuScreen() {
           icono={iconoDe.get(destacado.id) ?? null}
           precio={precio}
           onAbrir={() => abrir(destacado)}
+        />
+      )}
+      {!q && (
+        <SeccionMenuDelDia
+          platos={menu!.menuDelDia}
+          precio={precio}
+          puedePedir={r.abierto}
+          onAbrir={abrir}
         />
       )}
       <h2 className="text-[17px] font-semibold">{t.categorias}</h2>

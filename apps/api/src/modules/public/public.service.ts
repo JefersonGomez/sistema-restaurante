@@ -1,4 +1,4 @@
-import { estaAbierto, turnosDeHoy, type MenuPublico } from '@menu-qr/shared';
+import { estaAbierto, menuDelDiaHoy, turnosDeHoy, type MenuPublico } from '@menu-qr/shared';
 import { prisma } from '../../lib/prisma';
 import { noExiste } from '../../middlewares/errorHandler';
 
@@ -72,6 +72,9 @@ export async function menu(slug: string): Promise<MenuPublico> {
           fotoMiniUrl: true,
           agotado: true,
           alergenos: true,
+          menuDelDia: true,
+          diasSemana: true,
+          fechaMenu: true,
           grupos: {
             orderBy: { createdAt: 'asc' },
             select: {
@@ -110,5 +113,22 @@ export async function menu(slug: string): Promise<MenuPublico> {
     }),
   }));
 
-  return { restaurante, promocion, categorias: conPrecios.filter((c) => c.platos.length > 0) };
+  // Menús del día: salen de su categoría; solo se ofrecen los programados para hoy (hora local).
+  const delDia: MenuPublico['menuDelDia'] = [];
+  const sinMenus = conPrecios.map(({ platos, ...c }) => ({
+    ...c,
+    platos: platos.flatMap(({ menuDelDia, diasSemana, fechaMenu, ...p }) => {
+      if (!menuDelDia) return [p];
+      const hoy = { diasSemana, fechaMenu: fechaMenu?.toISOString().slice(0, 10) ?? null };
+      if (menuDelDiaHoy(hoy, ahora, r.zonaHoraria)) delDia.push({ ...p, icono: c.icono });
+      return [];
+    }),
+  }));
+
+  return {
+    restaurante,
+    promocion,
+    menuDelDia: delDia,
+    categorias: sinMenus.filter((c) => c.platos.length > 0),
+  };
 }

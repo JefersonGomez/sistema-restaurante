@@ -27,6 +27,7 @@ export const en: Textos = {
   ingresoBloqueadoAviso: 'The table is not accepting anyone else after several attempts to join.',
   desbloquear: 'Unlock',
   encuentrenos: 'Find us',
+  menuDelDia: 'Menu of the day',
   comoLlegar: 'Get directions',
   mapaDe: (nombre) => `Map of ${nombre}`,
   cerrado: 'Closed',

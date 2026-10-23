@@ -6,6 +6,7 @@ import {
   DishCard,
   DishSheet,
   SearchBar,
+  SeccionMenuDelDia,
   normalizar,
   type NuevaLinea,
 } from '@menu-qr/ui';
@@ -47,6 +48,7 @@ export function TomarPedido({ slug, mesa, precio, onListo, onCerrar }: Props) {
   const iconoDe = useMemo(() => {
     const m = new Map<string, string | null>();
     for (const c of menu?.categorias ?? []) for (const p of c.platos) m.set(p.id, c.icono);
+    for (const p of menu?.menuDelDia ?? []) m.set(p.id, p.icono);
     return m;
   }, [menu]);
   const q = normalizar(busqueda);
@@ -114,6 +116,14 @@ export function TomarPedido({ slug, mesa, precio, onListo, onCerrar }: Props) {
           {menu && (
             <>
               <SearchBar valor={busqueda} onCambio={setBusqueda} />
+              {!q && !categoria && (
+                <SeccionMenuDelDia
+                  platos={menu.menuDelDia}
+                  precio={precio}
+                  puedePedir
+                  onAbrir={setEligiendo}
+                />
+              )}
               <CategoryGrid
                 categorias={menu.categorias}
                 activa={categoria}

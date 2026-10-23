@@ -1,4 +1,4 @@
-import { Bell, MapPin, Navigation, Phone, Plus, Search } from 'lucide-react';
+import { Bell, CalendarDays, MapPin, Navigation, Phone, Plus, Search } from 'lucide-react';
 import { comoLlegar, mapaIncrustado } from '@menu-qr/shared/mapa';
 import type { MenuPublico, PlatoPublico } from '@menu-qr/shared';
 import { useUi } from './contexto';
@@ -323,6 +323,42 @@ export function DishCard({
         </span>
       </span>
     </button>
+  );
+}
+
+// Menús del día (combos programados para hoy): arriba de las categorías, resaltados.
+export function SeccionMenuDelDia({
+  platos,
+  precio,
+  puedePedir,
+  onAbrir,
+}: {
+  platos: (PlatoPublico & { icono: string | null })[];
+  precio: (c: number) => string;
+  puedePedir: boolean;
+  onAbrir: (p: PlatoPublico) => void;
+}) {
+  const { t } = useUi();
+  if (!platos.length) return null;
+  return (
+    <section aria-labelledby="menu-del-dia" className="flex flex-col gap-3">
+      <h2 id="menu-del-dia" className="flex items-center gap-2 text-[17px] font-semibold">
+        <CalendarDays className="size-5 text-amber" aria-hidden /> {t.menuDelDia}
+      </h2>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {platos.map((p) => (
+          <div key={p.id} className="rounded-md ring-2 ring-amber">
+            <DishCard
+              plato={p}
+              icono={p.icono}
+              precio={precio}
+              puedePedir={puedePedir}
+              onAbrir={() => onAbrir(p)}
+            />
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

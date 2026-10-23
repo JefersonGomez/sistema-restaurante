@@ -19,6 +19,7 @@ import {
 } from '../comunes';
 import { ListaOrdenable } from './Ordenable';
 import { PromocionDia } from './PromocionDia';
+import { MenusDelDia } from './MenusDelDia';
 
 export type Categoria = {
   id: string;
@@ -39,6 +40,7 @@ export type PlatoFila = {
   fotoMiniUrl: string | null;
   agotado: boolean;
   activo: boolean;
+  menuDelDia: boolean;
 };
 
 export const ICONOS = [
@@ -261,6 +263,7 @@ export function MenuPanelPage() {
       )}
 
       <PromocionDia iconos={new Map(categorias.data?.map((c) => [c.id, c.icono]))} />
+      <MenusDelDia categoriaId={categorias.data?.[0]?.id} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(340px,380px)_1fr]">
         {/* Categorías */}
@@ -413,6 +416,7 @@ export function MenuPanelPage() {
                       </span>
                       <span className="flex flex-wrap items-center gap-1.5 text-sm text-muted">
                         <span className="tabular-nums">{precio(p.precio)}</span>
+                        {p.menuDelDia && <Etiqueta tono="amber">Menú del día</Etiqueta>}
                         {!p.activo && <Etiqueta tono="neutro">Oculto</Etiqueta>}
                         {p.agotado && <Etiqueta tono="danger">Agotado</Etiqueta>}
                         {(!p.fotoUrl || !p.descripcionEn) && (

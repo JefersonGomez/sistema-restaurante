@@ -90,6 +90,18 @@ mesero; y una cuenta cerrada hoy (mesa 6) que aparece en el reporte **Hoy** del 
    Google Maps, con vista previa). El cliente ve el banner arriba del menú y, al final, la
    tarjeta "Encuéntrenos" con el mapa y "Cómo llegar".
 
+### Promoción y menús del día
+
+En Panel → **Menú**, arriba de todo:
+
+- **Promoción del día:** un plato destacado en el banner del menú, con texto, precio especial (es
+  el que se cobra) y color de fondo a elección (con vista previa).
+- **Menús del día:** "Agregar menú del día" crea un combo con precio fijo (p. ej. sopa + casado +
+  fresco) que se ofrece los días de la semana marcados o solo en una fecha ("Solo hoy"). Fijo:
+  escriba lo que incluye en la descripción. Con opciones: agregue grupos (p. ej. «Carne») para que
+  el cliente elija. El cliente lo ve en "Menú del día", arriba de las categorías; otro día no se
+  puede pedir.
+
 ### Registrar un restaurante nuevo
 
 En `http://localhost:5181/registro` (o "Cree su cuenta" en el login): datos del local (nombre,

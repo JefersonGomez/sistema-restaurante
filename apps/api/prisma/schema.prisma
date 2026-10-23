@@ -207,10 +207,10 @@ model Categoria {
 }
 
 model Plato {
-  id            String   @id @default(uuid()) @db.Uuid
-  restauranteId String   @db.Uuid
-  categoriaId   String   @db.Uuid
-  estacionId    String   @db.Uuid
+  id            String    @id @default(uuid()) @db.Uuid
+  restauranteId String    @db.Uuid
+  categoriaId   String    @db.Uuid
+  estacionId    String    @db.Uuid
   nombreEs      String
   nombreEn      String
   descripcionEs String?
@@ -218,12 +218,17 @@ model Plato {
   precio        Int // céntimos
   fotoUrl       String? // 960 px (detalle)
   fotoMiniUrl   String? // 320 px (lista)
-  agotado       Boolean  @default(false)
-  activo        Boolean  @default(true)
-  orden         Int      @default(0)
-  alergenos     String[] @default([])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  agotado       Boolean   @default(false)
+  activo        Boolean   @default(true)
+  orden         Int       @default(0)
+  alergenos     String[]  @default([])
+  // Menú del día (combo): se ofrece los días de la semana marcados (0 = domingo) o, a mano, en
+  // una fecha puntual. Fijo (partes en la descripción) o con opciones (grupos de modificadores).
+  menuDelDia    Boolean   @default(false)
+  diasSemana    Int[]     @default([])
+  fechaMenu     DateTime? @db.Date
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   restaurante Restaurante          @relation(fields: [restauranteId], references: [id])
   destacadoEn Restaurante[]        @relation("PlatoDestacado")

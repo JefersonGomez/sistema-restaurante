@@ -1,4 +1,5 @@
 import {
+  menuDelDiaHoy,
   calcularTotales,
   estaAbierto,
   minimoEfectivo,
@@ -73,6 +74,7 @@ function prepararItem(
   platoId: string,
   modIds: string[],
   precioPromo: number | null, // si el plato es el de la promoción
+  zonaHoraria: string,
 ) {
   if (!plato || !plato.activo || !plato.categoria.activa)
     throw new HttpError(409, 'PLATO_NO_DISPONIBLE', 'Un plato ya no está disponible', {
@@ -83,6 +85,16 @@ function prepararItem(
     throw new HttpError(409, 'PLATO_NO_DISPONIBLE', `«${plato.nombreEs}» está agotado`, {
       platoId,
       motivo: 'agotado',
+    });
+  // Un menú del día solo se puede pedir el día que está programado.
+  const hoy = {
+    diasSemana: plato.diasSemana,
+    fechaMenu: plato.fechaMenu?.toISOString().slice(0, 10) ?? null,
+  };
+  if (plato.menuDelDia && !menuDelDiaHoy(hoy, new Date(), zonaHoraria))
+    throw new HttpError(409, 'PLATO_NO_DISPONIBLE', `«${plato.nombreEs}» no se ofrece hoy`, {
+      platoId,
+      motivo: 'no_es_hoy',
     });
 
   const elegidos = new Set(modIds);
@@ -195,6 +207,7 @@ export async function crearPedido(p: NuevoPedido) {
           i.platoId,
           i.modificadores,
           i.platoId === r.platoDestacadoId ? r.precioPromo : null,
+          r.zonaHoraria,
         );
         return {
           platoId: i.platoId,

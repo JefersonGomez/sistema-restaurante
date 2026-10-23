@@ -195,6 +195,14 @@ export const platoSchema = z.object({
   activo: z.boolean().optional(),
   orden: z.number().int().min(0).optional(),
   alergenos: z.array(texto(40)).max(20).optional(),
+  // Menú del día: días de la semana (0 = domingo) y/o una fecha puntual "AAAA-MM-DD".
+  menuDelDia: z.boolean().optional(),
+  diasSemana: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+  fechaMenu: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha AAAA-MM-DD')
+    .nullable()
+    .optional(),
 });
 export const actualizarPlatoSchema = platoSchema.partial();
 export type PlatoInput = z.infer<typeof platoSchema>;
@@ -354,6 +362,8 @@ export type MenuPublico = {
     precioAntes: number | null;
     color: string | null; // fondo del banner (null = el del diseño)
   } | null;
+  // Menús del día (combos) programados para hoy; el icono es el de su categoría.
+  menuDelDia: (PlatoPublico & { icono: string | null })[];
   categorias: {
     id: string;
     nombreEs: string;

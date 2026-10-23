@@ -62,3 +62,20 @@ export function turnosDeHoy(turnos: Turno[], ahora: Date, zonaHoraria: string) {
     .map(({ abre, cierra }) => ({ abre, cierra }))
     .sort((x, y) => x.abre.localeCompare(y.abre));
 }
+
+// "AAAA-MM-DD" de hoy en la zona del restaurante.
+export const fechaLocal = (ahora: Date, zonaHoraria: string) =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: zonaHoraria }).format(ahora);
+
+// Un menú del día se ofrece hoy si está programado para este día de la semana o, a mano, para la
+// fecha de hoy ("AAAA-MM-DD").
+export function menuDelDiaHoy(
+  p: { diasSemana: number[]; fechaMenu: string | null },
+  ahora: Date,
+  zonaHoraria: string,
+) {
+  return (
+    p.diasSemana.includes(momentoLocal(ahora, zonaHoraria).diaSemana) ||
+    p.fechaMenu === fechaLocal(ahora, zonaHoraria)
+  );
+}
