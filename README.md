@@ -4,11 +4,11 @@ SaaS multi-restaurante: los comensales escanean un QR en la mesa, ven el menú (
 celular y piden; los pedidos llegan en tiempo real a cocina, bar, meseros y caja. Una sola
 instancia sirve a todos los restaurantes y ninguno puede ver datos de otro.
 
-> **Estado:** Fase 4 completa (avisos y alertas, animaciones, navegación, personas por mesa,
-> cuentas separadas, registro de restaurantes y personalización). Specs:
-> [`fase 1`](docs/especificacion-fase1.md), [`fase 2`](docs/especificacion-fase2.md),
-> [`frontend del menú`](docs/especificacion-frontend-menu.md), [`fase 3`](docs/especificacion-fase3.md)
-> y [`fase 4`](docs/especificacion-fase4.md).
+> **Estado:** Fase 5 completa (pedidos en línea para recoger y a domicilio, con pago en efectivo o
+> SINPE Móvil verificado a mano). Specs: [`fase 1`](docs/especificacion-fase1.md),
+> [`fase 2`](docs/especificacion-fase2.md), [`frontend del menú`](docs/especificacion-frontend-menu.md),
+> [`fase 3`](docs/especificacion-fase3.md), [`fase 4`](docs/especificacion-fase4.md) y
+> [`fase 5`](docs/especificacion-fase5.md).
 
 ## Requisitos
 
@@ -89,6 +89,23 @@ mesero; y una cuenta cerrada hoy (mesa 6) que aparece en el reporte **Hoy** del 
    llega a Panel → **Personalizar** (logo, banner, eslogan, color, teléfono, dirección y enlace de
    Google Maps, con vista previa). El cliente ve el banner arriba del menú y, al final, la
    tarjeta "Encuéntrenos" con el mapa y "Cómo llegar".
+
+### Pedidos en línea (Fase 5)
+
+1. Dueño → **Ajustes → Pedidos en línea**: activar, para recoger y/o a domicilio, tiempo estimado,
+   pedido mínimo, costo de envío, zona de entrega y número de SINPE Móvil. Ahí está el enlace para
+   compartir (`http://localhost:5180/r/soda-la-esquina`) y su QR para descargar.
+2. Cliente (en el celular o la computadora): abre el enlace, elige platos (los mismos del menú,
+   con promoción y menús del día), toca **Ver pedido**, elige para recoger o a domicilio, escribe sus
+   datos y la forma de pago (efectivo o SINPE: ve el número y el monto) y **Hacer pedido**. Queda en
+   una página de seguimiento que se actualiza sola.
+3. Personal (dueño, caja o mesero) → **En línea**: el pedido llega con sonido a "Nuevos". **Aceptar**
+   (con el tiempo estimado) lo manda a cocina; **Rechazar** pide un motivo que ve el cliente.
+4. Cocina lo ve como "Para llevar #N · nombre" o "Domicilio #N · nombre" y lo prepara como siempre.
+5. En "En curso": **Pago verificado** (SINPE), **Listo para entregar**, **Salió a entregar**
+   (domicilio) y **Entregado y cobrado** (con el método). El cliente ve cada paso.
+6. Los pedidos en línea no llevan el 10 % de servicio; a domicilio se suma el envío. En Reportes
+   aparecen en **Por canal** (en mesa, para recoger, a domicilio); los rechazados no cuentan.
 
 ### Promoción y menús del día
 
@@ -267,28 +284,31 @@ Errores siempre con la forma `{ error: { code, message, details? } }`.
 
 ### Endpoints
 
-| Rol                    | Rutas                                                                                                                                                              |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| SUPERADMIN             | `POST/GET /admin/restaurantes`, `PATCH /admin/restaurantes/:id` (activo, plan)                                                                                     |
-| DUENO                  | `GET/PATCH /restaurante` (incluye `modoConfirmacion`), `GET /reportes/hoy`                                                                                         |
-| DUENO                  | CRUD `/usuarios` (con `estacionId`), `/estaciones`, `/categorias` (+ `PATCH /orden`), `/mesas`                                                                     |
-| DUENO                  | CRUD `/platos`, `/platos/:platoId/grupos-modificadores[/:grupoId/modificadores]`                                                                                   |
-| DUENO                  | `POST /mesas/:id/regenerar-token`, `GET /mesas/:id/qr?formato=png\|svg`, `POST /uploads/firma` (501)                                                               |
-| DUENO, MESERO, COCINA  | `GET /platos`, `GET /platos/:id`, `PATCH /platos/:id/agotado`                                                                                                      |
-| DUENO, MESERO, CAJA    | `GET /operacion/mesas`, `GET /operacion/cuentas/:id`, `GET /operacion/llamadas?atendida=`                                                                          |
-| DUENO, MESERO          | `GET /operacion/pedidos?estado=`, `PATCH /operacion/pedidos/:id/confirmar\|cancelar`                                                                               |
-| DUENO, MESERO          | `POST /operacion/mesas/:id/pedidos`, `GET /operacion/items?estado=LISTO`                                                                                           |
-| DUENO, MESERO          | `PATCH /operacion/items/:id/cancelar`, `PATCH /operacion/llamadas/:id/atender`                                                                                     |
-| DUENO, COCINA          | `GET /operacion/estaciones`, `GET /operacion/estaciones/:id/items`                                                                                                 |
-| DUENO, COCINA, MESERO  | `PATCH /operacion/items/:id/estado` (cocina: preparar/listo de su estación; mesero: entregado)                                                                     |
-| DUENO, CAJA            | `POST /operacion/cuentas/:id/cerrar` `{ metodoPago }`                                                                                                              |
-| Comensal (sesión)      | `GET /public/cuenta`, `POST /public/cuenta/pedidos`, `POST /public/cuenta/llamar`, `POST /public/cuenta/solicitar`                                                 |
-| Público (rate limited) | `GET /public/:slug/menu`, `GET /public/mesa/:token`, `GET /health`                                                                                                 |
-| DUENO, CAJA            | `POST /operacion/cuentas/:id/pagos` (cuenta separada), `DELETE /operacion/cuentas/:id/pagos/:pagoId`                                                               |
-| DUENO, COCINA, MESERO  | `POST /operacion/items/:id/deshacer` `{ estado }` (toque equivocado, unos segundos)                                                                                |
-| DUENO                  | `GET /reportes?desde&hasta`, `/dispositivos` (código, lista, revocar), `PUT /usuarios/:id/pin`, `POST /uploads/imagen?destino=plato                                | logo | banner` |
-| Comensal (sesión)      | `POST /public/cuenta/personas`, `POST /public/cuenta/ingresos/:id` `{ aceptar }`, `POST /public/cuenta/desbloquear-ingreso`, `POST /public/cuenta/vistas/:platoId` |
-| Público (rate limited) | `POST /auth/registro`, `POST /public/mesa/:token/ingreso`, `POST /public/mesa/:token/ingreso/:id` `{ clave }`, `POST /dispositivos/vincular`                       |
+| Rol                    | Rutas                                                                                                                                                                                   |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SUPERADMIN             | `POST/GET /admin/restaurantes`, `PATCH /admin/restaurantes/:id` (activo, plan)                                                                                                          |
+| DUENO                  | `GET/PATCH /restaurante` (incluye `modoConfirmacion`), `GET /reportes/hoy`                                                                                                              |
+| DUENO                  | CRUD `/usuarios` (con `estacionId`), `/estaciones`, `/categorias` (+ `PATCH /orden`), `/mesas`                                                                                          |
+| DUENO                  | CRUD `/platos`, `/platos/:platoId/grupos-modificadores[/:grupoId/modificadores]`                                                                                                        |
+| DUENO                  | `POST /mesas/:id/regenerar-token`, `GET /mesas/:id/qr?formato=png\|svg`, `POST /uploads/firma` (501)                                                                                    |
+| DUENO, MESERO, COCINA  | `GET /platos`, `GET /platos/:id`, `PATCH /platos/:id/agotado`                                                                                                                           |
+| DUENO, MESERO, CAJA    | `GET /operacion/mesas`, `GET /operacion/cuentas/:id`, `GET /operacion/llamadas?atendida=`                                                                                               |
+| DUENO, MESERO          | `GET /operacion/pedidos?estado=`, `PATCH /operacion/pedidos/:id/confirmar\|cancelar`                                                                                                    |
+| DUENO, MESERO          | `POST /operacion/mesas/:id/pedidos`, `GET /operacion/items?estado=LISTO`                                                                                                                |
+| DUENO, MESERO          | `PATCH /operacion/items/:id/cancelar`, `PATCH /operacion/llamadas/:id/atender`                                                                                                          |
+| DUENO, COCINA          | `GET /operacion/estaciones`, `GET /operacion/estaciones/:id/items`                                                                                                                      |
+| DUENO, COCINA, MESERO  | `PATCH /operacion/items/:id/estado` (cocina: preparar/listo de su estación; mesero: entregado)                                                                                          |
+| DUENO, CAJA            | `POST /operacion/cuentas/:id/cerrar` `{ metodoPago }`                                                                                                                                   |
+| Comensal (sesión)      | `GET /public/cuenta`, `POST /public/cuenta/pedidos`, `POST /public/cuenta/llamar`, `POST /public/cuenta/solicitar`                                                                      |
+| Público (rate limited) | `GET /public/:slug/menu`, `GET /public/mesa/:token`, `GET /health`                                                                                                                      |
+| DUENO, CAJA            | `POST /operacion/cuentas/:id/pagos` (cuenta separada), `DELETE /operacion/cuentas/:id/pagos/:pagoId`                                                                                    |
+| DUENO, COCINA, MESERO  | `POST /operacion/items/:id/deshacer` `{ estado }` (toque equivocado, unos segundos)                                                                                                     |
+| DUENO                  | `GET /reportes?desde&hasta`, `/dispositivos` (código, lista, revocar), `PUT /usuarios/:id/pin`, `POST /uploads/imagen?destino=plato                                                     | logo | banner` |
+| Comensal (sesión)      | `POST /public/cuenta/personas`, `POST /public/cuenta/ingresos/:id` `{ aceptar }`, `POST /public/cuenta/desbloquear-ingreso`, `POST /public/cuenta/vistas/:platoId`                      |
+| Público (rate limited) | `POST /auth/registro`, `POST /public/mesa/:token/ingreso`, `POST /public/mesa/:token/ingreso/:id` `{ clave }`, `POST /dispositivos/vincular`                                            |
+| DUENO, CAJA, MESERO    | `GET /enlinea`, `POST /enlinea/:id/aceptar` `{ tiempoEstimadoMin }`, `/rechazar` `{ motivo }`, `/etapa` `{ etapa: LISTO\|EN_CAMINO }`, `/pago-verificado`, `/entregar` `{ metodoPago }` |
+| DUENO                  | `GET /restaurante/qr-enlinea.png` (QR del enlace /r/:slug; `GET /restaurante` trae `enlaceEnLinea`)                                                                                     |
+| Público (rate limited) | `POST /public/:slug/pedidos-en-linea` (10 por IP cada 10 min, máx. 2 pendientes por teléfono), `GET /public/seguimiento/:token`                                                         |
 
 El `restauranteId` de las rutas privadas sale siempre del JWT; si se manda en body o query se ignora.
 Rate limit: 1 200 solicitudes/min por IP en `/public` (todos los celulares de un restaurante comparten
@@ -416,6 +436,12 @@ cierre automático con MIXTO, "todo junto" bloqueado, deshacer, aislamiento), re
 tildes y único, correo repetido, validación) y personalización (banner 1600×600, enlaces de Google
 Maps válidos, datos en el menú público).
 
+Fase 5: pedidos en línea (para recoger y a domicilio, por aceptar aunque el modo sea "nunca", no
+entran a cocina ni a la bandeja del mesero hasta aceptarlos, total sin servicio y con envío,
+dirección obligatoria a domicilio, "salió a entregar" solo a domicilio, rechazo con motivo,
+activo/tipo/horario/mínimo, idempotencia, límite por teléfono, aislamiento, enlace y QR) y
+reportes por canal sin contar los rechazados.
+
 ### Prueba de carga (hora pico)
 
 Con la API corriendo (`pnpm dev`):
@@ -443,8 +469,10 @@ y máxima) de creación y de llegada a cocina. Termina con ✅ si no se perdió 
 | `pnpm typecheck`            | `tsc` en todos los paquetes     |
 | `pnpm lint` / `pnpm format` | ESLint / Prettier               |
 
-## Fuera de alcance (Fase 3)
+## Fuera de alcance (Fase 5)
 
-Pagos en línea, SINPE automático, factura electrónica (la pre-cuenta impresa dice "NO ES FACTURA
-ELECTRÓNICA"), impresión directa a impresoras térmicas, panel del superadmin, cobro de
-mensualidades, despliegue a producción, traducción automática con IA e inventario.
+Pagos con tarjeta en línea o pasarelas, verificación automática de SINPE, repartidores con app o
+rastreo GPS, envío calculado por distancia, SMS/WhatsApp automáticos, factura electrónica (los
+comprobantes dicen "NO ES FACTURA ELECTRÓNICA"), impresión directa a impresoras térmicas, panel del
+superadmin, cobro de mensualidades, despliegue a producción, traducción automática con IA e
+inventario.

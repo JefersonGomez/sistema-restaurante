@@ -654,6 +654,7 @@ export type Reporte = {
   vistasVsPedidos: { platoId: string; nombre: string; vistas: number; pedidos: number }[];
   preparacion: { estacion: string; items: number; promedioSeg: number; demorados: number }[];
   cancelaciones: { motivo: string; items: number }[];
+  porCanal: { canal: TipoCuenta; total: number; cuentas: number }[];
 };
 
 export type ReporteHoy = {

@@ -1,4 +1,10 @@
-import { MINUTOS_DEMORA, type Reporte, type ReporteHoy, type ReporteQuery } from '@menu-qr/shared';
+import {
+  MINUTOS_DEMORA,
+  type Reporte,
+  type ReporteHoy,
+  type ReporteQuery,
+  type TipoCuenta,
+} from '@menu-qr/shared';
 import { prisma } from '../../lib/prisma';
 import { noExiste } from '../../middlewares/errorHandler';
 
@@ -17,7 +23,12 @@ export function inicioDeHoyCR(ahora = new Date()) {
 export async function hoy(restauranteId: string): Promise<ReporteHoy> {
   const desde = inicioDeHoyCR();
   const cuentas = await prisma.cuenta.findMany({
-    where: { restauranteId, estado: 'CERRADA', cerradaEn: { gte: desde } },
+    where: {
+      restauranteId,
+      estado: 'CERRADA',
+      cerradaEn: { gte: desde },
+      OR: [{ etapa: null }, { etapa: { not: 'RECHAZADO' as const } }],
+    },
     select: { total: true },
   });
   const totalVendido = cuentas.reduce((s, c) => s + c.total, 0);
@@ -87,34 +98,43 @@ export async function rango(
            ((${hasta}::date + 1)::timestamp AT TIME ZONE ${tz}) AT TIME ZONE 'UTC' AS fin`;
   const { ini, fin } = limites!;
 
-  const [porDia, porHora, porMetodo, porCategoria, topPlatos, vistas, preparacion, cancelaciones] =
-    await Promise.all([
-      prisma.$queryRaw<{ dia: string; total: bigint; cuentas: bigint }[]>`
+  const [
+    porDia,
+    porHora,
+    porMetodo,
+    porCategoria,
+    topPlatos,
+    vistas,
+    preparacion,
+    cancelaciones,
+    porCanal,
+  ] = await Promise.all([
+    prisma.$queryRaw<{ dia: string; total: bigint; cuentas: bigint }[]>`
         SELECT to_char(d, 'YYYY-MM-DD') AS dia,
                COALESCE(SUM(c.total), 0) AS total, COUNT(c.id) AS cuentas
         FROM generate_series(${desde}::date, ${hasta}::date, interval '1 day') AS d
         LEFT JOIN "Cuenta" c
-          ON c."restauranteId" = ${restauranteId}::uuid AND c.estado = 'CERRADA'
+          ON c."restauranteId" = ${restauranteId}::uuid AND c.estado = 'CERRADA' AND c.etapa IS DISTINCT FROM 'RECHAZADO'
          AND c."cerradaEn" >= ${ini} AND c."cerradaEn" < ${fin}
          AND ((c."cerradaEn" AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date = d::date
         GROUP BY d ORDER BY d`,
-      prisma.$queryRaw<{ hora: number; total: bigint; cuentas: bigint }[]>`
+    prisma.$queryRaw<{ hora: number; total: bigint; cuentas: bigint }[]>`
         SELECT h AS hora, COALESCE(SUM(c.total), 0) AS total, COUNT(c.id) AS cuentas
         FROM generate_series(0, 23) AS h
         LEFT JOIN "Cuenta" c
-          ON c."restauranteId" = ${restauranteId}::uuid AND c.estado = 'CERRADA'
+          ON c."restauranteId" = ${restauranteId}::uuid AND c.estado = 'CERRADA' AND c.etapa IS DISTINCT FROM 'RECHAZADO'
          AND c."cerradaEn" >= ${ini} AND c."cerradaEn" < ${fin}
          AND extract(hour FROM (c."cerradaEn" AT TIME ZONE 'UTC') AT TIME ZONE ${tz}) = h
         GROUP BY h ORDER BY h`,
-      prisma.$queryRaw<{ metodo: string; total: bigint; cuentas: bigint }[]>`
+    prisma.$queryRaw<{ metodo: string; total: bigint; cuentas: bigint }[]>`
         SELECT COALESCE(c."metodoPago"::text, 'SIN_DATO') AS metodo,
                SUM(c.total) AS total, COUNT(*) AS cuentas
         FROM "Cuenta" c
-        WHERE c."restauranteId" = ${restauranteId}::uuid AND c.estado = 'CERRADA'
+        WHERE c."restauranteId" = ${restauranteId}::uuid AND c.estado = 'CERRADA' AND c.etapa IS DISTINCT FROM 'RECHAZADO'
           AND c."cerradaEn" >= ${ini} AND c."cerradaEn" < ${fin}
         GROUP BY 1 ORDER BY 2 DESC`,
-      // Ítems vendidos: de pedidos confirmados y no cancelados, en cuentas cerradas del rango.
-      prisma.$queryRaw<{ categoria: string; cantidad: bigint; total: bigint }[]>`
+    // Ítems vendidos: de pedidos confirmados y no cancelados, en cuentas cerradas del rango.
+    prisma.$queryRaw<{ categoria: string; cantidad: bigint; total: bigint }[]>`
         SELECT cat."nombreEs" AS categoria, SUM(i.cantidad) AS cantidad,
                SUM(i.cantidad * i."precioUnitario") AS total
         FROM "PedidoItem" i
@@ -122,32 +142,30 @@ export async function rango(
         JOIN "Cuenta" c ON c.id = p."cuentaId"
         JOIN "Plato" pl ON pl.id = i."platoId"
         JOIN "Categoria" cat ON cat.id = pl."categoriaId"
-        WHERE c."restauranteId" = ${restauranteId}::uuid AND c.estado = 'CERRADA'
+        WHERE c."restauranteId" = ${restauranteId}::uuid AND c.estado = 'CERRADA' AND c.etapa IS DISTINCT FROM 'RECHAZADO'
           AND c."cerradaEn" >= ${ini} AND c."cerradaEn" < ${fin}
           AND p.estado = 'CONFIRMADO' AND NOT i.cancelado
         GROUP BY cat.id, cat."nombreEs" ORDER BY 3 DESC`,
-      prisma.$queryRaw<{ platoId: string; nombre: string; cantidad: bigint; total: bigint }[]>`
+    prisma.$queryRaw<{ platoId: string; nombre: string; cantidad: bigint; total: bigint }[]>`
         SELECT pl.id AS "platoId", pl."nombreEs" AS nombre, SUM(i.cantidad) AS cantidad,
                SUM(i.cantidad * i."precioUnitario") AS total
         FROM "PedidoItem" i
         JOIN "Pedido" p ON p.id = i."pedidoId"
         JOIN "Cuenta" c ON c.id = p."cuentaId"
         JOIN "Plato" pl ON pl.id = i."platoId"
-        WHERE c."restauranteId" = ${restauranteId}::uuid AND c.estado = 'CERRADA'
+        WHERE c."restauranteId" = ${restauranteId}::uuid AND c.estado = 'CERRADA' AND c.etapa IS DISTINCT FROM 'RECHAZADO'
           AND c."cerradaEn" >= ${ini} AND c."cerradaEn" < ${fin}
           AND p.estado = 'CONFIRMADO' AND NOT i.cancelado
         GROUP BY pl.id, pl."nombreEs" ORDER BY 3 DESC, 4 DESC`,
-      prisma.$queryRaw<{ platoId: string; nombre: string; vistas: bigint }[]>`
+    prisma.$queryRaw<{ platoId: string; nombre: string; vistas: bigint }[]>`
         SELECT pl.id AS "platoId", pl."nombreEs" AS nombre, SUM(v.vistas) AS vistas
         FROM "VistaPlato" v JOIN "Plato" pl ON pl.id = v."platoId"
         WHERE v."restauranteId" = ${restauranteId}::uuid
           AND v.dia BETWEEN ${desde}::date AND ${hasta}::date
         GROUP BY pl.id, pl."nombreEs"`,
-      // Preparación: de EN_PREPARACION a LISTO; demorado = listo más de MINUTOS_DEMORA después
-      // de confirmado el pedido (lo mismo que pinta de rojo la pantalla de cocina).
-      prisma.$queryRaw<
-        { estacion: string; items: bigint; promedioSeg: number; demorados: bigint }[]
-      >`
+    // Preparación: de EN_PREPARACION a LISTO; demorado = listo más de MINUTOS_DEMORA después
+    // de confirmado el pedido (lo mismo que pinta de rojo la pantalla de cocina).
+    prisma.$queryRaw<{ estacion: string; items: bigint; promedioSeg: number; demorados: bigint }[]>`
         SELECT e.nombre AS estacion, COUNT(*) AS items,
                ROUND(AVG(extract(epoch FROM i."listoEn" - i."enPreparacionEn")))::float8 AS "promedioSeg",
                COUNT(*) FILTER (
@@ -159,14 +177,21 @@ export async function rango(
         WHERE p."restauranteId" = ${restauranteId}::uuid
           AND i."listoEn" >= ${ini} AND i."listoEn" < ${fin} AND i."enPreparacionEn" IS NOT NULL
         GROUP BY e.id, e.nombre ORDER BY e.nombre`,
-      prisma.$queryRaw<{ motivo: string; items: bigint }[]>`
+    prisma.$queryRaw<{ motivo: string; items: bigint }[]>`
         SELECT COALESCE(NULLIF(trim(i."motivoCancelacion"), ''), 'Sin motivo') AS motivo,
                SUM(i.cantidad) AS items
         FROM "PedidoItem" i JOIN "Pedido" p ON p.id = i."pedidoId"
         WHERE p."restauranteId" = ${restauranteId}::uuid AND i.cancelado
           AND i."updatedAt" >= ${ini} AND i."updatedAt" < ${fin}
         GROUP BY 1 ORDER BY 2 DESC`,
-    ]);
+    // Canal: en mesa, para recoger o a domicilio.
+    prisma.$queryRaw<{ canal: string; total: bigint; cuentas: bigint }[]>`
+        SELECT c.tipo::text AS canal, SUM(c.total) AS total, COUNT(*) AS cuentas
+        FROM "Cuenta" c
+        WHERE c."restauranteId" = ${restauranteId}::uuid AND c.estado = 'CERRADA' AND c.etapa IS DISTINCT FROM 'RECHAZADO'
+          AND c."cerradaEn" >= ${ini} AND c."cerradaEn" < ${fin}
+        GROUP BY 1 ORDER BY 2 DESC`,
+  ]);
 
   const dias = porDia.map((d) => ({ dia: d.dia, total: n(d.total), cuentas: n(d.cuentas) }));
   const totalVendido = dias.reduce((s, d) => s + d.total, 0);
@@ -226,6 +251,11 @@ export async function rango(
       demorados: n(p.demorados),
     })),
     cancelaciones: cancelaciones.map((c) => ({ motivo: c.motivo, items: n(c.items) })),
+    porCanal: porCanal.map((c) => ({
+      canal: c.canal as TipoCuenta,
+      total: n(c.total),
+      cuentas: n(c.cuentas),
+    })),
   };
 }
 

@@ -12,6 +12,7 @@
 - **Fase 3 completa** (3.1–3.10, 2026-10-23). Pendiente: revisión del usuario y la spec de la
   próxima fase. Lo que quedó fuera de alcance está en el README.
 - **Fase 4 completa** (4.1–4.8, 2026-10-23). Pendiente: prueba completa del usuario.
+- **Fase 5 completa** (5.1–5.4, 2026-10-23): pedidos en línea. Pendiente: prueba del usuario.
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
 
 ## Plan de la Fase 5 (aprobado 2026-10-23) — spec: docs/especificacion-fase5.md
@@ -24,7 +25,7 @@ autorizó commit + push al cerrar cada sub-fase.
 | 5.1  | Modelo y API: cuenta sin mesa (tipo, cliente), config, pedido en línea, seguimiento, acciones, "lugar" | ✅     |
 | 5.2  | Cliente: /r/:slug, checkout y seguimiento                                                              | ✅     |
 | 5.3  | Personal: pantalla "En línea", avisos, etiquetas, Ajustes, QR del enlace                               | ✅     |
-| 5.4  | Reportes por canal, seed, README, tests                                                                | ⬜     |
+| 5.4  | Reportes por canal, seed, README, tests                                                                | ✅     |
 
 - 5.1: migración `20261023160000_pedidos_en_linea`: Cuenta.mesaId opcional (relación con onDelete
   Restrict; el índice parcial cuenta_unica_abierta sigue igual), Cuenta.tipo (MESA/RECOGER/DOMICILIO),
@@ -59,6 +60,11 @@ autorizó commit + push al cerrar cada sub-fase.
   `enlaceEnLinea` (con MENU_PUBLIC_URL; sin variable nueva) y GET /restaurante/qr-enlinea.png. Cocina:
   etiqueta más chica si no es mesa. Ajustes: el formulario general va en su propio contenedor para que
   la barra fija "Guardar cambios" no tape "Guardar horario".
+- 5.4: reportes: todas las consultas excluyen `etapa = RECHAZADO` (IS DISTINCT FROM, por los null de
+  mesa) y hay `porCanal` (MESA/RECOGER/DOMICILIO) en pantalla y CSV. Seed: `enLineaDemo` (activa los
+  pedidos en línea si nunca se configuraron) y el historial de 30 días trae ~15 % de pedidos en línea
+  (sin mesa, sin servicio, envío a domicilio, ENTREGADO). README: recorrido de la Fase 5, endpoints,
+  tests y fuera de alcance.
 
 ## Plan de la Fase 4 (aprobado 2026-10-23) — spec: docs/especificacion-fase4.md
 

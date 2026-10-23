@@ -229,3 +229,43 @@ describe('reportes con el historial del seed', () => {
     expect((await reporte(dia(30), dia(1))).body.resumen.cuentas).toBeLessThan(10);
   });
 });
+
+describe('reportes por canal', () => {
+  it('separa mesa / para recoger / a domicilio y no cuenta los pedidos en línea rechazados', async () => {
+    const { restaurante } = await crearRestaurante('resto-canal');
+    const mc = await sembrarMenu(restaurante.id);
+    const t = await tokenDe('dueno@resto-canal.test');
+    const base = { restauranteId: restaurante.id, estado: 'CERRADA' as const };
+    const dia = new Date('2026-10-10T18:00:00Z'); // 10 oct, 12:00 en Costa Rica
+    await prisma.cuenta.createMany({
+      data: [
+        { ...base, mesaId: mc.mesa.id, total: 500000, metodoPago: 'EFECTIVO', cerradaEn: dia },
+        {
+          ...base,
+          tipo: 'RECOGER',
+          etapa: 'ENTREGADO',
+          total: 300000,
+          metodoPago: 'SINPE',
+          cerradaEn: dia,
+        },
+        {
+          ...base,
+          tipo: 'DOMICILIO',
+          etapa: 'ENTREGADO',
+          total: 400000,
+          metodoPago: 'EFECTIVO',
+          cerradaEn: dia,
+        },
+        { ...base, tipo: 'RECOGER', etapa: 'RECHAZADO', total: 0, cerradaEn: dia },
+      ],
+    });
+    const r = (await reporte('2026-10-10', '2026-10-10', t)).body as Reporte;
+    expect(r.resumen).toEqual({ totalVendido: 1200000, cuentas: 3, ticketPromedio: 400000 });
+    expect(r.porCanal).toEqual([
+      { canal: 'MESA', total: 500000, cuentas: 1 },
+      { canal: 'DOMICILIO', total: 400000, cuentas: 1 },
+      { canal: 'RECOGER', total: 300000, cuentas: 1 },
+    ]);
+    expect(r.porMetodo.reduce((s, m) => s + m.cuentas, 0)).toBe(3);
+  });
+});

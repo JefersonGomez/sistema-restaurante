@@ -24,6 +24,11 @@ const RANGOS: { id: Rango; texto: string }[] = [
   { id: '30', texto: '30 días' },
   { id: 'otro', texto: 'Personalizado' },
 ];
+const CANALES: Record<string, string> = {
+  MESA: 'En mesa',
+  RECOGER: 'Para recoger',
+  DOMICILIO: 'A domicilio',
+};
 const METODOS: Record<string, string> = {
   EFECTIVO: 'Efectivo',
   TARJETA: 'Tarjeta',
@@ -66,6 +71,9 @@ function csv(r: Reporte, moneda: Moneda) {
     [],
     ['Método de pago', 'Ventas', 'Cuentas'],
     ...r.porMetodo.map((x) => [METODOS[x.metodo] ?? x.metodo, m(x.total), x.cuentas]),
+    [],
+    ['Canal', 'Ventas', 'Cuentas'],
+    ...r.porCanal.map((c) => [CANALES[c.canal] ?? c.canal, m(c.total), c.cuentas]),
     [],
     ['Categoría', 'Unidades', 'Ventas'],
     ...r.porCategoria.map((c) => [c.categoria, c.cantidad, m(c.total)]),
@@ -350,6 +358,17 @@ export function ReportesPage() {
                     nombre: p.nombre,
                     valores: [String(p.vistas), String(p.pedidos)],
                     proporcion: p.vistas / maximo(r.vistasVsPedidos.map((x) => x.vistas)),
+                  }))}
+                />
+              </Seccion>
+              <Seccion titulo="Por canal" detalle="En mesa, para recoger y a domicilio.">
+                <TablaBarras
+                  columnas={['Canal', 'Cuentas', 'Ventas']}
+                  filas={r.porCanal.map((c) => ({
+                    clave: c.canal,
+                    nombre: CANALES[c.canal] ?? c.canal,
+                    valores: [String(c.cuentas), precio(c.total)],
+                    proporcion: c.total / maximo(r.porCanal.map((x) => x.total)),
                   }))}
                 />
               </Seccion>

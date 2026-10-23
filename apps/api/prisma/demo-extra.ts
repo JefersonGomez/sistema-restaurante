@@ -100,6 +100,13 @@ export async function tabletDemo(restauranteId: string) {
   return true;
 }
 
+const CLIENTES = ['Ana', 'Luis', 'María', 'Carlos', 'Sofía', 'Diego', 'Valeria', 'José'];
+const DIRECCIONES = [
+  'Barrio Escalante, 100 m norte del parque',
+  'San Pedro, frente a la UCR',
+  'Barrio Amón, casa esquinera',
+  'Los Yoses, edificio azul, apto 3',
+];
 const MOTIVOS = ['Se acabó', 'El cliente cambió de idea', 'Pedido duplicado', 'Tardaba mucho'];
 const OFFSET_CR_H = 6; // Costa Rica = UTC−6 todo el año
 
@@ -137,6 +144,7 @@ export async function historial(r: Restaurante, dias = 30) {
   const mods: Prisma.PedidoItemModificadorCreateManyInput[] = [];
   const vistas = new Map<string, number>(); // `${platoId}|${dia}` → vistas
 
+  let numeroPedido = 0; // correlativo de los pedidos en línea
   const hoy = new Date(Date.now() - OFFSET_CR_H * 3_600_000); // "ahora" en hora local
   for (let d = dias; d >= 1; d--) {
     const fecha = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate() - d));
@@ -213,19 +221,38 @@ export async function historial(r: Restaurante, dias = 30) {
         const clave = `${a.uno(platos).id}|${dia}`;
         vistas.set(clave, (vistas.get(clave) ?? 0) + 1);
       }
+      // ~15 % son pedidos en línea (sin mesa, sin servicio; a domicilio con envío).
+      const enLinea = a.prob(0.15) ? a.uno(['RECOGER', 'DOMICILIO'] as const) : null;
+      const envio = enLinea === 'DOMICILIO' ? 100000 : 0;
+      const t = calcularTotales(lineas, enLinea ? { ...r, porcentajeServicio: 0 } : r);
+      const pago = enLinea ? a.uno(['EFECTIVO', 'SINPE'] as const) : a.uno(metodos);
       cuentas.push({
         id: cuentaId,
         restauranteId,
-        mesaId: a.uno(mesas).id,
         estado: 'CERRADA',
         verificada: true,
-        ...calcularTotales(lineas, r),
-        metodoPago: a.uno(metodos),
+        ...t,
+        total: t.total + envio,
+        metodoPago: pago,
         cerradaPorId: caja.id,
-        numeroComensales: a.entre(1, 5),
         abiertaEn,
         cerradaEn,
         createdAt: abiertaEn,
+        ...(enLinea
+          ? {
+              tipo: enLinea,
+              numeroPedido: ++numeroPedido,
+              clienteNombre: a.uno(CLIENTES),
+              clienteTelefono: `8${a.entre(100, 999)} ${a.entre(1000, 9999)}`,
+              direccionEntrega: enLinea === 'DOMICILIO' ? a.uno(DIRECCIONES) : null,
+              costoEnvio: envio,
+              pagoElegido: pago,
+              pagoVerificado: pago === 'SINPE',
+              etapa: 'ENTREGADO' as const,
+              tiempoEstimadoMin: a.uno([20, 25, 30]),
+              tokenSeguimiento: randomBytes(24).toString('base64url'),
+            }
+          : { mesaId: a.uno(mesas).id, numeroComensales: a.entre(1, 5) }),
       });
     }
   }
@@ -274,6 +301,26 @@ export async function personalizacionDemo(restauranteId: string) {
       eslogan: r.eslogan ?? 'Comida tica casera, como en la casa de la abuela',
       telefono: r.telefono ?? '2222 3333',
       direccion: r.direccion ?? 'Barrio Escalante, San José, Costa Rica',
+    },
+  });
+  return true;
+}
+
+// Pedidos en línea activados en el restaurante demo (si nunca se configuraron).
+export async function enLineaDemo(restauranteId: string) {
+  const r = await prisma.restaurante.findUniqueOrThrow({ where: { id: restauranteId } });
+  if (r.enLineaActivo || r.sinpeNumero) return false;
+  await prisma.restaurante.update({
+    where: { id: restauranteId },
+    data: {
+      enLineaActivo: true,
+      enLineaRecoger: true,
+      enLineaDomicilio: true,
+      costoEnvio: 100000,
+      zonaEntrega: 'San José centro, Barrio Escalante, Los Yoses y San Pedro',
+      sinpeNumero: '8888 0000',
+      sinpeNombre: 'Soda La Esquina',
+      tiempoEstimadoMin: 25,
     },
   });
   return true;
