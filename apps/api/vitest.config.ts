@@ -9,5 +9,9 @@ export default defineConfig({
     globalSetup: ['tests/globalSetup.ts'],
     // Todos los tests comparten la BD de tests: se corren en serie.
     fileParallelism: false,
+    // Margen para cuando la máquina está ocupada (servidores de desarrollo recompilando): con los
+    // valores por defecto (5 s / 10 s) algunas corridas fallaban por tiempo.
+    testTimeout: 20_000,
+    hookTimeout: 30_000,
   },
 });

@@ -18,6 +18,8 @@ import { useIdioma, useTextos } from './estado/idioma';
 import { Cargando, pasoPedido, UiProvider } from '@menu-qr/ui';
 import { MesaLlenaScreen, PersonasModal, SolicitudesIngreso } from './componentes/ingreso';
 import { AccountScreen } from './pantallas/AccountScreen';
+import { RutaEnLinea } from './pantallas/EnLinea';
+import { Seguimiento } from './pantallas/Seguimiento';
 import { CartScreen } from './pantallas/CartScreen';
 import { MenuScreen } from './pantallas/MenuScreen';
 import './index.css';
@@ -101,6 +103,9 @@ function App() {
             <Route path="carrito" element={<CartScreen />} />
             <Route path="cuenta" element={<AccountScreen />} />
           </Route>
+          {/* Pedidos en línea (sin mesa) y su seguimiento. */}
+          <Route path="/r/:slug/*" element={<RutaEnLinea />} />
+          <Route path="/seguimiento/:token" element={<Seguimiento />} />
           <Route path="*" element={<ErrorScreen tipo="sinMesa" />} />
         </Routes>
       </AppShell>

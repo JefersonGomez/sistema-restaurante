@@ -22,7 +22,7 @@ autorizó commit + push al cerrar cada sub-fase.
 | Paso | Qué                                                                                                    | Estado |
 | ---- | ------------------------------------------------------------------------------------------------------ | ------ |
 | 5.1  | Modelo y API: cuenta sin mesa (tipo, cliente), config, pedido en línea, seguimiento, acciones, "lugar" | ✅     |
-| 5.2  | Cliente: /r/:slug, checkout y seguimiento                                                              | ⬜     |
+| 5.2  | Cliente: /r/:slug, checkout y seguimiento                                                              | ✅     |
 | 5.3  | Personal: pantalla "En línea", avisos, etiquetas, Ajustes, QR del enlace                               | ⬜     |
 | 5.4  | Reportes por canal, seed, README, tests                                                                | ⬜     |
 
@@ -41,6 +41,15 @@ autorizó commit + push al cerrar cada sub-fase.
     GET /public/seguimiento/:token, y /enlinea (listar, aceptar, rechazar, etapa, pago-verificado,
     entregar) para DUENO/CAJA/MESERO; eventos enlinea:nuevo / enlinea:actualizado a meseros y caja.
     Pendiente para 5.4: excluir los RECHAZADO de los reportes.
+- 5.2: menú en línea `apps/menu/src/pantallas/EnLinea.tsx` (/r/:slug, carrito `enlinea:<slug>`, botón
+  fijo "Ver pedido"; /r/:slug/pedido: tipo, datos del cliente recordados en el celular, efectivo o
+  SINPE con instrucciones, totales sin servicio + envío, pedido mínimo) y `Seguimiento.tsx`
+  (/seguimiento/:token, se refresca cada 8 s hasta entregado/rechazado; "en preparación" sale de los
+  ítems). Header: mesa y campanita opcionales. TotalsSummary: `envio` y oculta el servicio en 0 %. En
+  línea el total se calcula desde que se pide (recalcularCuenta incluye PENDIENTE si tipo ≠ MESA).
+  vitest: testTimeout 20 s / hookTimeout 30 s (las corridas intermitentes con ~10 fallos coincidían con
+  la máquina ocupada recompilando; con el margen no se repitió). En la BD de desarrollo: pedidos en
+  línea activados para la Soda (envío ₡1 000, SINPE de ejemplo) y un "Pedido #1" de prueba.
 
 ## Plan de la Fase 4 (aprobado 2026-10-23) — spec: docs/especificacion-fase4.md
 

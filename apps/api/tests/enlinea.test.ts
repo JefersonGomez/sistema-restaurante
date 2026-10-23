@@ -70,6 +70,7 @@ describe('pedidos en línea', () => {
     let s = await seguir(r.body.token);
     expect(s.cuenta).toMatchObject({ tipo: 'RECOGER', lugar: 'Para llevar #1 · Ana', mesa: null });
     expect(s.cuenta.enLinea).toMatchObject({ etapa: 'RECIBIDO', clienteTelefono: '8888 1234' });
+    expect(s.cuenta.total).toBeGreaterThan(0); // el total se conoce desde que se pide
 
     // Ni cocina ni la bandeja del mesero lo ven todavía; caja sí, en "En línea".
     const cocina = await tokenDe('cocina@resto-a.test');

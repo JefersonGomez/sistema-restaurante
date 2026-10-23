@@ -101,6 +101,7 @@ export async function crear(slug: string, input: PedidoEnLineaInput) {
     await prisma.cuenta.delete({ where: { id: cuenta.id } }); // plato no disponible, mínimo…
     throw e;
   }
+  await prisma.$transaction((tx) => recalcularCuenta(tx, cuenta.id)); // el total, desde ya
   avisar(r.id, 'enlinea:nuevo', { cuentaId: cuenta.id, lugar: lugarDe({ ...cuenta, mesa: null }) });
   return { token };
 }
@@ -120,6 +121,8 @@ export async function seguimiento(token: string): Promise<SeguimientoEnLinea> {
           moneda: true,
           sinpeNumero: true,
           sinpeNombre: true,
+          porcentajeIva: true,
+          preciosIncluyenImpuestos: true,
         },
       },
     },

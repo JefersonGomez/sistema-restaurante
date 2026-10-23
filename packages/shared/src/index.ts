@@ -611,6 +611,8 @@ export type SeguimientoEnLinea = {
     moneda: Moneda;
     sinpeNumero: string | null;
     sinpeNombre: string | null;
+    porcentajeIva: number;
+    preciosIncluyenImpuestos: boolean;
   };
   cuenta: CuentaDetalle;
 };

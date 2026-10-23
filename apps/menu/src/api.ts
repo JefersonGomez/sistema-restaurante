@@ -4,6 +4,8 @@ import type {
   MenuPublico,
   MesaPublica,
   PedidoDetalle,
+  PedidoEnLineaInput,
+  SeguimientoEnLinea,
 } from '@menu-qr/shared';
 
 export const API = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
@@ -106,3 +108,13 @@ export const responderIngreso = (sesion: string, id: string, aceptar: boolean) =
 
 export const desbloquearIngreso = (sesion: string) =>
   llamar('/public/cuenta/desbloquear-ingreso', { method: 'POST', sesion });
+
+// --- Pedidos en línea (sin mesa) ---
+export const pedirEnLinea = (slug: string, pedido: PedidoEnLineaInput) =>
+  llamar<{ token: string }>(`/public/${encodeURIComponent(slug)}/pedidos-en-linea`, {
+    method: 'POST',
+    body: JSON.stringify(pedido),
+  });
+
+export const verSeguimiento = (token: string) =>
+  llamar<SeguimientoEnLinea>(`/public/seguimiento/${encodeURIComponent(token)}`);

@@ -127,12 +127,14 @@ export function TotalsSummary({
   precio,
   etiquetaTotal,
   estimado,
+  envio = 0,
 }: {
   totales: Totales;
   config: ConfigImpuestos;
   precio: (c: number) => string;
   etiquetaTotal: string;
   estimado?: boolean;
+  envio?: number; // pedido a domicilio (ya incluido en el total)
 }) {
   const t = useTextos();
   const incluye = config.preciosIncluyenImpuestos;
@@ -145,7 +147,9 @@ export function TotalsSummary({
   return (
     <div className="flex flex-col gap-2.5 rounded-md bg-surface p-4 text-sm">
       {fila(t.subtotal, incluye ? tt.subtotal + tt.montoIva : tt.subtotal)}
-      {fila(t.servicio(config.porcentajeServicio), tt.montoServicio)}
+      {config.porcentajeServicio > 0 &&
+        fila(t.servicio(config.porcentajeServicio), tt.montoServicio)}
+      {envio > 0 && fila(t.envio, envio)}
       {!incluye && fila(t.iva(config.porcentajeIva), tt.montoIva)}
       <div className="flex justify-between border-t border-dashed border-line pt-3 text-[17px] font-semibold">
         <span>{etiquetaTotal}</span>

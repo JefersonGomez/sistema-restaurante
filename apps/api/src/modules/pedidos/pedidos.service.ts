@@ -51,8 +51,12 @@ export async function recalcularCuenta(tx: Tx, cuentaId: string) {
       },
     },
   });
+  // En línea el total se conoce desde que se pide (el cliente lo paga por SINPE antes de aceptar);
+  // un pedido rechazado queda CANCELADO y no suma.
+  const estados: ('CONFIRMADO' | 'PENDIENTE')[] =
+    cuenta.tipo === 'MESA' ? ['CONFIRMADO'] : ['CONFIRMADO', 'PENDIENTE'];
   const lineas = await tx.pedidoItem.findMany({
-    where: { pedido: { cuentaId, estado: 'CONFIRMADO' } },
+    where: { pedido: { cuentaId, estado: { in: estados } } },
     select: { precioUnitario: true, cantidad: true, cancelado: true },
   });
   // Pedidos en línea: sin el 10 % de servicio (es servicio a la mesa) y con el costo de envío.

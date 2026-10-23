@@ -33,8 +33,8 @@ export function Header({
   onCambiarIdioma,
 }: {
   restaurante: Restaurante;
-  mesa: number;
-  onLlamar: () => void;
+  mesa?: number; // sin mesa (pedido en línea) no se muestra ni la mesa ni "Llamar al mesero"
+  onLlamar?: () => void;
   onCambiarIdioma: () => void;
 }) {
   const { t } = useUi();
@@ -98,21 +98,25 @@ export function Header({
               {t.idiomaCorto}
             </button>
           )}
-          <button
-            type="button"
-            onClick={onLlamar}
-            aria-label={t.llamarMesero}
-            className="grid size-11 place-items-center rounded-[14px] text-amber hover:bg-surface"
-          >
-            <Bell className="size-[22px]" strokeWidth={1.9} aria-hidden />
-          </button>
+          {onLlamar && (
+            <button
+              type="button"
+              onClick={onLlamar}
+              aria-label={t.llamarMesero}
+              className="grid size-11 place-items-center rounded-[14px] text-amber hover:bg-surface"
+            >
+              <Bell className="size-[22px]" strokeWidth={1.9} aria-hidden />
+            </button>
+          )}
         </div>
       </div>
-      <div className="-mt-2 flex">
-        <Pastilla tono="purple">
-          {t.mesa} {mesa}
-        </Pastilla>
-      </div>
+      {mesa !== undefined && (
+        <div className="-mt-2 flex">
+          <Pastilla tono="purple">
+            {t.mesa} {mesa}
+          </Pastilla>
+        </div>
+      )}
     </>
   );
 }
