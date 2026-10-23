@@ -4,11 +4,11 @@ SaaS multi-restaurante: los comensales escanean un QR en la mesa, ven el menú (
 celular y piden; los pedidos llegan en tiempo real a cocina, bar, meseros y caja. Una sola
 instancia sirve a todos los restaurantes y ninguno puede ver datos de otro.
 
-> **Estado:** Fase 3 completa (identidad visual compartida, fotos de platos, horarios y
-> promoción, panel del dueño, tablets de cocina con PIN, reportes y rediseño de cocina, mesero y
-> caja). Specs: [`fase 1`](docs/especificacion-fase1.md), [`fase 2`](docs/especificacion-fase2.md),
-> [`frontend del menú`](docs/especificacion-frontend-menu.md) y
-> [`fase 3`](docs/especificacion-fase3.md).
+> **Estado:** Fase 4 completa (avisos y alertas, animaciones, navegación, personas por mesa,
+> cuentas separadas, registro de restaurantes y personalización). Specs:
+> [`fase 1`](docs/especificacion-fase1.md), [`fase 2`](docs/especificacion-fase2.md),
+> [`frontend del menú`](docs/especificacion-frontend-menu.md), [`fase 3`](docs/especificacion-fase3.md)
+> y [`fase 4`](docs/especificacion-fase4.md).
 
 ## Requisitos
 
@@ -63,6 +63,32 @@ mesero; y una cuenta cerrada hoy (mesa 6) que aparece en el reporte **Hoy** del 
 
 > Fuera del horario del restaurante (lunes a sábado 7:00–21:00, domingo 8:00–15:00, hora de Costa
 > Rica) el menú se ve pero no deja pedir. Para probar de noche, agregue un turno en Panel → Ajustes.
+
+### Recorrido de la Fase 4
+
+1. **Avisos:** en cocina, mesero o caja toque una vez la pantalla (activa el sonido) o
+   "Activar sonido y avisos" (también pide permiso para las notificaciones del sistema; solo en
+   `localhost` o https). La campanita guarda los avisos aunque cambie de pantalla. Llamar al
+   mesero desde el menú suena siempre; si la mesa vuelve a llamar sin ser atendida, se le recuerda
+   (máximo cada 30 s).
+2. **Alertas por tiempo:** en cocina, un pedido con más de 10 min sin empezar se marca con un
+   contorno rojo que late; en el mesero, un plato listo con más de 5 min sin llevarse, en verde.
+   Varios a la vez → un solo aviso y un solo sonido.
+3. **Animaciones:** tenedor y cuchillo que se cruzan al entrar y al abrir el menú; transiciones
+   entre pantallas; las mesas tienen ícono y se levantan con el cursor. En el panel, la barra
+   lateral se despliega al acercar el cursor; en el celular, el menú es un cajón lateral.
+4. **Personas por mesa:** el primero que escanea el QR dice cuántos son. Si la mesa está llena,
+   quien escanea ve "La mesa N ya tiene una cuenta de X personas, ¿está usted en esta mesa?" y los
+   celulares de la mesa reciben "Alguien quiere unirse" para aceptar o rechazar (aceptar sube el
+   cupo en 1). Con 3 rechazos o 5 intentos en 10 min la mesa se bloquea; se desbloquea desde
+   "Mi cuenta". Para probarlo use dos navegadores (uno en incógnito).
+5. **Cuentas separadas:** en caja, "¿Cómo pagan? → Separado": elija los platos de cada grupo (de
+   un "2× café" puede cobrar 1), el método de pago y "Cobrar este grupo". Cada grupo tiene su
+   comprobante para imprimir y se puede deshacer; al cobrar lo último la cuenta se cierra sola.
+6. **Registro y personalización:** en `/registro` se crea un restaurante nuevo; después el dueño
+   llega a Panel → **Personalizar** (logo, banner, eslogan, color, teléfono, dirección y enlace de
+   Google Maps, con vista previa). El cliente ve el banner arriba del menú y, al final, la
+   tarjeta "Encuéntrenos" con el mapa y "Cómo llegar".
 
 ### Registrar un restaurante nuevo
 
@@ -229,23 +255,28 @@ Errores siempre con la forma `{ error: { code, message, details? } }`.
 
 ### Endpoints
 
-| Rol                    | Rutas                                                                                                              |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| SUPERADMIN             | `POST/GET /admin/restaurantes`, `PATCH /admin/restaurantes/:id` (activo, plan)                                     |
-| DUENO                  | `GET/PATCH /restaurante` (incluye `modoConfirmacion`), `GET /reportes/hoy`                                         |
-| DUENO                  | CRUD `/usuarios` (con `estacionId`), `/estaciones`, `/categorias` (+ `PATCH /orden`), `/mesas`                     |
-| DUENO                  | CRUD `/platos`, `/platos/:platoId/grupos-modificadores[/:grupoId/modificadores]`                                   |
-| DUENO                  | `POST /mesas/:id/regenerar-token`, `GET /mesas/:id/qr?formato=png\|svg`, `POST /uploads/firma` (501)               |
-| DUENO, MESERO, COCINA  | `GET /platos`, `GET /platos/:id`, `PATCH /platos/:id/agotado`                                                      |
-| DUENO, MESERO, CAJA    | `GET /operacion/mesas`, `GET /operacion/cuentas/:id`, `GET /operacion/llamadas?atendida=`                          |
-| DUENO, MESERO          | `GET /operacion/pedidos?estado=`, `PATCH /operacion/pedidos/:id/confirmar\|cancelar`                               |
-| DUENO, MESERO          | `POST /operacion/mesas/:id/pedidos`, `GET /operacion/items?estado=LISTO`                                           |
-| DUENO, MESERO          | `PATCH /operacion/items/:id/cancelar`, `PATCH /operacion/llamadas/:id/atender`                                     |
-| DUENO, COCINA          | `GET /operacion/estaciones`, `GET /operacion/estaciones/:id/items`                                                 |
-| DUENO, COCINA, MESERO  | `PATCH /operacion/items/:id/estado` (cocina: preparar/listo de su estación; mesero: entregado)                     |
-| DUENO, CAJA            | `POST /operacion/cuentas/:id/cerrar` `{ metodoPago }`                                                              |
-| Comensal (sesión)      | `GET /public/cuenta`, `POST /public/cuenta/pedidos`, `POST /public/cuenta/llamar`, `POST /public/cuenta/solicitar` |
-| Público (rate limited) | `GET /public/:slug/menu`, `GET /public/mesa/:token`, `GET /health`                                                 |
+| Rol                    | Rutas                                                                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| SUPERADMIN             | `POST/GET /admin/restaurantes`, `PATCH /admin/restaurantes/:id` (activo, plan)                                                                                     |
+| DUENO                  | `GET/PATCH /restaurante` (incluye `modoConfirmacion`), `GET /reportes/hoy`                                                                                         |
+| DUENO                  | CRUD `/usuarios` (con `estacionId`), `/estaciones`, `/categorias` (+ `PATCH /orden`), `/mesas`                                                                     |
+| DUENO                  | CRUD `/platos`, `/platos/:platoId/grupos-modificadores[/:grupoId/modificadores]`                                                                                   |
+| DUENO                  | `POST /mesas/:id/regenerar-token`, `GET /mesas/:id/qr?formato=png\|svg`, `POST /uploads/firma` (501)                                                               |
+| DUENO, MESERO, COCINA  | `GET /platos`, `GET /platos/:id`, `PATCH /platos/:id/agotado`                                                                                                      |
+| DUENO, MESERO, CAJA    | `GET /operacion/mesas`, `GET /operacion/cuentas/:id`, `GET /operacion/llamadas?atendida=`                                                                          |
+| DUENO, MESERO          | `GET /operacion/pedidos?estado=`, `PATCH /operacion/pedidos/:id/confirmar\|cancelar`                                                                               |
+| DUENO, MESERO          | `POST /operacion/mesas/:id/pedidos`, `GET /operacion/items?estado=LISTO`                                                                                           |
+| DUENO, MESERO          | `PATCH /operacion/items/:id/cancelar`, `PATCH /operacion/llamadas/:id/atender`                                                                                     |
+| DUENO, COCINA          | `GET /operacion/estaciones`, `GET /operacion/estaciones/:id/items`                                                                                                 |
+| DUENO, COCINA, MESERO  | `PATCH /operacion/items/:id/estado` (cocina: preparar/listo de su estación; mesero: entregado)                                                                     |
+| DUENO, CAJA            | `POST /operacion/cuentas/:id/cerrar` `{ metodoPago }`                                                                                                              |
+| Comensal (sesión)      | `GET /public/cuenta`, `POST /public/cuenta/pedidos`, `POST /public/cuenta/llamar`, `POST /public/cuenta/solicitar`                                                 |
+| Público (rate limited) | `GET /public/:slug/menu`, `GET /public/mesa/:token`, `GET /health`                                                                                                 |
+| DUENO, CAJA            | `POST /operacion/cuentas/:id/pagos` (cuenta separada), `DELETE /operacion/cuentas/:id/pagos/:pagoId`                                                               |
+| DUENO, COCINA, MESERO  | `POST /operacion/items/:id/deshacer` `{ estado }` (toque equivocado, unos segundos)                                                                                |
+| DUENO                  | `GET /reportes?desde&hasta`, `/dispositivos` (código, lista, revocar), `PUT /usuarios/:id/pin`, `POST /uploads/imagen?destino=plato                                | logo | banner` |
+| Comensal (sesión)      | `POST /public/cuenta/personas`, `POST /public/cuenta/ingresos/:id` `{ aceptar }`, `POST /public/cuenta/desbloquear-ingreso`, `POST /public/cuenta/vistas/:platoId` |
+| Público (rate limited) | `POST /auth/registro`, `POST /public/mesa/:token/ingreso`, `POST /public/mesa/:token/ingreso/:id` `{ clave }`, `POST /dispositivos/vincular`                       |
 
 El `restauranteId` de las rutas privadas sale siempre del JWT; si se manda en body o query se ignora.
 Rate limit: 1 200 solicitudes/min por IP en `/public` (todos los celulares de un restaurante comparten
@@ -365,6 +396,13 @@ PDF de QR solo con mesas propias, reordenar categorías y platos, vinculación d
 vencido o reutilizado, bloqueo tras 5 PIN, tablet revocada sin socket), reportes (totales iguales a
 la suma de las cuentas cerradas del historial del seed, días en hora local, aislamiento) y deshacer
 un estado de cocina.
+
+Fase 4: recordatorio de llamada al mesero (y que el spam no suene), aviso agrupado, personas por
+mesa (cupo, aceptar/rechazar, sesión entregada una sola vez, bloqueo por rechazos y por spam,
+solicitud vencida, otra mesa no puede responder), cuentas separadas (grupos, división de un ítem,
+cierre automático con MIXTO, "todo junto" bloqueado, deshacer, aislamiento), registro (slug sin
+tildes y único, correo repetido, validación) y personalización (banner 1600×600, enlaces de Google
+Maps válidos, datos en el menú público).
 
 ### Prueba de carga (hora pico)
 

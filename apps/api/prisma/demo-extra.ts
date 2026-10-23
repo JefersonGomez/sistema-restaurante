@@ -247,3 +247,34 @@ export async function historial(r: Restaurante, dias = 30) {
   );
   return cuentas.length;
 }
+
+// Personalización de ejemplo (Fase 4): eslogan, contacto, dirección y un banner generado.
+export async function personalizacionDemo(restauranteId: string) {
+  const r = await prisma.restaurante.findUniqueOrThrow({ where: { id: restauranteId } });
+  if (r.bannerUrl || r.eslogan) return false;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="600">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7a91c"/><stop offset="0.55" stop-color="#e2741b"/>
+      <stop offset="1" stop-color="#5b2db5"/></linearGradient></defs>
+    <rect width="1600" height="600" fill="url(#g)"/>
+    <circle cx="1260" cy="300" r="230" fill="#ffffff" opacity="0.9"/>
+    <circle cx="1260" cy="300" r="170" fill="none" stroke="#e2741b" stroke-width="16" opacity="0.35"/>
+    <circle cx="300" cy="520" r="140" fill="#ffffff" opacity="0.12"/>
+  </svg>`;
+  const banner = await sharp(Buffer.from(svg)).webp({ quality: 80 }).toBuffer();
+  const bannerUrl = await storage.guardar(
+    `restaurantes/${restauranteId}/banner/${randomUUID()}.webp`,
+    banner,
+    'image/webp',
+  );
+  await prisma.restaurante.update({
+    where: { id: restauranteId },
+    data: {
+      bannerUrl,
+      eslogan: r.eslogan ?? 'Comida tica casera, como en la casa de la abuela',
+      telefono: r.telefono ?? '2222 3333',
+      direccion: r.direccion ?? 'Barrio Escalante, San José, Costa Rica',
+    },
+  });
+  return true;
+}

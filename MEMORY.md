@@ -11,6 +11,7 @@
 - **Frontend del comensal completo y subido** (commit `5869078`, 2026-10-21).
 - **Fase 3 completa** (3.1–3.10, 2026-10-23). Pendiente: revisión del usuario y la spec de la
   próxima fase. Lo que quedó fuera de alcance está en el README.
+- **Fase 4 completa** (4.1–4.8, 2026-10-23). Pendiente: prueba completa del usuario.
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
 
 ## Plan de la Fase 4 (aprobado 2026-10-23) — spec: docs/especificacion-fase4.md
@@ -26,7 +27,7 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
 | 4.5  | Caja: pagar junto o separado, grupos de ítems con su método de pago y comprobante                                                                     | ✅     |
 | 4.6  | Registro de restaurante + dueño                                                                                                                       | ✅     |
 | 4.7  | Personalización: ubicación (Google Maps), logo, eslogan, banner; vista bonita para el cliente                                                         | ✅     |
-| 4.8  | Tests, seed y README de la Fase 4                                                                                                                     | ⬜     |
+| 4.8  | Tests, seed y README de la Fase 4                                                                                                                     | ✅     |
 
 - 4.1: causas de "no suena la llamada": (a) el audio del navegador queda bloqueado al recargar
   hasta tocar "Activar sonido" → ahora el primer toque/tecla en cualquier parte lo activa
@@ -86,6 +87,10 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
   menú. Panel: /panel/personalizar (nombre, eslogan, logo, banner, color, teléfono, dirección, enlace
   Maps, vista previa con los mismos componentes); logo y color salieron de Ajustes. Tras registrarse,
   el dueño cae en /panel/personalizar?bienvenida.
+- 4.8: seed: `personalizacionDemo` (banner generado, eslogan, teléfono y dirección si faltan).
+  README: recorrido de la Fase 4, endpoints nuevos y qué cubren los tests. Una corrida de `pnpm test`
+  dio 10 fallos en la API que no se repitieron en tres corridas seguidas (posible interferencia con
+  `tsx watch` reiniciando mientras corrían): vigilar.
 
 ## Plan de la Fase 3 (sub-fases) — aprobado 2026-10-22; el usuario autorizó commit + push al cerrar cada sub-fase
 

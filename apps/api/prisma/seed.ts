@@ -4,7 +4,7 @@ import { calcularTotales } from '@menu-qr/shared';
 import { prisma } from '../src/lib/prisma';
 import { env } from '../src/lib/env';
 import { generarTokenQr } from '../src/lib/tokens';
-import { fotosDePlatos, historial, tabletDemo } from './demo-extra';
+import { fotosDePlatos, historial, personalizacionDemo, tabletDemo } from './demo-extra';
 
 // Credenciales de prueba (documentadas en el README). Solo para desarrollo.
 const USUARIOS_DEMO = [
@@ -43,6 +43,8 @@ async function main() {
   const fotos = await fotosDePlatos(restaurante.id);
   if (fotos) console.log(`Fotos generadas para ${fotos} platos.`);
   if (await tabletDemo(restaurante.id)) console.log('Tablet de cocina vinculada.');
+  if (await personalizacionDemo(restaurante.id))
+    console.log('Personalización de ejemplo: banner, eslogan, teléfono y dirección.');
   const cuentas = await historial(restaurante);
   if (cuentas) console.log(`Historial: ${cuentas} cuentas cerradas en los últimos 30 días.`);
 
