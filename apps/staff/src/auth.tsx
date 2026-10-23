@@ -15,6 +15,7 @@ type Sesion = {
   usuario: Usuario | null;
   cargando: boolean;
   login: (email: string, password: string) => Promise<void>;
+  registrar: (datos: unknown) => Promise<void>;
   logout: () => Promise<void>;
   recargar: () => Promise<void>;
   entrarTablet: (accessToken: string, usuario: Usuario) => void;
@@ -57,6 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
     setUsuario(u);
   };
+  const registrar = async (datos: unknown) => {
+    const [u] = await Promise.all([api.registro(datos), new Promise((r) => setTimeout(r, 700))]);
+    setUsuario(u);
+  };
   const logout = async () => {
     await api.logout();
     setUsuario(null);
@@ -71,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsuario((await api.api<{ usuario: Usuario }>('/auth/me')).usuario);
 
   return (
-    <Ctx.Provider value={{ usuario, cargando, login, logout, recargar, entrarTablet }}>
+    <Ctx.Provider value={{ usuario, cargando, login, registrar, logout, recargar, entrarTablet }}>
       {children}
     </Ctx.Provider>
   );

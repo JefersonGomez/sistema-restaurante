@@ -26,6 +26,10 @@ const centimos = z.number().int().min(0).max(1_000_000_000);
 const porcentaje = z.number().int().min(0).max(100);
 const email = z.string().trim().toLowerCase().pipe(z.email());
 const password = z.string().min(8).max(200);
+export const telefonoSchema = z
+  .string()
+  .trim()
+  .regex(/^[0-9 +()-]{8,20}$/, 'Teléfono de 8 dígitos, ej. 8888 8888');
 
 export const idParamSchema = z.object({ id: z.uuid() });
 
@@ -78,6 +82,8 @@ export const restauranteConfigSchema = z
       .string()
       .refine(zonaHorariaValida, 'Zona horaria inválida (ej. America/Costa_Rica)'),
     cerradoManual: z.boolean(), // "Cerrar temporalmente"
+    telefono: telefonoSchema.nullable(),
+    direccion: z.string().trim().max(200).nullable(),
     // Promoción del banner: con precioPromo, ese es el precio que se cobra por el plato.
     platoDestacadoId: z.uuid().nullable(),
     textoPromoEs: z.string().trim().max(80).nullable(),
@@ -100,6 +106,17 @@ export const crearRestauranteSchema = z.object({
   dueno: z.object({ nombre: texto(), email, password }),
 });
 export type CrearRestauranteInput = z.infer<typeof crearRestauranteSchema>;
+
+// Registro público: el dueño crea su restaurante (queda activo y con la sesión iniciada).
+export const registroSchema = z.object({
+  restaurante: z.object({
+    nombre: texto(80),
+    telefono: telefonoSchema,
+    direccion: z.string().trim().max(200).optional(),
+  }),
+  dueno: z.object({ nombre: texto(), email, password }),
+});
+export type RegistroInput = z.infer<typeof registroSchema>;
 
 export const adminRestaurantePatchSchema = z
   .object({ activo: z.boolean(), plan: texto(40) })

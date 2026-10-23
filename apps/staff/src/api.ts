@@ -52,6 +52,16 @@ export async function login(email: string, password: string) {
   return datos.usuario;
 }
 
+// Registro de un restaurante nuevo: deja la sesión iniciada como en el login.
+export async function registro(datos: unknown) {
+  const res = await post('/auth/registro', datos);
+  const r = await res.json();
+  if (!res.ok)
+    throw new ErrorApi(res.status, r.error?.code, r.error?.message ?? 'Error', r.error?.details);
+  fijarToken(r.accessToken);
+  return r.usuario;
+}
+
 export async function logout() {
   await post('/auth/logout').catch(() => {});
   fijarToken(null);

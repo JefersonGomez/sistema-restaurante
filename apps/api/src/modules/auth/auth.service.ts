@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import type { LoginInput } from '@menu-qr/shared';
+import type { LoginInput, RegistroInput } from '@menu-qr/shared';
 import { prisma } from '../../lib/prisma';
 import { env } from '../../lib/env';
 import {
@@ -105,6 +105,54 @@ export async function cambiarPassword(usuarioId: string, actual: string, nueva: 
     where: { id: usuarioId },
     data: { passwordHash: await bcrypt.hash(nueva, 10), debeCambiarPassword: false },
   });
+}
+
+// "Soda La Esquina" → "soda-la-esquina" (sin tildes); si ya existe, se le agrega -2, -3…
+export const slugDe = (nombre: string) =>
+  nombre
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '') // quita tildes
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 50) || 'restaurante';
+
+async function slugLibre(nombre: string) {
+  const base = slugDe(nombre);
+  for (let n = 1; ; n++) {
+    const slug = n === 1 ? base : `${base}-${n}`;
+    if (!(await prisma.restaurante.findUnique({ where: { slug }, select: { id: true } })))
+      return slug;
+  }
+}
+
+// Registro público: crea el restaurante (activo), su dueño, las estaciones Cocina y Bar y un
+// horario inicial de todos los días 7:00–21:00 (para que el menú no salga "Cerrado"); el dueño
+// queda con la sesión iniciada.
+export async function registrar({ restaurante, dueno }: RegistroInput) {
+  if (await prisma.usuario.findUnique({ where: { email: dueno.email }, select: { id: true } }))
+    throw new HttpError(409, 'CORREO_EN_USO', 'Ya hay una cuenta con ese correo; entre con él');
+  const passwordHash = await bcrypt.hash(dueno.password, 10);
+  await prisma.restaurante.create({
+    data: {
+      nombre: restaurante.nombre,
+      slug: await slugLibre(restaurante.nombre),
+      telefono: restaurante.telefono,
+      direccion: restaurante.direccion || null,
+      usuarios: {
+        create: { nombre: dueno.nombre, email: dueno.email, passwordHash, rol: 'DUENO' },
+      },
+      estaciones: { create: [{ nombre: 'Cocina' }, { nombre: 'Bar' }] },
+      horarios: {
+        create: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
+          diaSemana,
+          abre: '07:00',
+          cierra: '21:00',
+        })),
+      },
+    },
+  });
+  return login({ email: dueno.email, password: dueno.password });
 }
 
 export async function yo(usuarioId: string) {

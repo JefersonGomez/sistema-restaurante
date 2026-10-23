@@ -24,7 +24,7 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
 | 4.3  | Navegación: barra lateral que se esconde, menú desplegable en el celular                                                                              | ✅     |
 | 4.4  | Cantidad de personas al escanear el QR (y cómo se une alguien a una cuenta abierta)                                                                   | ✅     |
 | 4.5  | Caja: pagar junto o separado, grupos de ítems con su método de pago y comprobante                                                                     | ✅     |
-| 4.6  | Registro de restaurante + dueño                                                                                                                       | ⬜     |
+| 4.6  | Registro de restaurante + dueño                                                                                                                       | ✅     |
 | 4.7  | Personalización: ubicación (Google Maps), logo, eslogan, banner; vista bonita para el cliente                                                         | ⬜     |
 | 4.8  | Tests, seed y README de la Fase 4                                                                                                                     | ⬜     |
 
@@ -71,6 +71,12 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
   separados → 409 PAGO_SEPARADO. DELETE /operacion/cuentas/:id/pagos/:pagoId deshace (cuenta abierta;
   las filas divididas no se vuelven a juntar). Caja: selector "¿Cómo pagan?", grupos cobrados con
   "Imprimir comprobante" (ticket 80 mm por grupo, "NO ES FACTURA ELECTRÓNICA") y "Deshacer".
+- 4.6: migración `20261023120000_registro` (Restaurante.telefono, direccion). POST /auth/registro
+  (limiteRegistro: 5 por IP/hora) con `registroSchema`: crea restaurante activo + dueño + estaciones
+  Cocina/Bar + horario todos los días 7:00–21:00 y hace login (cookie de refresh). Slug desde el nombre
+  sin tildes (`p{Diacritic}`), con -2, -3 si existe. Correo repetido → 409 CORREO_EN_USO. Sin
+  confirmación de correo (decisión del usuario: recomendación aceptada). Staff: /registro en 2 pasos
+  ("Su local" / "Sus datos"), enlace "Cree su cuenta" en el login; `erroresDe(e, prefijo)`.
 
 ## Plan de la Fase 3 (sub-fases) — aprobado 2026-10-22; el usuario autorizó commit + push al cerrar cada sub-fase
 

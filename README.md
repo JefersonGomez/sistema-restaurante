@@ -64,6 +64,13 @@ mesero; y una cuenta cerrada hoy (mesa 6) que aparece en el reporte **Hoy** del 
 > Fuera del horario del restaurante (lunes a sábado 7:00–21:00, domingo 8:00–15:00, hora de Costa
 > Rica) el menú se ve pero no deja pedir. Para probar de noche, agregue un turno en Panel → Ajustes.
 
+### Registrar un restaurante nuevo
+
+En `http://localhost:5181/registro` (o "Cree su cuenta" en el login): datos del local (nombre,
+teléfono, dirección) y del dueño (nombre, correo, contraseña). El restaurante queda activo con las
+estaciones Cocina y Bar y abierto todos los días de 7:00 a 21:00; el dueño entra directo a su panel.
+Límite: 5 registros por hora por IP.
+
 ### Recorrido de la Fase 3
 
 Entrar como dueño (`dueno@sodalaesquina.test`) en `http://localhost:5181/panel`:

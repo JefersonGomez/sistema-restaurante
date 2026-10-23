@@ -72,6 +72,8 @@ model Restaurante {
   nombre                   String
   slug                     String           @unique
   logoUrl                  String?
+  telefono                 String?
+  direccion                String?
   colorAcento              String? // acento del menú del comensal; null = morado del diseño
   moneda                   Moneda           @default(CRC)
   idiomas                  Idioma[]         @default([es, en])

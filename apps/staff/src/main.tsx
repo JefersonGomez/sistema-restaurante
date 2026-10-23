@@ -22,6 +22,7 @@ import { CambiarPasswordPage } from './CambiarPasswordPage';
 import { DispositivosPage } from './panel/DispositivosPage';
 import { ReportesPage } from './panel/reportes/ReportesPage';
 import { TabletPage } from './TabletPage';
+import { RegistroPage } from './RegistroPage';
 import { tokenTablet } from './api';
 import { Encabezado } from './ui';
 import './index.css';
@@ -67,6 +68,10 @@ function App() {
         <Route
           path="/tablet"
           element={usuario ? <Navigate to={inicio} replace /> : <TabletPage />}
+        />
+        <Route
+          path="/registro"
+          element={usuario ? <Navigate to={inicio} replace /> : <RegistroPage />}
         />
         <Route
           path="/admin"

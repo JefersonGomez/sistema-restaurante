@@ -70,6 +70,12 @@ export function LoginPage() {
         <Boton type="submit" disabled={enviando} className="h-14 w-full text-[15.5px]">
           {enviando ? 'Ingresando…' : 'Ingresar'}
         </Boton>
+        <p className="text-center text-sm text-muted">
+          ¿Tiene un restaurante o una soda?{' '}
+          <Link to="/registro" className="font-semibold text-purple underline">
+            Cree su cuenta
+          </Link>
+        </p>
         <Link to="/tablet" className="block min-h-11 text-center text-sm text-muted underline">
           ¿Es una tablet de cocina? Entrar con PIN
         </Link>

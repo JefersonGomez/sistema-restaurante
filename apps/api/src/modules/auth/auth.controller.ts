@@ -16,6 +16,11 @@ export async function login(req: Request, res: Response) {
   res.cookie(COOKIE, refreshToken, opcionesCookie).json({ accessToken, usuario });
 }
 
+export async function registro(req: Request, res: Response) {
+  const { refreshToken, accessToken, usuario } = await service.registrar(req.body);
+  res.status(201).cookie(COOKIE, refreshToken, opcionesCookie).json({ accessToken, usuario });
+}
+
 export async function refresh(req: Request, res: Response) {
   const { refreshToken, accessToken } = await service.refrescar(req.cookies?.[COOKIE]);
   res.cookie(COOKIE, refreshToken, opcionesCookie).json({ accessToken });

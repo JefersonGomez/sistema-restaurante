@@ -36,3 +36,5 @@ export const limitePin = crear(20, 15, {
   soloFallidos: true,
   clave: (req) => `disp:${req.get('x-dispositivo') ?? ipKeyGenerator(req.ip ?? '')}`,
 });
+// Registro de restaurantes: 5 por IP cada hora (cuenten o no).
+export const limiteRegistro = crear(5, 60);

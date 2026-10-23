@@ -185,5 +185,8 @@ export function Etiqueta({
 }
 
 // Errores de Zod → { "nombreEs": "…", "grupos.0.minimo": "…" } para mostrarlos junto a cada campo.
-export const erroresDe = (e: { issues: { path: PropertyKey[]; message: string }[] }) =>
-  Object.fromEntries(e.issues.map((i) => [i.path.map(String).join('.'), i.message]));
+// `prefijo`: cuando se valida una parte del objeto (p. ej. "restaurante.").
+export const erroresDe = (
+  e: { issues: { path: PropertyKey[]; message: string }[] },
+  prefijo = '',
+) => Object.fromEntries(e.issues.map((i) => [prefijo + i.path.map(String).join('.'), i.message]));
