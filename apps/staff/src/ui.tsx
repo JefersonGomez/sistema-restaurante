@@ -42,7 +42,7 @@ export function Encabezado({ titulo, children }: { titulo: string; children?: Re
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-app print:hidden">
       <div className="flex flex-wrap items-center gap-2 px-4 py-2">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-36 flex-1">
           <h1 className="truncate text-[17px] font-semibold">{titulo}</h1>
           <p className="truncate text-xs text-muted">
             {usuario?.nombre}

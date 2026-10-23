@@ -5,13 +5,12 @@
 
 ## Estado actual
 
-- **Fecha última actualización:** 2026-10-20
+- **Fecha última actualización:** 2026-10-23
 - **Fase 1 completa y subida** (commit `a202fd9`).
 - **Fase 2 completa y subida** (commit `a0317b7`).
 - **Frontend del comensal completo y subido** (commit `5869078`, 2026-10-21).
-- **Próxima sesión — pendientes conocidos:** revisión visual del usuario en su celular; el
-  frontend del personal (apps/staff) aún usa el estilo básico de la Fase 2 (no el del prototipo);
-  sin UI para administrar menú/mesas (solo API); platos sin foto usan el ícono de la categoría.
+- **Fase 3 completa** (3.1–3.10, 2026-10-23). Pendiente: revisión del usuario y la spec de la
+  próxima fase. Lo que quedó fuera de alcance está en el README.
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
 
 ## Plan de la Fase 3 (sub-fases) — aprobado 2026-10-22; el usuario autorizó commit + push al cerrar cada sub-fase
@@ -29,7 +28,7 @@ Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por e
 | 3.7  | Dispositivos con PIN (vincular 6 dígitos, token de dispositivo, PIN 4 dígitos, bloqueo, revocar)       | ✅     |
 | 3.8  | Reportes agregados en SQL + vistas de platos + recharts + CSV                                          | ✅     |
 | 3.9  | Rediseño de estación, mesero y caja con la identidad visual                                            | ✅     |
-| 3.10 | Tests obligatorios, seed (fotos generadas, horarios, promo, dispositivo, 30 días), README              | ⬜     |
+| 3.10 | Tests obligatorios, seed (fotos generadas, horarios, promo, dispositivo, 30 días), README              | ✅     |
 
 ### Decisiones de la Fase 3 (respondidas por el usuario 2026-10-22)
 
@@ -98,6 +97,12 @@ zona, cerradoManual)` con Intl (sin librerías). Cerrado → 423 (antes 409) sol
   GET /reportes?desde&hasta (días locales, zonaHoraria del restaurante, todo en SQL con $queryRaw; ~130 ms).
   POST /public/cuenta/vistas/:id (el menú registra 1 vista por plato por visita). MINUTOS_DEMORA=20 en shared.
   Staff: panel/reportes (recharts lazy, tablas con barra, CSV armado en el navegador con los mismos datos).
+- 3.10: `prisma/demo-extra.ts` (lo llama el seed y agrega solo lo que falte, sin borrar): fotos simples
+  con sharp (degradado por categoría + nombre) guardadas con el storage driver; "Tablet de la cocina"
+  vinculada; 30 días de cuentas cerradas con PRNG de semilla fija (horas pico 11–14 y 17–19, ~10 %
+  demorados, ~3 % cancelados con motivo, vistas de platos) insertadas con createMany (~17 s). Test: el
+  reporte de 30 días sobre ese historial cuadra con la suma de cuentas cerradas y tarda < 1 s. Encabezado
+  del staff con ancho mínimo de título (en 360 px los botones bajan de línea). README: recorrido Fase 3.
 - 3.9: tokens del tema (claro/oscuro) en ui.tsx, EstacionPage, MeseroPage, TomarPedido y CajaPage. Estación:
   3 columnas (Nuevos / En preparación / Listos) según el ítem menos avanzado del pedido; reloj amarillo 10 min,
   rojo MINUTOS_DEMORA; "Deshacer" 5 s → POST /operacion/items/:id/deshacer {estado} (vuelve al anterior y borra

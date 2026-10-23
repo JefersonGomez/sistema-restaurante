@@ -3,7 +3,15 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { Reporte } from '@menu-qr/shared';
 import { app } from '../src/app';
 import { prisma } from '../src/lib/prisma';
-import { abrirSesion, crearRestaurante, limpiarBD, sembrarMenu, tokenDe } from './helpers';
+import { historial } from '../prisma/demo-extra';
+import {
+  abrirSesion,
+  crearRestaurante,
+  crearUsuario,
+  limpiarBD,
+  sembrarMenu,
+  tokenDe,
+} from './helpers';
 
 let a: Awaited<ReturnType<typeof sembrarMenu>>;
 let b: Awaited<ReturnType<typeof sembrarMenu>>;
@@ -185,5 +193,39 @@ describe('reportes por rango', () => {
     expect((await request(app).get('/reportes?desde=2026-10-01&hasta=2026-10-02')).status).toBe(
       401,
     );
+  });
+});
+
+describe('reportes con el historial del seed', () => {
+  it('30 días: el total cuadra con la suma de las cuentas cerradas y carga rápido', async () => {
+    const { restaurante } = await crearRestaurante('resto-seed');
+    await sembrarMenu(restaurante.id);
+    await crearUsuario('mesero@resto-seed.test', 'MESERO', restaurante.id);
+    await crearUsuario('caja@resto-seed.test', 'CAJA', restaurante.id);
+    const creadas = await historial(restaurante);
+    expect(creadas).toBeGreaterThan(300);
+
+    const zona = 'America/Costa_Rica';
+    const dia = (atras: number) =>
+      new Intl.DateTimeFormat('en-CA', { timeZone: zona }).format(
+        new Date(Date.now() - atras * 86_400_000),
+      );
+    const t = await tokenDe('dueno@resto-seed.test');
+    const inicio = Date.now();
+    const res = await reporte(dia(30), dia(1), t);
+    expect(Date.now() - inicio).toBeLessThan(1000);
+    const r = res.body as Reporte;
+
+    const suma = await prisma.cuenta.aggregate({
+      where: { restauranteId: restaurante.id, estado: 'CERRADA' },
+      _sum: { total: true },
+      _count: true,
+    });
+    expect(r.resumen.cuentas).toBe(suma._count);
+    expect(r.resumen.totalVendido).toBe(suma._sum.total);
+    expect(r.porMetodo.reduce((s, m) => s + m.total, 0)).toBe(suma._sum.total);
+    expect(r.porHora.reduce((s, h) => s + h.cuentas, 0)).toBe(suma._count);
+    // Lo del seed no se mezcla con el resto de restaurantes de la prueba.
+    expect((await reporte(dia(30), dia(1))).body.resumen.cuentas).toBeLessThan(10);
   });
 });

@@ -4,9 +4,11 @@ SaaS multi-restaurante: los comensales escanean un QR en la mesa, ven el menú (
 celular y piden; los pedidos llegan en tiempo real a cocina, bar, meseros y caja. Una sola
 instancia sirve a todos los restaurantes y ninguno puede ver datos de otro.
 
-> **Estado:** Fase 2 completa (pedidos, cuentas, pantallas de cocina/bar, mesero, caja y reporte
-> del día). Specs: [`docs/especificacion-fase1.md`](docs/especificacion-fase1.md) y
-> [`docs/especificacion-fase2.md`](docs/especificacion-fase2.md).
+> **Estado:** Fase 3 completa (identidad visual compartida, fotos de platos, horarios y
+> promoción, panel del dueño, tablets de cocina con PIN, reportes y rediseño de cocina, mesero y
+> caja). Specs: [`fase 1`](docs/especificacion-fase1.md), [`fase 2`](docs/especificacion-fase2.md),
+> [`frontend del menú`](docs/especificacion-frontend-menu.md) y
+> [`fase 3`](docs/especificacion-fase3.md).
 
 ## Requisitos
 
@@ -25,8 +27,9 @@ pnpm db:seed           # datos de prueba (imprime la URL de cada mesa)
 pnpm dev               # api :4000 · menu :5180 · staff :5181
 ```
 
-¿Ya tenías la base de la Fase 1? Para cargar las cuentas y pedidos de ejemplo de la Fase 2,
-reinicia la base (borra todo y vuelve a sembrar):
+El seed completa lo que falte sin borrar nada (fotos de platos, 30 días de ventas, tablet), así
+que sobre una base ya sembrada basta con `pnpm db:migrate` y `pnpm db:seed`. Para empezar de
+cero (borra todo y vuelve a sembrar):
 
 ```bash
 pnpm --filter api exec prisma migrate reset
@@ -37,16 +40,17 @@ pnpm db:seed
 
 Con `pnpm dev` corriendo y el seed cargado:
 
-1. **Cocina** — en una tablet o ventana: `http://localhost:5181`, entrar con `cocina@sodalaesquina.test`.
-   Tocar **Activar sonido** una vez.
+1. **Cocina** — en una tablet o ventana: `http://localhost:5181`, entrar con `cocina@sodalaesquina.test`
+   (o vincular la tablet y entrar con PIN, ver **Dispositivos**). Tocar **Activar sonido** una vez.
 2. **Mesero** — en otra ventana (o el celular): entrar con `mesero@sodalaesquina.test`.
 3. **Comensal** — abrir la URL de la **mesa 3** que imprimió el seed (`http://localhost:5180/m/<token>`).
    Elegir platos (el casado con bistec pide el término), agregar al pedido y **Enviar pedido**.
 4. Con `PRIMER_PEDIDO` (default) el primer pedido queda "esperando confirmación": el mesero lo ve
-   en **Pendientes** y toca **Confirmar** → aparece al instante en la pantalla de cocina (y el bar
-   recibe solo sus bebidas).
-5. Cocina toca cada ítem: **Nuevo → Preparando → Listo**. El comensal ve los estados en "Mi cuenta".
-6. El mesero ve el ítem en **Para llevar** y toca **Entregado**.
+   en **Pendientes** y toca **Confirmar y enviar a cocina** → aparece al instante en la columna
+   **Nuevos** de la cocina (y el bar recibe solo sus bebidas).
+5. Cocina toca cada ítem: pasa a **En preparación** y luego a **Listos** (un toque equivocado se
+   deshace con **Deshacer** durante 5 s). El comensal ve los estados en "Mi cuenta".
+6. El mesero ve "Listo para llevar" en **Pendientes** (y la insignia en la mesa) y toca **Entregado**.
 7. Abrir la misma URL de la mesa 3 en otro navegador: es la misma cuenta y ve los mismos estados.
 8. El comensal toca **Pedir la cuenta** → la caja (`caja@sodalaesquina.test`) la ve primero en la
    lista, con subtotal, servicio e IVA. **Imprimir pre-cuenta** abre el ticket de 80 mm.
@@ -56,6 +60,25 @@ Con `pnpm dev` corriendo y el seed cargado:
 El seed deja ejemplos listos para ver en las pantallas: mesa 1 con ítems en preparación, listo y
 entregado; mesa 2 con un pedido por confirmar; mesa 4 pidiendo la cuenta; mesa 5 llamando al
 mesero; y una cuenta cerrada hoy (mesa 6) que aparece en el reporte **Hoy** del dueño.
+
+> Fuera del horario del restaurante (lunes a sábado 7:00–21:00, domingo 8:00–15:00, hora de Costa
+> Rica) el menú se ve pero no deja pedir. Para probar de noche, agregue un turno en Panel → Ajustes.
+
+### Recorrido de la Fase 3
+
+Entrar como dueño (`dueno@sodalaesquina.test`) en `http://localhost:5181/panel`:
+
+1. **Menú** → "Nuevo plato": subir o tomar una foto con la cámara del celular, nombres ES/EN,
+   modificadores y vista previa. Al guardar aparece en el menú del comensal en segundos.
+2. **Mesas y QR** → crear las mesas 1 a 12 y descargar el PDF (6 por hoja tamaño carta o una por
+   hoja para acrílico). Cada QR abre su mesa.
+3. **Ajustes** → horario por turnos, "Cerrar temporalmente" (el menú muestra "Cerrado" y no deja
+   pedir), color del menú, impuestos y promoción.
+4. **Personal** → "Poner PIN" a la persona de cocina; **Dispositivos** → "Vincular tablet" y en la
+   tablet abrir `/tablet`, escribir el código y entrar con el PIN: solo ve los pedidos de su estación.
+5. **Reportes** → "30 días" (el seed trae un mes de ventas): ventas por día y hora, platos, métodos
+   de pago, vistos vs. pedidos, preparación y cancelaciones. **Exportar CSV** baja lo mismo que se ve.
+6. Cocina, mesero y caja siguen el modo claro u oscuro del sistema operativo.
 
 ### Probar con el celular (misma red Wi-Fi)
 
@@ -136,7 +159,12 @@ el dueño le asigna una (`PATCH /usuarios/:id { estacionId }`), solo ve y opera 
 Horario de lunes a sábado 7:00–21:00 y domingo 8:00–15:00, un ícono por categoría y la promoción
 "Jueves de chifrijo" a ₡3 500 (normal ₡3 900).
 
-El seed es idempotente: si el restaurante demo ya existe no lo modifica.
+Además el seed genera una foto simple para cada plato (con sharp, en `UPLOADS_DIR`), deja
+vinculada una "Tablet de la cocina" y crea **30 días de cuentas cerradas** al azar (con semilla fija:
+siempre los mismos datos) para que los reportes tengan qué mostrar.
+
+El seed es idempotente: si el restaurante demo ya existe no lo vuelve a crear, solo agrega lo
+anterior si falta.
 
 ## Reglas de negocio
 
@@ -280,6 +308,15 @@ temporalmente".
    hay límite de intentos por tablet y por IP.
 5. "Desvincular" en el panel corta al instante la sesión y el socket de la tablet.
 
+## Reportes
+
+`GET /reportes?desde=AAAA-MM-DD&hasta=AAAA-MM-DD` (dueño): días locales del restaurante, ambos
+incluidos, máximo un año. Todo se agrega en SQL (30 días ≈ 50 ms). Solo cuentan las cuentas
+cerradas; un ítem es "demorado" si queda listo más de 20 min después de confirmado el pedido (el
+mismo rojo de la pantalla de cocina). Las vistas de platos se registran de forma anónima, una por
+plato y visita, con `POST /public/cuenta/vistas/:platoId`. El CSV se arma en el navegador con los
+mismos datos de la pantalla.
+
 ## Frontend del comensal
 
 Diseño basado en [`prototipo_front/prototipo-menu.html`](prototipo_front/prototipo-menu.html) y
@@ -315,6 +352,13 @@ platos agotados/inactivos/ajenos, cuenta cerrada (410), idempotencia (secuencial
 transiciones inválidas (409), una sola cuenta abierta por mesa con solicitudes simultáneas, que un
 comensal no puede usar otra cuenta, permisos por rol en `/operacion` y salas de socket.
 
+Fase 3: `estaAbierto` (varios turnos, cruce de medianoche, cierre manual), pedido rechazado con 423
+fuera de horario, subida de imágenes (tipo falso, tamaño, los 2 tamaños, borrar imágenes ajenas),
+PDF de QR solo con mesas propias, reordenar categorías y platos, vinculación de tablets (código
+vencido o reutilizado, bloqueo tras 5 PIN, tablet revocada sin socket), reportes (totales iguales a
+la suma de las cuentas cerradas del historial del seed, días en hora local, aislamiento) y deshacer
+un estado de cocina.
+
 ### Prueba de carga (hora pico)
 
 Con la API corriendo (`pnpm dev`):
@@ -342,9 +386,8 @@ y máxima) de creación y de llegada a cocina. Termina con ✅ si no se perdió 
 | `pnpm typecheck`            | `tsc` en todos los paquetes     |
 | `pnpm lint` / `pnpm format` | ESLint / Prettier               |
 
-## Fuera de alcance (Fase 2)
+## Fuera de alcance (Fase 3)
 
-Pagos en línea, integración con SINPE o pasarelas, facturación electrónica de Hacienda (la
-pre-cuenta impresa dice "NO ES FACTURA ELECTRÓNICA"), impresión directa a impresoras térmicas,
-notificaciones push, modo offline completo, dividir la cuenta por persona, reservas, reportes
-avanzados y despliegue.
+Pagos en línea, SINPE automático, factura electrónica (la pre-cuenta impresa dice "NO ES FACTURA
+ELECTRÓNICA"), impresión directa a impresoras térmicas, panel del superadmin, cobro de
+mensualidades, despliegue a producción, traducción automática con IA e inventario.

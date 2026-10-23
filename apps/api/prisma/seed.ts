@@ -4,6 +4,7 @@ import { calcularTotales } from '@menu-qr/shared';
 import { prisma } from '../src/lib/prisma';
 import { env } from '../src/lib/env';
 import { generarTokenQr } from '../src/lib/tokens';
+import { fotosDePlatos, historial, tabletDemo } from './demo-extra';
 
 // Credenciales de prueba (documentadas en el README). Solo para desarrollo.
 const USUARIOS_DEMO = [
@@ -35,8 +36,15 @@ async function main() {
     restaurante = await prisma.$transaction(crearRestauranteDemo, { timeout: 30_000 });
     console.log('Restaurante demo creado.');
   } else {
-    console.log('Restaurante demo ya existía, no se modificó.');
+    console.log('Restaurante demo ya existía: solo se completa lo que falte.');
   }
+
+  // Se agregan si faltan (sirve también sobre una base de desarrollo ya sembrada).
+  const fotos = await fotosDePlatos(restaurante.id);
+  if (fotos) console.log(`Fotos generadas para ${fotos} platos.`);
+  if (await tabletDemo(restaurante.id)) console.log('Tablet de cocina vinculada.');
+  const cuentas = await historial(restaurante);
+  if (cuentas) console.log(`Historial: ${cuentas} cuentas cerradas en los últimos 30 días.`);
 
   const mesas = await prisma.mesa.findMany({
     where: { restauranteId: restaurante.id },
