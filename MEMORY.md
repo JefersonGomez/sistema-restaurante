@@ -14,6 +14,18 @@
 - **Fase 4 completa** (4.1–4.8, 2026-10-23). Pendiente: prueba completa del usuario.
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
 
+## Plan de la Fase 5 (aprobado 2026-10-23) — spec: docs/especificacion-fase5.md
+
+Pedidos en línea para recoger y a domicilio; pago en efectivo o SINPE verificado a mano. El usuario
+autorizó commit + push al cerrar cada sub-fase.
+
+| Paso | Qué                                                                                                    | Estado |
+| ---- | ------------------------------------------------------------------------------------------------------ | ------ |
+| 5.1  | Modelo y API: cuenta sin mesa (tipo, cliente), config, pedido en línea, seguimiento, acciones, "lugar" | ⬜     |
+| 5.2  | Cliente: /r/:slug, checkout y seguimiento                                                              | ⬜     |
+| 5.3  | Personal: pantalla "En línea", avisos, etiquetas, Ajustes, QR del enlace                               | ⬜     |
+| 5.4  | Reportes por canal, seed, README, tests                                                                | ⬜     |
+
 ## Plan de la Fase 4 (aprobado 2026-10-23) — spec: docs/especificacion-fase4.md
 
 El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3).
