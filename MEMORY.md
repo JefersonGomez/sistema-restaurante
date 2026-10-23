@@ -21,7 +21,7 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | 4.1  | Alertas: arreglar sonido de llamada al mesero; cocina >10 min sin empezar (rojo animado); listos sin entregar (verde animado); un solo aviso agrupado | ✅     |
 | 4.2  | Animación de carga (cuchillo y tenedor), transiciones generales, ícono de mesa + hover                                                                | ✅     |
-| 4.3  | Navegación: barra lateral que se esconde, menú desplegable en el celular                                                                              | ⬜     |
+| 4.3  | Navegación: barra lateral que se esconde, menú desplegable en el celular                                                                              | ✅     |
 | 4.4  | Cantidad de personas al escanear el QR (y cómo se une alguien a una cuenta abierta)                                                                   | ⬜     |
 | 4.5  | Caja: pagar junto o separado, grupos de ítems con su método de pago y comprobante                                                                     | ⬜     |
 | 4.6  | Registro de restaurante + dueño                                                                                                                       | ⬜     |
@@ -47,6 +47,11 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
   nuevas (cocina, bandeja, caja, mesas); transiciones por defecto en botones/enlaces/campos y
   `scale: .97` al presionar (tokens.css); hover que levanta las tarjetas de mesa. Todo respeta la
   regla global de "reducir movimiento".
+- 4.3: PanelLayout: en md+ barra fija de 72 px solo con íconos (`group`); con hover o foco de
+  teclado se ensancha a 240 px encima del contenido (no lo empuja) y los textos aparecen con
+  opacidad. En el celular se quitó la barra inferior: encabezado con botón de menú → cajón lateral
+  (`anim-cajon`, se cierra con Escape, tocando afuera o al elegir una opción). Campanita y "Activar
+  sonido" en el encabezado del celular y arriba a la derecha en escritorio.
 
 ## Plan de la Fase 3 (sub-fases) — aprobado 2026-10-22; el usuario autorizó commit + push al cerrar cada sub-fase
 

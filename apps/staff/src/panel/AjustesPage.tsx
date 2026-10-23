@@ -458,7 +458,7 @@ function Formulario({ r }: { r: Restaurante }) {
         )}
       </Seccion>
 
-      <div className="sticky bottom-20 z-10 flex items-center gap-3 rounded-lg bg-app p-3 shadow-tarjeta md:bottom-4">
+      <div className="sticky bottom-4 z-10 flex items-center gap-3 rounded-lg bg-app p-3 shadow-tarjeta">
         <Boton onClick={enviar} disabled={guardar.isPending || subiendo || !legible}>
           Guardar cambios
         </Boton>

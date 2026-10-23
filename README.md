@@ -280,8 +280,8 @@ subida y descartada (409 si está en uso).
 
 ## Panel del dueño
 
-`http://localhost:5181/panel` (rol DUENO): barra lateral en computadora y navegación inferior en el
-celular. **Inicio** con las ventas de hoy y accesos rápidos; **Menú** con categorías y platos que se
+`http://localhost:5181/panel` (rol DUENO): barra lateral de íconos que se despliega al acercar el cursor en
+computadora y menú desplegable (cajón lateral) en el celular. **Inicio** con las ventas de hoy y accesos rápidos; **Menú** con categorías y platos que se
 ordenan arrastrando (también con teclado), interruptores de agotado/visible, duplicar y eliminar con
 confirmación, y un formulario de plato con foto (subir, arrastrar o tomarla con la cámara), nombres y
 descripciones ES/EN, alérgenos, editor de modificadores y vista previa en vivo del celular del cliente.
