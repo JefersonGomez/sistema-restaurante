@@ -13,6 +13,21 @@
   próxima fase. Lo que quedó fuera de alcance está en el README.
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
 
+## Plan de la Fase 4 (propuesto 2026-10-23, pendiente de aprobación) — spec: docs/especificacion-fase4.md
+
+El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3).
+
+| Paso | Qué                                                                                                                                                   | Estado |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 4.1  | Alertas: arreglar sonido de llamada al mesero; cocina >10 min sin empezar (rojo animado); listos sin entregar (verde animado); un solo aviso agrupado | ⬜     |
+| 4.2  | Animación de carga (cuchillo y tenedor), transiciones generales, ícono de mesa + hover                                                                | ⬜     |
+| 4.3  | Navegación: barra lateral que se esconde, menú desplegable en el celular                                                                              | ⬜     |
+| 4.4  | Cantidad de personas al escanear el QR (y cómo se une alguien a una cuenta abierta)                                                                   | ⬜     |
+| 4.5  | Caja: pagar junto o separado, grupos de ítems con su método de pago y comprobante                                                                     | ⬜     |
+| 4.6  | Registro de restaurante + dueño                                                                                                                       | ⬜     |
+| 4.7  | Personalización: ubicación (Google Maps), logo, eslogan, banner; vista bonita para el cliente                                                         | ⬜     |
+| 4.8  | Tests, seed y README de la Fase 4                                                                                                                     | ⬜     |
+
 ## Plan de la Fase 3 (sub-fases) — aprobado 2026-10-22; el usuario autorizó commit + push al cerrar cada sub-fase
 
 Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por el usuario.

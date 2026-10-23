@@ -8,7 +8,8 @@ SaaS multi-restaurante de pedidos por QR (Costa Rica). Monorepo pnpm: `apps/api`
 1. Leer `MEMORY.md` (estado actual, decisiones, pendientes).
 2. Si la tarea toca alcance, leer la spec de la fase en curso (fuente de verdad):
    `docs/especificacion-fase1.md`, `docs/especificacion-fase2.md`, `docs/especificacion-frontend-menu.md`
-   (hechas) y `docs/especificacion-fase3.md` (en curso).
+   `docs/especificacion-fase3.md` (hechas) y `docs/especificacion-fase4.md` (en curso: se va
+   ampliando con cada pedido del usuario; anotar ahí cada pedido nuevo antes de programarlo).
 
 ## Después de cada cambio
 
@@ -16,7 +17,8 @@ SaaS multi-restaurante de pedidos por QR (Costa Rica). Monorepo pnpm: `apps/api`
 - Si cambian scripts, variables de entorno, puertos o credenciales → actualizar `README.md`.
 - Al reportar al usuario: explicar **qué se hizo en cada archivo** (archivo → cambio), para que
   pueda revisar todo.
-- **Antes de cada commit/push: mostrar qué se sube y esperar validación del usuario.**
+- **Antes de cada commit/push: mostrar qué se sube y esperar validación del usuario.** (Fases 3 y 4:
+  el usuario autorizó commit + push al cerrar cada sub-fase sin esperar.)
 
 ## Forma de trabajar
 
@@ -27,7 +29,7 @@ SaaS multi-restaurante de pedidos por QR (Costa Rica). Monorepo pnpm: `apps/api`
   Express, Socket.IO, PostgreSQL 16, Prisma, Zod, JWT, bcrypt, React, Vite, Tailwind, Vitest,
   Supertest, ESLint, Prettier. Las librerías ya aprobadas están listadas en `MEMORY.md`.
 - No implementar nada de la sección "Fuera de alcance" de la spec de la fase en curso
-  (Fase 3: pagos en línea, SINPE automático, factura electrónica, impresión térmica directa, panel
+  (Fase 4: pagos en línea, SINPE automático, factura electrónica, impresión térmica directa, panel
   del superadmin, cobro de mensualidades, despliegue, traducción automática con IA, inventario).
 - Código mínimo y directo. Sin abstracciones "para después".
 
