@@ -7,6 +7,7 @@ import { activarConPrimerToque } from './alertas';
 import { AuthProvider, useAuth } from './auth';
 import { AvisosGlobales } from './AvisosGlobales';
 import { CajaPage } from './CajaPage';
+import { EnLineaPage } from './EnLineaPage';
 import { EstacionPage } from './EstacionPage';
 import { LoginPage } from './LoginPage';
 import { MeseroPage } from './MeseroPage';
@@ -124,6 +125,14 @@ function App() {
           element={
             <Solo roles={['CAJA', 'DUENO']}>
               <CajaPage />
+            </Solo>
+          }
+        />
+        <Route
+          path="/en-linea"
+          element={
+            <Solo roles={['DUENO', 'CAJA', 'MESERO']}>
+              <EnLineaPage />
             </Solo>
           }
         />

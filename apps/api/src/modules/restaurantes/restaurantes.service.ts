@@ -1,3 +1,5 @@
+import QRCode from 'qrcode';
+import { env } from '../../lib/env';
 import bcrypt from 'bcryptjs';
 import type {
   AdminRestaurantePatchInput,
@@ -78,4 +80,11 @@ export async function actualizarPropio(restauranteId: string, data: RestauranteC
     .map((k) => previo[k]);
   if (viejas.length) await borrarImagenes(restauranteId, viejas);
   return r;
+}
+
+// QR del enlace para pedir en línea (/r/:slug), para imprimir o compartir en redes.
+export async function qrEnLinea(restauranteId: string) {
+  const { slug } = await obtenerPropio(restauranteId);
+  const url = `${env.MENU_PUBLIC_URL}/r/${slug}`;
+  return { url, png: await QRCode.toBuffer(url, { type: 'png', margin: 2, width: 768 }) };
 }

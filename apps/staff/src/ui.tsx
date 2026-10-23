@@ -49,12 +49,24 @@ export function Conexion({ conectado }: { conectado: boolean }) {
   );
 }
 
-const PANTALLAS_DUENO = [
-  { ruta: '/panel', texto: 'Panel' },
-  { ruta: '/cocina', texto: 'Cocina/Bar' },
-  { ruta: '/mesero', texto: 'Mesero' },
-  { ruta: '/caja', texto: 'Caja' },
-];
+// Pestañas del encabezado según el rol (el mesero y la caja también atienden los pedidos en línea).
+const PANTALLAS: Partial<Record<string, { ruta: string; texto: string }[]>> = {
+  DUENO: [
+    { ruta: '/panel', texto: 'Panel' },
+    { ruta: '/cocina', texto: 'Cocina/Bar' },
+    { ruta: '/mesero', texto: 'Mesero' },
+    { ruta: '/caja', texto: 'Caja' },
+    { ruta: '/en-linea', texto: 'En línea' },
+  ],
+  MESERO: [
+    { ruta: '/mesero', texto: 'Mesas' },
+    { ruta: '/en-linea', texto: 'En línea' },
+  ],
+  CAJA: [
+    { ruta: '/caja', texto: 'Caja' },
+    { ruta: '/en-linea', texto: 'En línea' },
+  ],
+};
 
 export function Encabezado({ titulo, children }: { titulo: string; children?: ReactNode }) {
   const { usuario, logout } = useAuth();
@@ -79,9 +91,9 @@ export function Encabezado({ titulo, children }: { titulo: string; children?: Re
           <span className="max-sm:sr-only">Salir</span>
         </button>
       </div>
-      {usuario?.rol === 'DUENO' && (
+      {usuario && PANTALLAS[usuario.rol] && (
         <nav className="flex gap-1 overflow-x-auto border-t border-line px-2 text-sm">
-          {PANTALLAS_DUENO.map((p) => (
+          {PANTALLAS[usuario.rol]!.map((p) => (
             <NavLink
               key={p.ruta}
               to={p.ruta}

@@ -202,3 +202,27 @@ describe('pedidos en línea', () => {
     expect((await request(app).get(`/public/seguimiento/${'x'.repeat(32)}`)).status).toBe(404);
   });
 });
+
+describe('enlace y QR para compartir', () => {
+  it('el dueño ve el enlace /r/:slug y descarga su QR en PNG', async () => {
+    const dueno = await tokenDe('dueno@resto-a.test');
+    const r = await request(app).get('/restaurante').set('Authorization', `Bearer ${dueno}`);
+    expect(r.body.enlaceEnLinea).toMatch(/\/r\/resto-a$/);
+    const qr = await request(app)
+      .get('/restaurante/qr-enlinea.png')
+      .set('Authorization', `Bearer ${dueno}`)
+      .buffer(true)
+      .parse((res, cb) => {
+        const partes: Buffer[] = [];
+        res.on('data', (c: Buffer) => partes.push(c));
+        res.on('end', () => cb(null, Buffer.concat(partes)));
+      });
+    expect(qr.status).toBe(200);
+    expect(qr.headers['content-type']).toMatch('image/png');
+    expect((qr.body as Buffer).subarray(1, 4).toString()).toBe('PNG');
+    expect(
+      (await request(app).get('/restaurante/qr-enlinea.png').set('Authorization', `Bearer ${caja}`))
+        .status,
+    ).toBe(403);
+  });
+});

@@ -8,6 +8,7 @@ import {
   type Moneda,
 } from '@menu-qr/shared';
 import { api, type ErrorApi } from '../api';
+import { AjustesEnLinea, type ConfigEnLinea } from './AjustesEnLinea';
 import {
   Boton,
   Campo,
@@ -37,7 +38,7 @@ type Restaurante = {
   textoPromoEn: string | null;
   precioPromo: number | null;
   horarios: Turno[];
-};
+} & ConfigEnLinea;
 
 const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const diaDe = (i: number) => (i + 1) % 7; // índice de la lista (lunes primero) → diaSemana (0 = domingo)
@@ -206,8 +207,9 @@ function Formulario({ r }: { r: Restaurante }) {
     guardar.mutate(r.data);
   };
 
+  // Contenedor propio: así la barra fija de "Guardar cambios" no tapa otras secciones.
   return (
-    <>
+    <div className="space-y-4">
       <Seccion titulo="Idiomas y moneda">
         <fieldset className="flex flex-wrap gap-4 text-sm">
           <legend className="mb-1 font-medium">Idiomas del menú</legend>
@@ -309,7 +311,7 @@ function Formulario({ r }: { r: Restaurante }) {
           </span>
         )}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -337,7 +339,7 @@ export function AjustesPage() {
     <>
       <TituloPagina
         titulo="Ajustes"
-        detalle="Horario, idiomas, moneda, impuestos y confirmación de pedidos."
+        detalle="Horario, idiomas, moneda, impuestos, confirmación de pedidos y pedidos en línea."
       />
       {!r ? (
         <Esqueleto className="h-96" />
@@ -363,6 +365,7 @@ export function AjustesPage() {
           </Tarjeta>
           <Horarios inicial={r.horarios} />
           <Formulario r={r} />
+          <AjustesEnLinea r={r} />
         </div>
       )}
     </>

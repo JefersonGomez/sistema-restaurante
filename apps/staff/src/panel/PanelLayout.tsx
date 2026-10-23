@@ -2,6 +2,7 @@ import {
   BarChart3,
   ChefHat,
   ConciergeBell,
+  Globe,
   House,
   LogOut,
   Menu as MenuIcono,
@@ -40,6 +41,7 @@ const OPERAR: Enlace[] = [
   { a: '/cocina', texto: 'Cocina y bar', Icono: ChefHat },
   { a: '/mesero', texto: 'Mesero', Icono: ConciergeBell },
   { a: '/caja', texto: 'Caja', Icono: ReceiptText },
+  { a: '/en-linea', texto: 'Pedidos en línea', Icono: Globe },
 ];
 
 // En escritorio la barra está reducida a íconos y los textos aparecen al desplegarla

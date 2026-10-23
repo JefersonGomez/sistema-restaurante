@@ -358,7 +358,11 @@ export function EstacionPage() {
                     className={`anim-entrar rounded-lg border-2 bg-app shadow-tarjeta ${borde}`}
                   >
                     <header className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
-                      <span className="text-3xl font-bold tracking-tight">{p.lugar}</span>
+                      <span
+                        className={`font-bold tracking-tight ${p.mesa ? 'text-3xl' : 'text-xl'}`}
+                      >
+                        {p.lugar}
+                      </span>
                       <span className="flex flex-col items-end gap-1">
                         <span
                           className={`rounded-full px-3 py-1 text-base font-bold tabular-nums ${reloj}`}

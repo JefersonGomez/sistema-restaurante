@@ -18,6 +18,7 @@ function Oyente({ rol }: { rol: string }) {
       }),
       ...((sala || caja) && {
         'cuenta:solicitada': (p: ConMesa) => avisar('cuenta', `${p.lugar} pidió la cuenta`),
+        'enlinea:nuevo': (p: ConMesa) => avisar('pedido', `Pedido en línea nuevo: ${p.lugar}`, 3),
       }),
       // El dueño ya recibe los pedidos nuevos; a cocina le avisa cuando entran a preparar.
       ...(rol === 'COCINA' && {

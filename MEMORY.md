@@ -23,7 +23,7 @@ autorizó commit + push al cerrar cada sub-fase.
 | ---- | ------------------------------------------------------------------------------------------------------ | ------ |
 | 5.1  | Modelo y API: cuenta sin mesa (tipo, cliente), config, pedido en línea, seguimiento, acciones, "lugar" | ✅     |
 | 5.2  | Cliente: /r/:slug, checkout y seguimiento                                                              | ✅     |
-| 5.3  | Personal: pantalla "En línea", avisos, etiquetas, Ajustes, QR del enlace                               | ⬜     |
+| 5.3  | Personal: pantalla "En línea", avisos, etiquetas, Ajustes, QR del enlace                               | ✅     |
 | 5.4  | Reportes por canal, seed, README, tests                                                                | ⬜     |
 
 - 5.1: migración `20261023160000_pedidos_en_linea`: Cuenta.mesaId opcional (relación con onDelete
@@ -50,6 +50,15 @@ autorizó commit + push al cerrar cada sub-fase.
   vitest: testTimeout 20 s / hookTimeout 30 s (las corridas intermitentes con ~10 fallos coincidían con
   la máquina ocupada recompilando; con el margen no se repitió). En la BD de desarrollo: pedidos en
   línea activados para la Soda (envío ₡1 000, SINPE de ejemplo) y un "Pedido #1" de prueba.
+- 5.3: `apps/staff/src/EnLineaPage.tsx` (/en-linea para DUENO, CAJA y MESERO): columnas Nuevos (tiempo
+  estimado + Aceptar / Rechazar con motivo), En curso (progreso de cocina, Pago verificado, Listo para
+  entregar, Salió a entregar, Entregado y cobrado con método) y Terminados hoy. Pestañas del encabezado
+  por rol (mesero: Mesas / En línea; caja: Caja / En línea) y "Pedidos en línea" en la barra del panel.
+  AvisosGlobales avisa `enlinea:nuevo` (3 tonos). Ajustes: `panel/AjustesEnLinea.tsx` (activar,
+  tipos, tiempo, mínimo, envío, zona, SINPE, enlace + copiar + QR). GET /restaurante incluye
+  `enlaceEnLinea` (con MENU_PUBLIC_URL; sin variable nueva) y GET /restaurante/qr-enlinea.png. Cocina:
+  etiqueta más chica si no es mesa. Ajustes: el formulario general va en su propio contenedor para que
+  la barra fija "Guardar cambios" no tape "Guardar horario".
 
 ## Plan de la Fase 4 (aprobado 2026-10-23) — spec: docs/especificacion-fase4.md
 
