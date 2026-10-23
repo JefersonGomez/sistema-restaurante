@@ -61,6 +61,12 @@ operacionRouter.patch(
   validate({ params: idParamSchema, body: cambiarEstadoItemSchema }),
   c.estadoItem,
 );
+operacionRouter.post(
+  '/items/:id/deshacer',
+  requireRole('DUENO', 'COCINA', 'MESERO'),
+  validate({ params: idParamSchema, body: cambiarEstadoItemSchema }),
+  c.deshacerItem,
+);
 operacionRouter.patch(
   '/items/:id/cancelar',
   sala,

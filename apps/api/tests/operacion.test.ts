@@ -89,6 +89,22 @@ describe('flujo completo', () => {
       como(token).patch(`/operacion/items/${id}/estado`).send({ estado: e });
     expect((await estado(t.cocina, itemCasado, 'EN_PREPARACION')).status).toBe(200);
     expect((await estado(t.cocina, itemCasado, 'LISTO')).status).toBe(200);
+
+    // Deshacer un toque equivocado: vuelve a EN_PREPARACION y borra la hora de "listo".
+    const deshacer = (token: string) =>
+      como(token).post(`/operacion/items/${itemCasado}/deshacer`).send({ estado: 'LISTO' });
+    expect((await deshacer(t.bar)).status).toBe(403); // otra estación
+    expect((await deshacer(t.cocina)).body.estado).toBe('EN_PREPARACION');
+    expect((await prisma.pedidoItem.findUnique({ where: { id: itemCasado } }))?.listoEn).toBeNull();
+    expect((await deshacer(t.cocina)).status).toBe(409); // ya no está LISTO
+    expect((await estado(t.cocina, itemCasado, 'LISTO')).status).toBe(200);
+    // Pasado el margen ya no se puede.
+    await prisma.pedidoItem.update({
+      where: { id: itemCasado },
+      data: { listoEn: new Date(Date.now() - 60_000) },
+    });
+    expect((await deshacer(t.cocina)).status).toBe(409);
+
     const listos = (await como(t.mesero).get('/operacion/items?estado=LISTO')).body;
     expect(listos.map((i: { id: string }) => i.id)).toEqual([itemCasado]);
     expect((await estado(t.mesero, itemCasado, 'ENTREGADO')).body.estado).toBe('ENTREGADO');

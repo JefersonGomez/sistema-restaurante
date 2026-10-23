@@ -1,20 +1,17 @@
-import { useEffect, useState } from 'react';
+import { Trash2, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import type { MenuPublico, PlatoPublico } from '@menu-qr/shared';
 import {
-  grupoCompleto,
-  minimoEfectivo,
-  precioConModificadores,
-  seleccionValida,
-} from '@menu-qr/shared/seleccion';
+  CategoryGrid,
+  DishCard,
+  DishSheet,
+  SearchBar,
+  normalizar,
+  type NuevaLinea,
+} from '@menu-qr/ui';
 import { api, ErrorApi, obtenerMenu } from './api';
 
-type Linea = {
-  id: number;
-  plato: PlatoPublico;
-  cantidad: number;
-  notas: string;
-  modificadores: string[];
-};
+type Linea = NuevaLinea & { clave: number };
 
 const nuevoId = () =>
   Array.from(crypto.getRandomValues(new Uint8Array(16)), (x) =>
@@ -30,9 +27,12 @@ type Props = {
   onCerrar: () => void;
 };
 
-// El mesero arma un pedido para una mesa con el mismo catálogo del comensal.
+// El mesero arma un pedido para una mesa con los mismos componentes del menú del comensal.
+// Puede pedir aunque el restaurante figure cerrado (la API solo bloquea al cliente).
 export function TomarPedido({ slug, mesa, precio, onListo, onCerrar }: Props) {
   const [menu, setMenu] = useState<MenuPublico>();
+  const [busqueda, setBusqueda] = useState('');
+  const [categoria, setCategoria] = useState<string | null>(null);
   const [eligiendo, setEligiendo] = useState<PlatoPublico | null>(null);
   const [lineas, setLineas] = useState<Linea[]>([]);
   const [enviando, setEnviando] = useState(false);
@@ -44,15 +44,26 @@ export function TomarPedido({ slug, mesa, precio, onListo, onCerrar }: Props) {
     obtenerMenu(slug, true).then(setMenu, (e: Error) => setError(e.message));
   }, [slug]);
 
+  const iconoDe = useMemo(() => {
+    const m = new Map<string, string | null>();
+    for (const c of menu?.categorias ?? []) for (const p of c.platos) m.set(p.id, c.icono);
+    return m;
+  }, [menu]);
+  const q = normalizar(busqueda);
+  const platos = (menu?.categorias ?? [])
+    .filter((c) => !categoria || c.id === categoria)
+    .flatMap((c) => c.platos)
+    .filter((p) => !q || normalizar(`${p.nombreEs} ${p.nombreEn}`).includes(q));
+
   const enviar = async () => {
     setEnviando(true);
     setError(null);
     const body = {
       clientRequestId,
       items: lineas.map((l) => ({
-        platoId: l.plato.id,
+        platoId: l.platoId,
         cantidad: l.cantidad,
-        notas: l.notas || undefined,
+        notas: l.nota || undefined,
         modificadores: l.modificadores,
       })),
     };
@@ -75,189 +86,121 @@ export function TomarPedido({ slug, mesa, precio, onListo, onCerrar }: Props) {
     }
   };
 
-  const total = lineas.reduce(
-    (s, l) =>
-      s + precioConModificadores(l.plato.precio, l.plato.grupos, l.modificadores) * l.cantidad,
-    0,
-  );
+  const total = lineas.reduce((s, l) => s + l.precioUnitario * l.cantidad, 0);
+  const unidades = lineas.reduce((s, l) => s + l.cantidad, 0);
 
   return (
     <div
-      className="fixed inset-0 z-30 flex flex-col bg-white"
+      className="fixed inset-0 z-30 flex flex-col bg-app"
       role="dialog"
       aria-modal="true"
-      aria-label={`Pedido mesa ${mesa.numero}`}
+      aria-label={`Pedido para la mesa ${mesa.numero}`}
     >
-      <header className="flex items-center justify-between border-b px-4 py-3">
-        <h2 className="font-semibold">Pedido para mesa {mesa.numero}</h2>
-        <button type="button" onClick={onCerrar} className="text-sm text-stone-500">
-          Cerrar
-        </button>
-      </header>
-      <div className="flex-1 overflow-y-auto px-4">
-        {!menu && !error && <p className="py-6 text-stone-500">Cargando menú…</p>}
-        {menu?.categorias.map((c) => (
-          <section key={c.id} className="pt-4">
-            <h3 className="mb-1 text-sm font-semibold uppercase text-teal-800">{c.nombreEs}</h3>
-            {c.platos.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                disabled={p.agotado}
-                onClick={() =>
-                  p.grupos.length
-                    ? setEligiendo(p)
-                    : setLineas((ls) => [
-                        ...ls,
-                        { id: Date.now(), plato: p, cantidad: 1, notas: '', modificadores: [] },
-                      ])
-                }
-                className="flex w-full justify-between border-b border-stone-100 py-3 text-left disabled:opacity-40"
-              >
-                <span>
-                  {p.nombreEs} {p.agotado && <em className="text-xs">(agotado)</em>}
-                </span>
-                <span className="tabular-nums text-stone-600">{precio(p.precio)}</span>
-              </button>
-            ))}
-          </section>
-        ))}
-      </div>
-
-      <footer className="space-y-2 border-t bg-stone-50 p-3">
-        {lineas.map((l) => (
-          <div key={l.id} className="flex items-center gap-2 text-sm">
-            <button
-              type="button"
-              onClick={() => setLineas((ls) => ls.filter((x) => x.id !== l.id))}
-              aria-label="Quitar"
-              className="text-red-700"
-            >
-              ✕
-            </button>
-            <span className="tabular-nums">{l.cantidad}×</span>
-            <span className="flex-1 truncate">
-              {l.plato.nombreEs}
-              {l.notas && <em className="text-amber-800"> “{l.notas}”</em>}
-            </span>
-          </div>
-        ))}
-        {error && (
-          <p role="alert" className="text-sm text-red-700">
-            {error}
-          </p>
-        )}
+      <header className="flex items-center justify-between border-b border-line px-4 py-2">
+        <h2 className="text-[17px] font-semibold">Pedido para la mesa {mesa.numero}</h2>
         <button
           type="button"
-          disabled={lineas.length === 0 || enviando}
-          onClick={enviar}
-          className="h-12 w-full rounded-lg bg-teal-700 font-semibold text-white disabled:opacity-40"
+          onClick={onCerrar}
+          aria-label="Cerrar sin enviar"
+          className="grid size-11 place-items-center rounded-md hover:bg-surface"
         >
-          {enviando ? 'Enviando…' : `Enviar a cocina · ${precio(total)}`}
+          <X className="size-5" aria-hidden />
         </button>
+      </header>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
+          {!menu && !error && <div className="esqueleto h-60 rounded-lg" aria-busy="true" />}
+          {menu && (
+            <>
+              <SearchBar valor={busqueda} onCambio={setBusqueda} />
+              <CategoryGrid
+                categorias={menu.categorias}
+                activa={categoria}
+                onElegir={setCategoria}
+              />
+              <div className="grid gap-3 md:grid-cols-2">
+                {platos.map((p) => (
+                  <DishCard
+                    key={p.id}
+                    plato={p}
+                    icono={iconoDe.get(p.id) ?? null}
+                    precio={precio}
+                    puedePedir
+                    onAbrir={() => setEligiendo(p)}
+                  />
+                ))}
+                {platos.length === 0 && (
+                  <p className="col-span-full py-8 text-center text-muted">
+                    No hay platos con ese nombre.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <footer className="border-t border-line bg-app p-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
+        <div className="mx-auto max-w-5xl space-y-2">
+          {lineas.length > 0 && (
+            <ul className="max-h-40 space-y-1 overflow-y-auto text-sm">
+              {lineas.map((l) => (
+                <li key={l.clave} className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    aria-label={`Quitar ${l.nombreEs}`}
+                    onClick={() => setLineas((ls) => ls.filter((x) => x.clave !== l.clave))}
+                    className="grid size-11 shrink-0 place-items-center rounded-md text-danger hover:bg-danger-soft"
+                  >
+                    <Trash2 className="size-4" aria-hidden />
+                  </button>
+                  <span className="tabular-nums">{l.cantidad}×</span>
+                  <span className="min-w-0 flex-1 truncate">
+                    {l.nombreEs}
+                    {l.modsEs.length > 0 && (
+                      <span className="text-muted"> · {l.modsEs.join(', ')}</span>
+                    )}
+                    {l.nota && <em className="text-amber-ink"> “{l.nota}”</em>}
+                  </span>
+                  <span className="tabular-nums">{precio(l.precioUnitario * l.cantidad)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {error && (
+            <p role="alert" className="rounded-md bg-danger-soft p-3 text-sm text-danger">
+              {error}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={enviar}
+            disabled={!lineas.length || enviando}
+            className="flex h-14 w-full items-center justify-center rounded-md bg-purple text-[15.5px] font-semibold text-on-accent disabled:opacity-50"
+          >
+            {enviando
+              ? 'Enviando…'
+              : lineas.length
+                ? `Enviar a cocina · ${unidades} · ${precio(total)}`
+                : 'Elija platos para el pedido'}
+          </button>
+        </div>
       </footer>
 
       {eligiendo && (
-        <ElegirModificadores
+        <DishSheet
           plato={eligiendo}
+          icono={iconoDe.get(eligiendo.id) ?? null}
           precio={precio}
+          puedePedir
           onCerrar={() => setEligiendo(null)}
           onAgregar={(l) => {
-            setLineas((ls) => [...ls, { ...l, id: Date.now(), plato: eligiendo }]);
+            setLineas((ls) => [...ls, { ...l, clave: Date.now() }]);
             setEligiendo(null);
           }}
         />
       )}
-    </div>
-  );
-}
-
-function ElegirModificadores({
-  plato,
-  precio,
-  onAgregar,
-  onCerrar,
-}: {
-  plato: PlatoPublico;
-  precio: (c: number) => string;
-  onAgregar: (l: { cantidad: number; notas: string; modificadores: string[] }) => void;
-  onCerrar: () => void;
-}) {
-  const [elegidos, setElegidos] = useState<string[]>([]);
-  const [cantidad, setCantidad] = useState(1);
-  const [notas, setNotas] = useState('');
-
-  const alternar = (grupoIdx: number, id: string) => {
-    const g = plato.grupos[grupoIdx]!;
-    const delGrupo = g.modificadores.map((m) => m.id);
-    setElegidos((a) =>
-      a.includes(id)
-        ? a.filter((x) => x !== id)
-        : g.maximo === 1
-          ? [...a.filter((x) => !delGrupo.includes(x)), id]
-          : a.filter((x) => delGrupo.includes(x)).length >= g.maximo
-            ? a
-            : [...a, id],
-    );
-  };
-
-  return (
-    <div className="fixed inset-0 z-40 flex items-end bg-black/40" onClick={onCerrar}>
-      <div
-        className="max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-white p-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="mb-3 text-lg font-semibold">{plato.nombreEs}</h3>
-        {plato.grupos.map((g, idx) => (
-          <fieldset key={g.id} className="mb-3">
-            <legend
-              className={`text-sm font-medium ${grupoCompleto(g, elegidos) ? '' : 'text-amber-700'}`}
-            >
-              {g.nombreEs} ({minimoEfectivo(g)}–{g.maximo})
-            </legend>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {g.modificadores.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  aria-pressed={elegidos.includes(m.id)}
-                  onClick={() => alternar(idx, m.id)}
-                  className={`rounded-full px-3 py-1.5 text-sm ${elegidos.includes(m.id) ? 'bg-teal-700 text-white' : 'border border-stone-300'}`}
-                >
-                  {m.nombreEs}
-                  {m.precioExtra > 0 && ` +${precio(m.precioExtra)}`}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        ))}
-        <input
-          value={notas}
-          onChange={(e) => setNotas(e.target.value.slice(0, 200))}
-          placeholder="Notas (ej.: sin cebolla)"
-          className="mb-3 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
-        />
-        <div className="flex gap-2">
-          <select
-            value={cantidad}
-            onChange={(e) => setCantidad(Number(e.target.value))}
-            className="rounded-md border px-2"
-            aria-label="Cantidad"
-          >
-            {Array.from({ length: 20 }, (_, i) => (
-              <option key={i + 1}>{i + 1}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            disabled={!seleccionValida(plato.grupos, elegidos)}
-            onClick={() => onAgregar({ cantidad, notas: notas.trim(), modificadores: elegidos })}
-            className="h-11 flex-1 rounded-lg bg-teal-700 font-medium text-white disabled:opacity-40"
-          >
-            Agregar
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

@@ -55,6 +55,19 @@ export const estadoItem = async (req: ConId, res: Response) => {
   );
 };
 
+// Deshace el último avance (el body dice de qué estado se vuelve).
+export const deshacerItem = async (req: ConId, res: Response) => {
+  res.json(
+    await s.cambiarEstadoItem(
+      restauranteDe(req),
+      req.usuario!,
+      req.params.id,
+      req.body.estado,
+      true,
+    ),
+  );
+};
+
 export const cancelarItem = async (req: ConId, res: Response) => {
   res.json(await s.cancelarItem(restauranteDe(req), req.params.id, req.body.motivo));
 };

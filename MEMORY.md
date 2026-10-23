@@ -28,7 +28,7 @@ Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por e
 | 3.6  | Panel: Mesas y QR (PDF), Personal (temporal, último acceso), Ajustes (contraste del acento)            | ✅     |
 | 3.7  | Dispositivos con PIN (vincular 6 dígitos, token de dispositivo, PIN 4 dígitos, bloqueo, revocar)       | ✅     |
 | 3.8  | Reportes agregados en SQL + vistas de platos + recharts + CSV                                          | ✅     |
-| 3.9  | Rediseño de estación, mesero y caja con la identidad visual                                            | ⬜     |
+| 3.9  | Rediseño de estación, mesero y caja con la identidad visual                                            | ✅     |
 | 3.10 | Tests obligatorios, seed (fotos generadas, horarios, promo, dispositivo, 30 días), README              | ⬜     |
 
 ### Decisiones de la Fase 3 (respondidas por el usuario 2026-10-22)
@@ -98,7 +98,12 @@ zona, cerradoManual)` con Intl (sin librerías). Cerrado → 423 (antes 409) sol
   GET /reportes?desde&hasta (días locales, zonaHoraria del restaurante, todo en SQL con $queryRaw; ~130 ms).
   POST /public/cuenta/vistas/:id (el menú registra 1 vista por plato por visita). MINUTOS_DEMORA=20 en shared.
   Staff: panel/reportes (recharts lazy, tablas con barra, CSV armado en el navegador con los mismos datos).
-  PENDIENTE próxima sesión: 3.9 rediseño estación/mesero/caja y 3.10 seed (30 días) + README.
+- 3.9: tokens del tema (claro/oscuro) en ui.tsx, EstacionPage, MeseroPage, TomarPedido y CajaPage. Estación:
+  3 columnas (Nuevos / En preparación / Listos) según el ítem menos avanzado del pedido; reloj amarillo 10 min,
+  rojo MINUTOS_DEMORA; "Deshacer" 5 s → POST /operacion/items/:id/deshacer {estado} (vuelve al anterior y borra
+  la marca de tiempo; el servidor tolera 15 s). Mesero: cuadrícula con insignias (por confirmar, llama, cuenta,
+  listos) y una sola bandeja "Pendientes" ordenada por antigüedad; detalle de mesa con Modal de @menu-qr/ui.
+  TomarPedido usa SearchBar/CategoryGrid/DishCard/DishSheet del menú del comensal. Caja: mismo flujo, estilo nuevo.
 - Propuestas sin objeción: HEIC solo si sharp puede leerlo (si no, error claro pidiendo JPG/PNG);
   fotos del seed generadas con sharp; los campos `horaApertura/horaCierre` y `Plato.destacado`
   se reemplazan por `HorarioRestaurante` y `platoDestacadoId` (migrando los datos).

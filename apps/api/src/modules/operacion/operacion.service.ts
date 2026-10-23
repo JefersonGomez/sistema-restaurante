@@ -95,6 +95,8 @@ const ANTERIOR: Record<'EN_PREPARACION' | 'LISTO' | 'ENTREGADO', EstadoItem> = {
   LISTO: 'EN_PREPARACION',
   ENTREGADO: 'LISTO',
 };
+// Margen del servidor para "deshacer" (la pantalla lo ofrece 5 s; se tolera la demora de red).
+const DESHACER_SEG = 15;
 const MARCA_TIEMPO = {
   EN_PREPARACION: 'enPreparacionEn',
   LISTO: 'listoEn',
@@ -123,6 +125,7 @@ export async function cambiarEstadoItem(
   usuario: UsuarioToken,
   itemId: string,
   estado: keyof typeof ANTERIOR,
+  deshacer = false, // vuelve de `estado` al anterior (toque equivocado, hasta DESHACER_SEG después)
 ) {
   const item = await itemDelRestaurante(restauranteId, itemId);
 
@@ -140,13 +143,26 @@ export async function cambiarEstadoItem(
   if (item.pedido.cuenta.estado === 'CERRADA') throw invalida('La cuenta ya está cerrada');
 
   // Transición atómica: solo avanza si sigue en el estado anterior (evita dobles toques).
-  const { count } = await prisma.pedidoItem.updateMany({
-    where: { id: itemId, estado: ANTERIOR[estado], cancelado: false },
-    data: { estado, [MARCA_TIEMPO[estado]]: new Date() },
-  });
+  const marca = MARCA_TIEMPO[estado];
+  const { count } = deshacer
+    ? await prisma.pedidoItem.updateMany({
+        where: {
+          id: itemId,
+          estado,
+          cancelado: false,
+          [marca]: { gte: new Date(Date.now() - DESHACER_SEG * 1000) },
+        },
+        data: { estado: ANTERIOR[estado], [marca]: null },
+      })
+    : await prisma.pedidoItem.updateMany({
+        where: { id: itemId, estado: ANTERIOR[estado], cancelado: false },
+        data: { estado, [marca]: new Date() },
+      });
   if (count === 0)
     throw invalida(
-      `No se puede pasar de ${item.cancelado ? 'CANCELADO' : item.estado} a ${estado}`,
+      deshacer
+        ? 'Ya no se puede deshacer'
+        : `No se puede pasar de ${item.cancelado ? 'CANCELADO' : item.estado} a ${estado}`,
     );
 
   const final = await prisma.pedidoItem.findUniqueOrThrow({

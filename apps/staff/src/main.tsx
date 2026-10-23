@@ -44,7 +44,7 @@ function Admin() {
   return (
     <div className="min-h-dvh">
       <Encabezado titulo="Administración de restaurantes" />
-      <main className="p-6 text-stone-500">Próximamente.</main>
+      <main className="min-h-dvh bg-bg p-6 text-muted">Próximamente.</main>
     </div>
   );
 }
@@ -53,7 +53,7 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 15
 
 function App() {
   const { usuario, cargando } = useAuth();
-  if (cargando) return <p className="p-6 text-stone-500">Cargando…</p>;
+  if (cargando) return <p className="min-h-dvh bg-bg p-6 text-muted">Cargando…</p>;
   if (usuario?.debeCambiarPassword) return <CambiarPasswordPage />;
   // Una tablet vinculada vuelve a la pantalla de PIN, no al login con correo.
   const inicio = usuario ? INICIO[usuario.rol] : tokenTablet() ? '/tablet' : '/login';

@@ -1,3 +1,4 @@
+import { Printer } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { CuentaDetalle, MenuPublico, MesaOperacion, MetodoPago } from '@menu-qr/shared';
 import { api, obtenerMenu } from './api';
@@ -98,19 +99,25 @@ export function CajaPage() {
   const pendientes = cuenta?.pedidos.some((p) => p.estado === 'PENDIENTE');
 
   return (
-    <div className="min-h-dvh bg-stone-100">
+    <div className="min-h-dvh bg-bg">
       <Encabezado titulo="Caja">
         <Conexion conectado={conectado} />
       </Encabezado>
       {error && (
-        <p className="m-3 rounded-md bg-red-50 p-2 text-sm text-red-800 print:hidden">{error}</p>
+        <p className="m-3 rounded-md bg-danger-soft p-3 text-sm text-danger print:hidden">
+          {error}
+        </p>
       )}
 
-      <div className="grid gap-4 p-4 md:grid-cols-[320px_1fr] print:hidden">
+      <div className="mx-auto grid max-w-6xl items-start gap-4 p-4 md:grid-cols-[320px_1fr] print:hidden">
         <aside className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase text-stone-500">Cuentas abiertas</h2>
+          <h2 className="text-sm font-semibold tracking-wide text-muted uppercase">
+            Cuentas abiertas
+          </h2>
           {abiertas.length === 0 && (
-            <p className="text-sm text-stone-500">No hay cuentas abiertas.</p>
+            <p className="rounded-lg border border-dashed border-line p-6 text-center text-sm text-muted">
+              No hay cuentas abiertas.
+            </p>
           )}
           {abiertas.map((m) => (
             <button
@@ -118,45 +125,45 @@ export function CajaPage() {
               type="button"
               onClick={() => setSeleccion(m.cuenta!.id)}
               aria-pressed={seleccion === m.cuenta!.id}
-              className={`flex w-full items-center justify-between rounded-lg border-2 bg-white p-3 text-left ${
+              className={`flex min-h-16 w-full items-center justify-between rounded-lg border-2 bg-app p-3 text-left shadow-tarjeta ${
                 seleccion === m.cuenta!.id
-                  ? 'border-teal-700'
+                  ? 'border-purple'
                   : m.cuenta!.estado === 'PIDIO_CUENTA'
-                    ? 'border-violet-500'
+                    ? 'border-amber'
                     : 'border-transparent'
               }`}
             >
               <span>
                 <span className="font-semibold">Mesa {m.numero}</span>
                 {m.cuenta!.estado === 'PIDIO_CUENTA' && (
-                  <span className="ml-2 rounded bg-violet-100 px-1.5 text-xs text-violet-800">
+                  <span className="ml-2 rounded-full bg-amber px-2 py-0.5 text-xs font-semibold text-on-amber">
                     pidió cuenta
                   </span>
                 )}
-                <span className="block text-xs text-stone-500">
-                  desde {hora(m.cuenta!.abiertaEn)}
-                </span>
+                <span className="block text-xs text-muted">desde {hora(m.cuenta!.abiertaEn)}</span>
               </span>
               <span className="font-semibold tabular-nums">{precio(m.cuenta!.total)}</span>
             </button>
           ))}
         </aside>
 
-        <section className="rounded-xl bg-white p-4 shadow-sm">
+        <section className="rounded-lg bg-app p-5 shadow-tarjeta md:sticky md:top-20">
           {!cuenta ? (
-            <p className="text-stone-500">Elegí una cuenta.</p>
+            <p className="py-10 text-center text-muted">
+              Elija una cuenta de la lista para ver el detalle y cobrarla.
+            </p>
           ) : (
             <>
               <h2 className="mb-3 text-xl font-semibold">Mesa {cuenta.mesa.numero}</h2>
               <table className="w-full text-sm">
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-line">
                   {items.map((i) => (
                     <tr key={i.id}>
                       <td className="w-10 py-1.5 pr-2 align-top tabular-nums">{i.cantidad}×</td>
                       <td className="py-1.5">
                         {i.nombreEs}
                         {i.modificadores.length > 0 && (
-                          <span className="text-stone-500">
+                          <span className="text-muted">
                             {' '}
                             ({i.modificadores.map((m) => m.nombre).join(', ')})
                           </span>
@@ -176,7 +183,7 @@ export function CajaPage() {
                 servicio={r?.porcentajeServicio ?? 10}
               />
               {pendientes && (
-                <p className="mt-3 rounded bg-amber-50 p-2 text-sm text-amber-900">
+                <p className="mt-3 rounded-md bg-amber-soft p-3 text-sm text-amber-ink">
                   Hay pedidos sin confirmar: el mesero debe confirmarlos o cancelarlos antes de
                   cerrar.
                 </p>
@@ -191,7 +198,7 @@ export function CajaPage() {
                       type="button"
                       aria-pressed={metodo === m.id}
                       onClick={() => setMetodo(m.id)}
-                      className={`rounded-lg px-4 py-2 text-sm font-medium ${metodo === m.id ? 'bg-teal-700 text-white' : 'border border-stone-300'}`}
+                      className={`min-h-11 rounded-md px-4 text-sm font-medium ${metodo === m.id ? 'bg-purple text-on-accent' : 'bg-surface hover:bg-surface-2'}`}
                     >
                       {m.texto}
                     </button>
@@ -202,15 +209,15 @@ export function CajaPage() {
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="rounded-lg border border-stone-300 px-4 py-2 text-sm"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-md bg-surface px-4 text-sm font-medium hover:bg-surface-2"
                 >
-                  🖨 Imprimir pre-cuenta
+                  <Printer className="size-4" aria-hidden /> Imprimir pre-cuenta
                 </button>
                 <button
                   type="button"
                   onClick={cerrar}
                   disabled={!metodo || cerrando || pendientes}
-                  className="flex-1 rounded-lg bg-teal-700 py-2 font-semibold text-white disabled:opacity-40"
+                  className="min-h-12 flex-1 rounded-md bg-purple font-semibold text-on-accent disabled:opacity-50"
                 >
                   {cerrando ? 'Cerrando…' : 'Cerrar cuenta'}
                 </button>
@@ -269,7 +276,7 @@ function Desglose({
     </div>
   );
   return (
-    <div className="mt-3 space-y-1 border-t pt-2 text-sm">
+    <div className="mt-3 space-y-1 border-t border-line pt-2 text-sm">
       {fila('Subtotal', cuenta.subtotal)}
       {fila(`Servicio (${servicio}%)`, cuenta.montoServicio)}
       {fila(`IVA (${iva}%)`, cuenta.montoIva)}
