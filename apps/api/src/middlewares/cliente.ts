@@ -23,7 +23,7 @@ export const autenticarCliente: RequestHandler = async (req, _res, next) => {
     sesionId: sesion.id,
     cuentaId: sesion.cuentaId,
     restauranteId: sesion.cuenta.restauranteId,
-    mesaId: sesion.cuenta.mesaId,
+    mesaId: sesion.cuenta.mesaId!, // las sesiones de comensal solo existen en cuentas de mesa
   };
   next();
 };

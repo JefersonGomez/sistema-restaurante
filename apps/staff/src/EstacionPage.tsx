@@ -56,7 +56,7 @@ const columnaDe = (p: PedidoEstacion) =>
       ? 'prep'
       : 'listos';
 
-type Deshacible = { item: ItemDetalle; mesa: number; estado: EstadoItem };
+type Deshacible = { item: ItemDetalle; lugar: string; estado: EstadoItem };
 
 type Estacion = { id: string; nombre: string };
 type Plato = {
@@ -195,11 +195,11 @@ export function EstacionPage() {
     refrescar();
   };
 
-  const avanzar = async (item: ItemDetalle, mesa: number) => {
+  const avanzar = async (item: ItemDetalle, lugar: string) => {
     const estado = SIGUIENTE[item.estado];
     if (!estado) return;
     clearTimeout(temporizador.current);
-    setDeshacible({ item, mesa, estado });
+    setDeshacible({ item, lugar, estado });
     temporizador.current = setTimeout(() => setDeshacible(null), DESHACER_MS);
     // Cambio optimista; si la API lo rechaza (otro dispositivo ya lo movió) se resincroniza.
     fijarEstado(item.id, estado);
@@ -358,9 +358,7 @@ export function EstacionPage() {
                     className={`anim-entrar rounded-lg border-2 bg-app shadow-tarjeta ${borde}`}
                   >
                     <header className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
-                      <span className="text-3xl font-bold tracking-tight">
-                        Mesa {p.mesa.numero}
-                      </span>
+                      <span className="text-3xl font-bold tracking-tight">{p.lugar}</span>
                       <span className="flex flex-col items-end gap-1">
                         <span
                           className={`rounded-full px-3 py-1 text-base font-bold tabular-nums ${reloj}`}
@@ -380,7 +378,7 @@ export function EstacionPage() {
                         <li key={i.id}>
                           <button
                             type="button"
-                            onClick={() => avanzar(i, p.mesa.numero)}
+                            onClick={() => avanzar(i, p.lugar)}
                             disabled={!SIGUIENTE[i.estado]}
                             className={`min-h-14 w-full rounded-md border-2 p-3 text-left transition-transform active:scale-[0.98] disabled:cursor-default ${ESTILO_ITEM[i.estado]}`}
                           >
@@ -418,7 +416,7 @@ export function EstacionPage() {
           className="anim-aparecer fixed bottom-4 left-1/2 z-30 flex max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-3 rounded-[14px] bg-fg py-2 pr-2 pl-4 text-app shadow-app"
         >
           <span className="text-sm">
-            Mesa {deshacible.mesa} · {deshacible.item.nombreEs} → {NOMBRE_ESTADO[deshacible.estado]}
+            {deshacible.lugar} · {deshacible.item.nombreEs} → {NOMBRE_ESTADO[deshacible.estado]}
           </span>
           <button
             type="button"

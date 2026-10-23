@@ -17,9 +17,11 @@ import {
   aCuenta,
   aItem,
   aPedido,
+  datosLugar,
   incluirCuenta,
   incluirItem,
   incluirPedido,
+  lugarDe,
 } from '../pedidos/detalle';
 import * as avisar from '../pedidos/eventos';
 import {
@@ -37,10 +39,10 @@ const ITEMS_ACTIVOS: EstadoItem[] = ['PENDIENTE', 'EN_PREPARACION', 'LISTO'];
 async function pedidoDelRestaurante(restauranteId: string, pedidoId: string) {
   const p = await prisma.pedido.findFirst({
     where: { id: pedidoId, restauranteId },
-    select: { cuentaId: true, cuenta: { select: { mesa: { select: { numero: true } } } } },
+    select: { cuentaId: true, cuenta: { select: datosLugar } },
   });
   if (!p) throw noExiste('Pedido');
-  return { restauranteId, cuentaId: p.cuentaId, mesa: p.cuenta.mesa };
+  return { restauranteId, cuentaId: p.cuentaId, mesa: p.cuenta.mesa, lugar: lugarDe(p.cuenta) };
 }
 
 // --- Pedidos: PENDIENTE → CONFIRMADO | CANCELADO ---
@@ -114,7 +116,7 @@ async function itemDelRestaurante(restauranteId: string, itemId: string) {
         select: {
           estado: true,
           cuentaId: true,
-          cuenta: { select: { estado: true, mesa: { select: { numero: true } } } },
+          cuenta: { select: { estado: true, ...datosLugar } },
         },
       },
     },
@@ -174,7 +176,12 @@ export async function cambiarEstadoItem(
   });
   const detalle = aItem(final);
   avisar.itemEstado(
-    { restauranteId, cuentaId: item.pedido.cuentaId, mesa: item.pedido.cuenta.mesa },
+    {
+      restauranteId,
+      cuentaId: item.pedido.cuentaId,
+      mesa: item.pedido.cuenta.mesa,
+      lugar: lugarDe(item.pedido.cuenta),
+    },
     { ...detalle, pedidoId: item.pedidoId },
   );
   return detalle;
@@ -183,7 +190,12 @@ export async function cambiarEstadoItem(
 // Se puede cancelar mientras no esté LISTO; requiere motivo.
 export async function cancelarItem(restauranteId: string, itemId: string, motivo: string) {
   const item = await itemDelRestaurante(restauranteId, itemId);
-  const ctx = { restauranteId, cuentaId: item.pedido.cuentaId, mesa: item.pedido.cuenta.mesa };
+  const ctx = {
+    restauranteId,
+    cuentaId: item.pedido.cuentaId,
+    mesa: item.pedido.cuenta.mesa,
+    lugar: lugarDe(item.pedido.cuenta),
+  };
   const { detalle, cuenta } = await prisma.$transaction(async (tx) => {
     await bloquearCuenta(tx, ctx.cuentaId);
     const actual = await tx.pedidoItem.findUniqueOrThrow({
@@ -211,16 +223,17 @@ export async function cancelarItem(restauranteId: string, itemId: string, motivo
 // --- Cuentas: ABIERTA | PIDIO_CUENTA → CERRADA ---
 
 // Pasos comunes al cerrar: la sesión del comensal deja de servir y la mesa queda libre.
-async function cerrarEnTx(
+export async function cerrarEnTx(
   tx: Prisma.TransactionClient,
-  c: { restauranteId: string; mesaId: string; cuentaId: string; usuarioId: string },
+  c: { restauranteId: string; mesaId: string | null; cuentaId: string; usuarioId: string },
   data: Prisma.CuentaUpdateInput,
 ) {
   await tx.sesionCliente.updateMany({ where: { cuentaId: c.cuentaId }, data: { revocada: true } });
-  await tx.llamada.updateMany({
-    where: { restauranteId: c.restauranteId, mesaId: c.mesaId, atendida: false },
-    data: { atendida: true },
-  });
+  if (c.mesaId)
+    await tx.llamada.updateMany({
+      where: { restauranteId: c.restauranteId, mesaId: c.mesaId, atendida: false },
+      data: { atendida: true },
+    });
   return tx.cuenta.update({
     where: { id: c.cuentaId },
     data: {
@@ -241,7 +254,7 @@ export async function cerrarCuenta(
 ) {
   const existe = await prisma.cuenta.findFirst({
     where: { id: cuentaId, restauranteId },
-    select: { mesaId: true, mesa: { select: { numero: true } } },
+    select: { mesaId: true, ...datosLugar },
   });
   if (!existe) throw noExiste('Cuenta');
 
@@ -265,7 +278,10 @@ export async function cerrarCuenta(
       { metodoPago },
     );
   });
-  avisar.cuentaCerrada({ restauranteId, cuentaId, mesa: existe.mesa }, cuenta.updatedAt);
+  avisar.cuentaCerrada(
+    { restauranteId, cuentaId, mesa: existe.mesa, lugar: lugarDe(existe) },
+    cuenta.updatedAt,
+  );
   return aCuenta(cuenta);
 }
 
@@ -282,7 +298,7 @@ export async function cobrarParte(
     where: { id: cuentaId, restauranteId },
     select: {
       mesaId: true,
-      mesa: { select: { numero: true } },
+      ...datosLugar,
       restaurante: {
         select: { porcentajeIva: true, porcentajeServicio: true, preciosIncluyenImpuestos: true },
       },
@@ -380,7 +396,7 @@ export async function cobrarParte(
     return { cuenta: c, cerrada: true, pagoId: pago.id };
   });
 
-  const ctx = { restauranteId, cuentaId, mesa: existe.mesa };
+  const ctx = { restauranteId, cuentaId, mesa: existe.mesa, lugar: lugarDe(existe) };
   if (cerrada) avisar.cuentaCerrada(ctx, cuenta.updatedAt);
   else avisar.cuentaActualizada(ctx, cuenta);
   return { cuenta: aCuenta(cuenta), pagoId, cerrada };
@@ -492,14 +508,20 @@ export async function mesas(restauranteId: string): Promise<MesaOperacion[]> {
 
 export async function pedidos(restauranteId: string, estado?: EstadoPedido) {
   const filas = await prisma.pedido.findMany({
-    where: { restauranteId, ...(estado ? { estado } : {}), cuenta: { estado: { not: 'CERRADA' } } },
-    orderBy: { createdAt: 'asc' },
-    include: {
-      ...incluirPedido,
-      cuenta: { select: { id: true, mesa: { select: { numero: true, nombre: true } } } },
+    where: {
+      restauranteId,
+      ...(estado ? { estado } : {}),
+      cuenta: { estado: { not: 'CERRADA' }, tipo: 'MESA' },
     },
+    orderBy: { createdAt: 'asc' },
+    include: { ...incluirPedido, cuenta: { select: { id: true, ...datosLugar } } },
   });
-  return filas.map((p) => ({ ...aPedido(p), cuentaId: p.cuenta.id, mesa: p.cuenta.mesa }));
+  return filas.map((p) => ({
+    ...aPedido(p),
+    cuentaId: p.cuenta.id,
+    mesa: p.cuenta.mesa!,
+    lugar: lugarDe(p.cuenta),
+  }));
 }
 
 // En una tablet vinculada manda la estación del dispositivo; si no, la asignada al usuario.
@@ -543,12 +565,13 @@ export async function itemsEstacion(
     orderBy: { confirmadoEn: 'asc' },
     include: {
       items: { where: filtroItem, orderBy: { createdAt: 'asc' }, include: incluirItem },
-      cuenta: { select: { mesa: { select: { numero: true, nombre: true } } } },
+      cuenta: { select: datosLugar },
     },
   });
   return filas.map((p) => ({
     pedidoId: p.id,
     mesa: p.cuenta.mesa,
+    lugar: lugarDe(p.cuenta),
     confirmadoEn: (p.confirmadoEn ?? p.createdAt).toISOString(),
     nota: p.nota,
     items: p.items.map(aItem),
@@ -561,7 +584,11 @@ export async function items(restauranteId: string, estado: EstadoItem = 'LISTO')
     where: {
       estado,
       cancelado: false,
-      pedido: { restauranteId, estado: 'CONFIRMADO', cuenta: { estado: { not: 'CERRADA' } } },
+      pedido: {
+        restauranteId,
+        estado: 'CONFIRMADO',
+        cuenta: { estado: { not: 'CERRADA' }, tipo: 'MESA' },
+      },
     },
     orderBy: { updatedAt: 'asc' },
     include: {

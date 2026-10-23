@@ -21,10 +21,26 @@ autorizó commit + push al cerrar cada sub-fase.
 
 | Paso | Qué                                                                                                    | Estado |
 | ---- | ------------------------------------------------------------------------------------------------------ | ------ |
-| 5.1  | Modelo y API: cuenta sin mesa (tipo, cliente), config, pedido en línea, seguimiento, acciones, "lugar" | ⬜     |
+| 5.1  | Modelo y API: cuenta sin mesa (tipo, cliente), config, pedido en línea, seguimiento, acciones, "lugar" | ✅     |
 | 5.2  | Cliente: /r/:slug, checkout y seguimiento                                                              | ⬜     |
 | 5.3  | Personal: pantalla "En línea", avisos, etiquetas, Ajustes, QR del enlace                               | ⬜     |
 | 5.4  | Reportes por canal, seed, README, tests                                                                | ⬜     |
+
+- 5.1: migración `20261023160000_pedidos_en_linea`: Cuenta.mesaId opcional (relación con onDelete
+  Restrict; el índice parcial cuenta_unica_abierta sigue igual), Cuenta.tipo (MESA/RECOGER/DOMICILIO),
+  numeroPedido, datos del cliente, costoEnvio, pagoElegido, comprobanteSinpe, pagoVerificado, etapa
+  (RECIBIDO→ACEPTADO→LISTO→EN_CAMINO→ENTREGADO | RECHAZADO), tiempoEstimadoMin, motivoRechazo,
+  tokenSeguimiento; Restaurante.enLinea* + costoEnvio, pedidoMinimo, zonaEntrega, sinpe*, tiempoEstimadoMin.
+  `lugarDe()` / `datosLugar` (pedidos/detalle): "Mesa 3" o "Para llevar #12 · Ana"; todos los eventos y
+  PedidoEstacion/CuentaDetalle llevan `lugar` (y mesa null en línea). La bandeja del mesero
+  (/operacion/pedidos e /operacion/items) excluye las cuentas en línea. Totales en línea: sin servicio y
+  - costoEnvio (`recalcularCuenta`). `crearPedido(..., enLinea: { minimo })`: siempre PENDIENTE, mínimo
+    dentro de la transacción, sin evento pedido:nuevo. Módulo `enlinea`: POST /public/:slug/pedidos-en-linea
+    (limiteEnLinea 10/10 min, idempotente por clientRequestId, máx. 2 pendientes por teléfono, correlativo con
+    pg_advisory_xact_lock vía $executeRaw: con $queryRaw falla "UnsupportedNativeDataType" por el void),
+    GET /public/seguimiento/:token, y /enlinea (listar, aceptar, rechazar, etapa, pago-verificado,
+    entregar) para DUENO/CAJA/MESERO; eventos enlinea:nuevo / enlinea:actualizado a meseros y caja.
+    Pendiente para 5.4: excluir los RECHAZADO de los reportes.
 
 ## Plan de la Fase 4 (aprobado 2026-10-23) — spec: docs/especificacion-fase4.md
 

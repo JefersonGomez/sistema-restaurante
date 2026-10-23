@@ -106,6 +106,16 @@ export const restauranteConfigSchema = z
       .regex(/^#[0-9a-fA-F]{6}$/, 'Color hex, ej. #17131f')
       .refine(acentoLegible, 'Ese color no contrasta con el texto blanco; elija uno más oscuro')
       .nullable(),
+    // Pedidos en línea (Fase 5).
+    enLineaActivo: z.boolean(),
+    enLineaRecoger: z.boolean(),
+    enLineaDomicilio: z.boolean(),
+    costoEnvio: centimos,
+    pedidoMinimo: centimos,
+    zonaEntrega: z.string().trim().max(200).nullable(),
+    sinpeNumero: telefonoSchema.nullable(),
+    sinpeNombre: z.string().trim().max(80).nullable(),
+    tiempoEstimadoMin: z.number().int().min(5).max(240),
   })
   .partial();
 export type RestauranteConfigInput = z.infer<typeof restauranteConfigSchema>;
@@ -353,6 +363,17 @@ export type MenuPublico = {
     abierto: boolean; // calculado por el servidor (horario + cierre manual)
     cerradoManual: boolean;
     horarioHoy: { abre: string; cierra: string }[];
+    enLinea: {
+      activo: boolean;
+      recoger: boolean;
+      domicilio: boolean;
+      costoEnvio: number;
+      pedidoMinimo: number;
+      zonaEntrega: string | null;
+      sinpeNumero: string | null;
+      sinpeNombre: string | null;
+      tiempoEstimadoMin: number;
+    };
   };
   promocion: {
     platoId: string;
@@ -419,6 +440,34 @@ export const crearPedidoSchema = z.object({
 export type CrearPedidoInput = z.infer<typeof crearPedidoSchema>;
 
 export const motivoSchema = z.object({ motivo: z.string().trim().min(1).max(200) });
+
+// --- Pedidos en línea (Fase 5) ---
+export const pedidoEnLineaSchema = crearPedidoSchema
+  .extend({
+    tipo: z.enum(['RECOGER', 'DOMICILIO']),
+    cliente: z.object({
+      nombre: texto(80),
+      telefono: telefonoSchema,
+      direccion: z.string().trim().max(200).optional(),
+      referencia: z.string().trim().max(200).optional(),
+    }),
+    pago: z.object({
+      metodo: z.enum(['EFECTIVO', 'SINPE']),
+      comprobante: z.string().trim().max(40).optional(),
+    }),
+  })
+  .refine((p) => p.tipo === 'RECOGER' || (p.cliente.direccion?.length ?? 0) >= 5, {
+    message: 'Escriba la dirección de entrega',
+    path: ['cliente', 'direccion'],
+  });
+export type PedidoEnLineaInput = z.infer<typeof pedidoEnLineaSchema>;
+export const aceptarEnLineaSchema = z.object({
+  tiempoEstimadoMin: z.number().int().min(5).max(240),
+});
+export const etapaEnLineaCambioSchema = z.object({ etapa: z.enum(['LISTO', 'EN_CAMINO']) });
+export const entregarEnLineaSchema = z.object({
+  metodoPago: z.enum(['EFECTIVO', 'TARJETA', 'SINPE']),
+});
 export const cambiarEstadoItemSchema = z.object({
   estado: z.enum(['EN_PREPARACION', 'LISTO', 'ENTREGADO']),
 });
@@ -486,10 +535,39 @@ export type PedidoDetalle = {
   updatedAt: string;
   items: ItemDetalle[];
 };
+export const tipoCuentaSchema = z.enum(['MESA', 'RECOGER', 'DOMICILIO']);
+export type TipoCuenta = z.infer<typeof tipoCuentaSchema>;
+export const etapaEnLineaSchema = z.enum([
+  'RECIBIDO',
+  'ACEPTADO',
+  'LISTO',
+  'EN_CAMINO',
+  'ENTREGADO',
+  'RECHAZADO',
+]);
+export type EtapaEnLinea = z.infer<typeof etapaEnLineaSchema>;
+// Datos de un pedido en línea (para recoger o a domicilio).
+export type DatosEnLinea = {
+  numero: number;
+  clienteNombre: string;
+  clienteTelefono: string;
+  direccion: string | null;
+  referencia: string | null;
+  costoEnvio: number;
+  pagoElegido: MetodoPago | null;
+  comprobanteSinpe: string | null;
+  pagoVerificado: boolean;
+  etapa: EtapaEnLinea;
+  tiempoEstimadoMin: number | null;
+  motivoRechazo: string | null;
+};
 export type CuentaDetalle = {
   id: string;
   estado: EstadoCuenta;
-  mesa: { id: string; numero: number; nombre: string | null };
+  mesa: { id: string; numero: number; nombre: string | null } | null; // null en pedidos en línea
+  tipo: TipoCuenta;
+  lugar: string; // "Mesa 3" o "Para llevar #12 · Ana"
+  enLinea: DatosEnLinea | null;
   verificada: boolean;
   subtotal: number;
   montoServicio: number;
@@ -523,9 +601,24 @@ export type MesaOperacion = {
 };
 
 // Pantalla de estación: ítems activos agrupados por pedido.
+export type SeguimientoEnLinea = {
+  restaurante: {
+    nombre: string;
+    slug: string;
+    logoUrl: string | null;
+    colorAcento: string | null;
+    telefono: string | null;
+    moneda: Moneda;
+    sinpeNumero: string | null;
+    sinpeNombre: string | null;
+  };
+  cuenta: CuentaDetalle;
+};
+
 export type PedidoEstacion = {
   pedidoId: string;
-  mesa: { numero: number; nombre: string | null };
+  mesa: { numero: number; nombre: string | null } | null; // null en pedidos en línea
+  lugar: string; // lo que se muestra en la tarjeta: "Mesa 3", "Para llevar #12 · Ana"
   confirmadoEn: string;
   nota: string | null;
   items: ItemDetalle[];

@@ -4,12 +4,18 @@ import { emitToCuenta, emitToRestaurant } from '../../realtime';
 // Avisos por socket. Se llaman SIEMPRE después del commit. Cada payload lleva `updatedAt`
 // para que el frontend ignore eventos viejos; ante cualquier duda el cliente vuelve a pedir por REST.
 
-type Ctx = { restauranteId: string; cuentaId: string; mesa: { numero: number } };
+export type Ctx = {
+  restauranteId: string;
+  cuentaId: string;
+  mesa: { numero: number } | null; // null en pedidos en línea
+  lugar: string; // "Mesa 3" o "Para llevar #12 · Ana"
+};
 
 export function pedidoNuevo(ctx: Ctx, pedido: PedidoDetalle) {
   const aviso = {
     cuentaId: ctx.cuentaId,
     mesa: ctx.mesa,
+    lugar: ctx.lugar,
     pedidoId: pedido.id,
     updatedAt: pedido.updatedAt,
   };
@@ -22,6 +28,7 @@ export function pedidoConfirmado(ctx: Ctx, pedido: PedidoDetalle) {
   const base = {
     cuentaId: ctx.cuentaId,
     mesa: ctx.mesa,
+    lugar: ctx.lugar,
     pedidoId: pedido.id,
     updatedAt: pedido.updatedAt,
   };
@@ -43,6 +50,7 @@ export function pedidoCancelado(ctx: Ctx, pedido: PedidoDetalle) {
   const aviso = {
     cuentaId: ctx.cuentaId,
     mesa: ctx.mesa,
+    lugar: ctx.lugar,
     pedidoId: pedido.id,
     updatedAt: pedido.updatedAt,
   };
@@ -61,7 +69,13 @@ export function itemEstado(
     updatedAt: string;
   },
 ) {
-  const aviso = { cuentaId: ctx.cuentaId, mesa: ctx.mesa, ...item, itemId: item.id };
+  const aviso = {
+    cuentaId: ctx.cuentaId,
+    mesa: ctx.mesa,
+    lugar: ctx.lugar,
+    ...item,
+    itemId: item.id,
+  };
   emitToRestaurant(ctx.restauranteId, { estacion: item.estacionId }, 'item:estado', aviso);
   emitToRestaurant(ctx.restauranteId, 'meseros', 'item:estado', aviso);
   emitToCuenta(ctx.cuentaId, 'item:estado', aviso);
@@ -82,6 +96,7 @@ export function cuentaActualizada(
   const aviso = {
     cuentaId: ctx.cuentaId,
     mesa: ctx.mesa,
+    lugar: ctx.lugar,
     estado,
     subtotal,
     montoServicio,
@@ -94,14 +109,24 @@ export function cuentaActualizada(
 }
 
 export function cuentaSolicitada(ctx: Ctx, updatedAt: Date) {
-  const aviso = { cuentaId: ctx.cuentaId, mesa: ctx.mesa, updatedAt: updatedAt.toISOString() };
+  const aviso = {
+    cuentaId: ctx.cuentaId,
+    mesa: ctx.mesa,
+    lugar: ctx.lugar,
+    updatedAt: updatedAt.toISOString(),
+  };
   emitToRestaurant(ctx.restauranteId, 'meseros', 'cuenta:solicitada', aviso);
   emitToRestaurant(ctx.restauranteId, 'caja', 'cuenta:solicitada', aviso);
   emitToCuenta(ctx.cuentaId, 'cuenta:actualizada', aviso);
 }
 
 export function cuentaCerrada(ctx: Ctx, updatedAt: Date) {
-  const aviso = { cuentaId: ctx.cuentaId, mesa: ctx.mesa, updatedAt: updatedAt.toISOString() };
+  const aviso = {
+    cuentaId: ctx.cuentaId,
+    mesa: ctx.mesa,
+    lugar: ctx.lugar,
+    updatedAt: updatedAt.toISOString(),
+  };
   emitToCuenta(ctx.cuentaId, 'cuenta:cerrada', aviso);
   emitToRestaurant(ctx.restauranteId, 'meseros', 'cuenta:cerrada', aviso);
   emitToRestaurant(ctx.restauranteId, 'caja', 'cuenta:cerrada', aviso);
@@ -114,6 +139,7 @@ export function mesaLlamada(
   emitToRestaurant(ctx.restauranteId, 'meseros', 'mesa:llamada', {
     cuentaId: ctx.cuentaId,
     mesa: ctx.mesa,
+    lugar: ctx.lugar,
     llamadaId: llamada.id,
     tipo: llamada.tipo,
     updatedAt: llamada.updatedAt.toISOString(),

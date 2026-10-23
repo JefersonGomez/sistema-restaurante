@@ -94,6 +94,16 @@ model Restaurante {
   textoPromoEn             String?
   precioPromo              Int? // céntimos
   colorPromo               String? // fondo del banner de la promoción; null = oscuro del diseño
+  // Pedidos en línea (Fase 5)
+  enLineaActivo            Boolean          @default(false)
+  enLineaRecoger           Boolean          @default(true)
+  enLineaDomicilio         Boolean          @default(false)
+  costoEnvio               Int              @default(0) // céntimos, fijo
+  pedidoMinimo             Int              @default(0) // céntimos; 0 = sin mínimo
+  zonaEntrega              String?
+  sinpeNumero              String?
+  sinpeNombre              String?
+  tiempoEstimadoMin        Int              @default(25)
   createdAt                DateTime         @default(now())
   updatedAt                DateTime         @updatedAt
 
@@ -287,28 +297,43 @@ model Modificador {
 // "cuenta_unica_abierta" (Prisma no soporta índices parciales en el schema).
 
 model Cuenta {
-  id               String       @id @default(uuid()) @db.Uuid
-  restauranteId    String       @db.Uuid
-  mesaId           String       @db.Uuid
-  estado           EstadoCuenta @default(ABIERTA)
-  verificada       Boolean      @default(false)
+  id                String        @id @default(uuid()) @db.Uuid
+  restauranteId     String        @db.Uuid
+  mesaId            String?       @db.Uuid // null en pedidos en línea (para recoger / a domicilio)
+  tipo              TipoCuenta    @default(MESA)
+  estado            EstadoCuenta  @default(ABIERTA)
+  verificada        Boolean       @default(false)
   // Totales en céntimos; los recalcula el servidor con calcularTotales() (packages/shared).
-  subtotal         Int          @default(0)
-  montoServicio    Int          @default(0)
-  montoIva         Int          @default(0)
-  total            Int          @default(0)
-  metodoPago       MetodoPago?
-  cerradaPorId     String?      @db.Uuid
-  numeroComensales Int? // cupo: lo dice el primero que escanea; sube al aceptar a alguien
-  ingresoBloqueado Boolean      @default(false) // demasiados intentos de entrar: nadie más se une
-  rechazosIngreso  Int          @default(0)
-  abiertaEn        DateTime     @default(now())
-  cerradaEn        DateTime?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  subtotal          Int           @default(0)
+  montoServicio     Int           @default(0)
+  montoIva          Int           @default(0)
+  total             Int           @default(0)
+  metodoPago        MetodoPago?
+  cerradaPorId      String?       @db.Uuid
+  numeroComensales  Int? // cupo: lo dice el primero que escanea; sube al aceptar a alguien
+  ingresoBloqueado  Boolean       @default(false) // demasiados intentos de entrar: nadie más se une
+  rechazosIngreso   Int           @default(0)
+  // Pedido en línea (Fase 5): quién pide, a dónde, cómo paga y en qué etapa va.
+  numeroPedido      Int? // "Pedido #12" (correlativo por restaurante)
+  clienteNombre     String?
+  clienteTelefono   String?
+  direccionEntrega  String?
+  referenciaEntrega String?
+  costoEnvio        Int           @default(0)
+  pagoElegido       MetodoPago? // lo que dijo el cliente (efectivo o SINPE)
+  comprobanteSinpe  String?
+  pagoVerificado    Boolean       @default(false)
+  etapa             EtapaEnLinea?
+  tiempoEstimadoMin Int?
+  motivoRechazo     String?
+  tokenSeguimiento  String?       @unique // enlace de seguimiento del cliente
+  abiertaEn         DateTime      @default(now())
+  cerradaEn         DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   restaurante Restaurante        @relation(fields: [restauranteId], references: [id])
-  mesa        Mesa               @relation(fields: [mesaId], references: [id])
+  mesa        Mesa?              @relation(fields: [mesaId], references: [id], onDelete: Restrict)
   cerradaPor  Usuario?           @relation(fields: [cerradaPorId], references: [id])
   pedidos     Pedido[]
   solicitudes SolicitudIngreso[]
@@ -318,6 +343,22 @@ model Cuenta {
   @@index([restauranteId])
   @@index([mesaId])
   @@index([restauranteId, estado, cerradaEn]) // reportes por rango de fechas
+  @@index([restauranteId, tipo, etapa])
+}
+
+enum TipoCuenta {
+  MESA
+  RECOGER
+  DOMICILIO
+}
+
+enum EtapaEnLinea {
+  RECIBIDO
+  ACEPTADO
+  LISTO
+  EN_CAMINO
+  ENTREGADO
+  RECHAZADO
 }
 
 model Pedido {

@@ -2,7 +2,7 @@ import { useAuth } from './auth';
 import { avisar } from './avisos';
 import { useTiempoReal } from './tiempoReal';
 
-type ConMesa = { mesa: { numero: number } };
+type ConMesa = { lugar: string }; // "Mesa 3" o "Para llevar #12 · Ana"
 
 // Escucha los eventos que merecen aviso para el rol de la sesión, en cualquier pantalla. Las
 // pantallas siguen escuchando por su cuenta solo para refrescar sus datos (sin sonar).
@@ -13,18 +13,16 @@ function Oyente({ rol }: { rol: string }) {
     {
       ...(sala && {
         'mesa:llamada': (p: ConMesa & { tipo: string }) =>
-          avisar('llamada', `Mesa ${p.mesa.numero} llama al mesero`, 3),
-        'pedido:nuevo': (p: ConMesa) =>
-          avisar('pedido', `Mesa ${p.mesa.numero}: pedido nuevo por confirmar`),
+          avisar('llamada', `${p.lugar} llama al mesero`, 3),
+        'pedido:nuevo': (p: ConMesa) => avisar('pedido', `${p.lugar}: pedido nuevo por confirmar`),
       }),
       ...((sala || caja) && {
-        'cuenta:solicitada': (p: ConMesa) =>
-          avisar('cuenta', `Mesa ${p.mesa.numero} pidió la cuenta`),
+        'cuenta:solicitada': (p: ConMesa) => avisar('cuenta', `${p.lugar} pidió la cuenta`),
       }),
       // El dueño ya recibe los pedidos nuevos; a cocina le avisa cuando entran a preparar.
       ...(rol === 'COCINA' && {
         'pedido:confirmado': (p: ConMesa) =>
-          avisar('cocina', `Mesa ${p.mesa.numero}: pedido nuevo para cocina`, 3),
+          avisar('cocina', `${p.lugar}: pedido nuevo para cocina`, 3),
       }),
     },
     () => {},

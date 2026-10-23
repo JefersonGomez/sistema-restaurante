@@ -4,13 +4,15 @@ import {
   crearPedidoSchema,
   idParamSchema,
   llamarSchema,
+  pedidoEnLineaSchema,
   personasSchema,
   responderIngresoSchema,
   slugParamSchema,
   tokenParamSchema,
 } from '@menu-qr/shared';
 import { autenticarCliente } from '../../middlewares/cliente';
-import { limitePublico, limiteSesion } from '../../middlewares/rateLimit';
+import { limiteEnLinea, limitePublico, limiteSesion } from '../../middlewares/rateLimit';
+import * as enLinea from '../enlinea/enlinea.controller';
 import { validate } from '../../middlewares/validate';
 import * as c from './public.controller';
 
@@ -19,6 +21,18 @@ export const publicRouter = Router();
 publicRouter.use(limitePublico);
 publicRouter.get('/mesa/:token', validate({ params: tokenParamSchema }), c.mesa);
 publicRouter.get('/:slug/menu', validate({ params: slugParamSchema }), c.menu);
+// Pedidos en línea (para recoger / a domicilio) y su seguimiento con un token aleatorio.
+publicRouter.post(
+  '/:slug/pedidos-en-linea',
+  limiteEnLinea,
+  validate({ params: slugParamSchema, body: pedidoEnLineaSchema }),
+  enLinea.crear,
+);
+publicRouter.get(
+  '/seguimiento/:token',
+  validate({ params: tokenParamSchema }),
+  enLinea.seguimiento,
+);
 // Mesa con el cupo lleno: pedir unirse y consultar la respuesta (con la clave de la solicitud).
 publicRouter.post(
   '/mesa/:token/ingreso',

@@ -15,6 +15,24 @@ export const incluirPedido = {
   items: { orderBy: { createdAt: 'asc' }, include: incluirItem },
 } satisfies Prisma.PedidoInclude;
 
+// Cómo se nombra el origen de una cuenta en pantallas y avisos: "Mesa 3", "Para llevar #12 · Ana".
+export const datosLugar = {
+  tipo: true,
+  numeroPedido: true,
+  clienteNombre: true,
+  mesa: { select: { numero: true, nombre: true } },
+} as const;
+export function lugarDe(c: {
+  tipo: string;
+  numeroPedido: number | null;
+  clienteNombre: string | null;
+  mesa: { numero: number } | null;
+}) {
+  if (c.mesa) return `Mesa ${c.mesa.numero}`;
+  const tipo = c.tipo === 'DOMICILIO' ? 'Domicilio' : 'Para llevar';
+  return `${tipo} #${c.numeroPedido ?? ''}${c.clienteNombre ? ` · ${c.clienteNombre}` : ''}`;
+}
+
 export const incluirCuenta = {
   mesa: { select: { id: true, numero: true, nombre: true } },
   pedidos: { orderBy: { createdAt: 'asc' }, include: incluirPedido },
@@ -61,6 +79,25 @@ export const aCuenta = (c: CuentaDB): CuentaDetalle => ({
   id: c.id,
   estado: c.estado,
   mesa: c.mesa,
+  tipo: c.tipo,
+  lugar: lugarDe(c),
+  enLinea:
+    c.tipo === 'MESA'
+      ? null
+      : {
+          numero: c.numeroPedido ?? 0,
+          clienteNombre: c.clienteNombre ?? '',
+          clienteTelefono: c.clienteTelefono ?? '',
+          direccion: c.direccionEntrega,
+          referencia: c.referenciaEntrega,
+          costoEnvio: c.costoEnvio,
+          pagoElegido: c.pagoElegido,
+          comprobanteSinpe: c.comprobanteSinpe,
+          pagoVerificado: c.pagoVerificado,
+          etapa: c.etapa ?? 'RECIBIDO',
+          tiempoEstimadoMin: c.tiempoEstimadoMin,
+          motivoRechazo: c.motivoRechazo,
+        },
   verificada: c.verificada,
   subtotal: c.subtotal,
   montoServicio: c.montoServicio,

@@ -31,6 +31,15 @@ export async function menu(slug: string): Promise<MenuPublico> {
       textoPromoEn: true,
       precioPromo: true,
       colorPromo: true,
+      enLineaActivo: true,
+      enLineaRecoger: true,
+      enLineaDomicilio: true,
+      costoEnvio: true,
+      pedidoMinimo: true,
+      zonaEntrega: true,
+      sinpeNumero: true,
+      sinpeNombre: true,
+      tiempoEstimadoMin: true,
       horarios: { select: { diaSemana: true, abre: true, cierra: true } },
     },
   });
@@ -44,6 +53,15 @@ export async function menu(slug: string): Promise<MenuPublico> {
     textoPromoEn,
     precioPromo,
     colorPromo,
+    enLineaActivo,
+    enLineaRecoger,
+    enLineaDomicilio,
+    costoEnvio,
+    pedidoMinimo,
+    zonaEntrega,
+    sinpeNumero,
+    sinpeNombre,
+    tiempoEstimadoMin,
     ...datos
   } = r;
   const ahora = new Date();
@@ -51,6 +69,17 @@ export async function menu(slug: string): Promise<MenuPublico> {
     ...datos,
     abierto: estaAbierto(horarios, ahora, r.zonaHoraria, r.cerradoManual),
     horarioHoy: turnosDeHoy(horarios, ahora, r.zonaHoraria),
+    enLinea: {
+      activo: enLineaActivo,
+      recoger: enLineaRecoger,
+      domicilio: enLineaDomicilio,
+      costoEnvio,
+      pedidoMinimo,
+      zonaEntrega,
+      sinpeNumero,
+      sinpeNombre,
+      tiempoEstimadoMin,
+    },
   };
 
   const categorias = await prisma.categoria.findMany({

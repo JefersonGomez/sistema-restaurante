@@ -145,7 +145,7 @@ export function CajaPage() {
   const cerrarJunto = () =>
     cuenta &&
     metodo &&
-    confirm(`¿Cerrar la cuenta de la mesa ${cuenta.mesa.numero} por ${precio(cuenta.total)}?`) &&
+    confirm(`¿Cerrar la cuenta (${cuenta.lugar}) por ${precio(cuenta.total)}?`) &&
     accion(async () => {
       await api(`/operacion/cuentas/${cuenta.id}/cerrar`, {
         method: 'POST',
@@ -192,7 +192,7 @@ export function CajaPage() {
     );
 
   const ticketCuenta = (c: CuentaDetalle): Ticket => ({
-    titulo: `PRE-CUENTA · Mesa ${c.mesa.numero}`,
+    titulo: `PRE-CUENTA · ${c.lugar}`,
     lineas: lineasDe(items),
     totales: c,
   });
@@ -258,7 +258,7 @@ export function CajaPage() {
           ) : (
             <>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-xl font-semibold">Mesa {cuenta.mesa.numero}</h2>
+                <h2 className="text-xl font-semibold">{cuenta.lugar}</h2>
                 <div
                   role="group"
                   aria-label="¿Cómo pagan?"
@@ -361,7 +361,7 @@ export function CajaPage() {
                                 type="button"
                                 onClick={() =>
                                   imprimir({
-                                    titulo: `COMPROBANTE · Mesa ${cuenta.mesa.numero} · ${titulo}`,
+                                    titulo: `COMPROBANTE · ${cuenta.lugar} · ${titulo}`,
                                     lineas: lineasDe(suyos),
                                     totales: p,
                                     metodo: NOMBRE_METODO[p.metodoPago],

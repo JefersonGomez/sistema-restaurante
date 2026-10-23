@@ -8,7 +8,7 @@ import {
 import { Prisma } from '../../generated/prisma/client';
 import { prisma } from '../../lib/prisma';
 import { HttpError, noExiste } from '../../middlewares/errorHandler';
-import { aPedido, incluirPedido } from './detalle';
+import { aPedido, incluirPedido, lugarDe } from './detalle';
 import * as avisar from './eventos';
 
 type Tx = Prisma.TransactionClient;
@@ -55,9 +55,15 @@ export async function recalcularCuenta(tx: Tx, cuentaId: string) {
     where: { pedido: { cuentaId, estado: 'CONFIRMADO' } },
     select: { precioUnitario: true, cantidad: true, cancelado: true },
   });
+  // Pedidos en línea: sin el 10 % de servicio (es servicio a la mesa) y con el costo de envío.
+  const enMesa = cuenta.tipo === 'MESA';
+  const t = calcularTotales(lineas, {
+    ...cuenta.restaurante,
+    porcentajeServicio: enMesa ? cuenta.restaurante.porcentajeServicio : 0,
+  });
   return tx.cuenta.update({
     where: { id: cuentaId },
-    data: calcularTotales(lineas, cuenta.restaurante),
+    data: { ...t, total: t.total + (enMesa ? 0 : cuenta.costoEnvio) },
   });
 }
 
@@ -142,6 +148,8 @@ type NuevoPedido = {
   origen: 'CLIENTE' | 'MESERO';
   usuarioId?: string;
   input: CrearPedidoInput;
+  // Pedido en línea: siempre queda por aceptar (lo acepta el restaurante) y tiene pedido mínimo.
+  enLinea?: { minimo: number };
 };
 
 const buscarPorRequest = (cuentaId: string, clientRequestId: string) =>
@@ -162,7 +170,7 @@ export async function crearPedido(p: NuevoPedido) {
       const cuenta = await tx.cuenta.findFirst({
         where: { id: p.cuentaId, restauranteId: p.restauranteId },
         include: {
-          mesa: { select: { numero: true } },
+          mesa: { select: { numero: true, nombre: true } },
           restaurante: {
             select: {
               modoConfirmacion: true,
@@ -219,12 +227,21 @@ export async function crearPedido(p: NuevoPedido) {
         };
       });
 
+      if (p.enLinea) {
+        const subtotal = items.reduce((n, i) => n + i.precioUnitario * i.cantidad, 0);
+        if (subtotal < p.enLinea.minimo)
+          throw new HttpError(400, 'PEDIDO_MINIMO', 'El pedido no llega al mínimo', {
+            minimo: p.enLinea.minimo,
+            subtotal,
+          });
+      }
       // Mesero: confirmado directo. Comensal: según modoConfirmacion del restaurante.
       const modo = cuenta.restaurante.modoConfirmacion;
       const confirmado =
-        p.origen === 'MESERO' ||
-        modo === 'NUNCA' ||
-        (modo === 'PRIMER_PEDIDO' && cuenta.verificada);
+        !p.enLinea &&
+        (p.origen === 'MESERO' ||
+          modo === 'NUNCA' ||
+          (modo === 'PRIMER_PEDIDO' && cuenta.verificada));
       const ahora = new Date();
 
       const pedido = await tx.pedido.create({
@@ -246,7 +263,7 @@ export async function crearPedido(p: NuevoPedido) {
       if (p.origen === 'MESERO' && !cuenta.verificada)
         await tx.cuenta.update({ where: { id: cuenta.id }, data: { verificada: true } });
       const cuentaFinal = confirmado ? await recalcularCuenta(tx, cuenta.id) : null;
-      return { pedido: aPedido(pedido), cuentaFinal, mesa: cuenta.mesa };
+      return { pedido: aPedido(pedido), cuentaFinal, mesa: cuenta.mesa, lugar: lugarDe(cuenta) };
     });
   } catch (e) {
     // Dos envíos simultáneos del mismo clientRequestId: gana uno, el otro lo devuelve.
@@ -257,7 +274,14 @@ export async function crearPedido(p: NuevoPedido) {
     throw e;
   }
 
-  const ctx = { restauranteId: p.restauranteId, cuentaId: p.cuentaId, mesa: resultado.mesa };
+  const ctx = {
+    restauranteId: p.restauranteId,
+    cuentaId: p.cuentaId,
+    mesa: resultado.mesa,
+    lugar: resultado.lugar,
+  };
+  // Los pedidos en línea avisan por su cuenta (enlinea:nuevo), no como pedido de mesa.
+  if (p.enLinea) return { pedido: resultado.pedido, creado: true };
   if (resultado.pedido.estado === 'PENDIENTE') avisar.pedidoNuevo(ctx, resultado.pedido);
   else avisar.pedidoConfirmado(ctx, resultado.pedido);
   if (resultado.cuentaFinal) avisar.cuentaActualizada(ctx, resultado.cuentaFinal);

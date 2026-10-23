@@ -206,7 +206,12 @@ const ctxDe = async (c: Cliente) => {
     where: { id: c.mesaId },
     select: { numero: true },
   });
-  return { restauranteId: c.restauranteId, cuentaId: c.cuentaId, mesa };
+  return {
+    restauranteId: c.restauranteId,
+    cuentaId: c.cuentaId,
+    mesa,
+    lugar: `Mesa ${mesa.numero}`,
+  };
 };
 
 // Llamar al mesero: si ya hay una llamada sin atender de esta mesa, no se duplica.
