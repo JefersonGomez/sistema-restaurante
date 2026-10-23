@@ -18,6 +18,7 @@ export const incluirPedido = {
 export const incluirCuenta = {
   mesa: { select: { id: true, numero: true, nombre: true } },
   pedidos: { orderBy: { createdAt: 'asc' }, include: incluirPedido },
+  pagos: { orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.CuentaInclude;
 
 type ItemDB = Prisma.PedidoItemGetPayload<{ include: typeof incluirItem }>;
@@ -41,6 +42,7 @@ export const aItem = (i: ItemDB): ItemDetalle => ({
     nombreEn: m.modificador?.nombreEn ?? null,
     precioExtra: m.precioExtra,
   })),
+  pagoId: i.pagoId,
   updatedAt: i.updatedAt.toISOString(),
 });
 
@@ -68,6 +70,16 @@ export const aCuenta = (c: CuentaDB): CuentaDetalle => ({
   abiertaEn: c.abiertaEn.toISOString(),
   cerradaEn: c.cerradaEn?.toISOString() ?? null,
   personas: c.numeroComensales,
+  pagos: c.pagos.map((p) => ({
+    id: p.id,
+    nombre: p.nombre,
+    metodoPago: p.metodoPago,
+    subtotal: p.subtotal,
+    montoServicio: p.montoServicio,
+    montoIva: p.montoIva,
+    total: p.total,
+    createdAt: p.createdAt.toISOString(),
+  })),
   ingresoBloqueado: c.ingresoBloqueado,
   updatedAt: c.updatedAt.toISOString(),
   pedidos: c.pedidos.map(aPedido),

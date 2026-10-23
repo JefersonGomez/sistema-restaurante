@@ -301,6 +301,7 @@ model Cuenta {
   cerradaPor  Usuario?           @relation(fields: [cerradaPorId], references: [id])
   pedidos     Pedido[]
   solicitudes SolicitudIngreso[]
+  pagos       PagoCuenta[]
   sesiones    SesionCliente[]
 
   @@index([restauranteId])
@@ -346,6 +347,7 @@ model PedidoItem {
   enPreparacionEn   DateTime?
   listoEn           DateTime?
   entregadoEn       DateTime?
+  pagoId            String?          @db.Uuid // cuentas separadas: en qué grupo se cobró
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
@@ -353,6 +355,7 @@ model PedidoItem {
   plato         Plato                   @relation(fields: [platoId], references: [id])
   estacion      Estacion                @relation(fields: [estacionId], references: [id])
   modificadores PedidoItemModificador[]
+  pago          PagoCuenta?             @relation(fields: [pagoId], references: [id], onDelete: SetNull)
 
   @@index([pedidoId])
   @@index([estacionId, estado])
@@ -480,4 +483,24 @@ model SolicitudIngreso {
   cuenta Cuenta @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
 
   @@index([cuentaId, createdAt])
+}
+
+// Cuenta pagada por separado: cada grupo de ítems se cobra con su método y su propio comprobante.
+model PagoCuenta {
+  id            String     @id @default(uuid()) @db.Uuid
+  cuentaId      String     @db.Uuid
+  nombre        String? // "Ana", "Grupo 2"… (opcional)
+  metodoPago    MetodoPago
+  subtotal      Int
+  montoServicio Int
+  montoIva      Int
+  total         Int
+  cobradoPorId  String?    @db.Uuid
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  cuenta Cuenta       @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
+  items  PedidoItem[]
+
+  @@index([cuentaId])
 }

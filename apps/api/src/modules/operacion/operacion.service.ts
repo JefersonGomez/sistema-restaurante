@@ -1,4 +1,5 @@
 import type {
+  CobrarParteInput,
   CrearPedidoInput,
   EstadoItem,
   EstadoMesa,
@@ -7,6 +8,8 @@ import type {
   MetodoPago,
   PedidoEstacion,
 } from '@menu-qr/shared';
+import { calcularTotales } from '@menu-qr/shared';
+import type { Prisma } from '../../generated/prisma/client';
 import { prisma } from '../../lib/prisma';
 import type { UsuarioToken } from '../../lib/tokens';
 import { HttpError, noExiste } from '../../middlewares/errorHandler';
@@ -207,6 +210,29 @@ export async function cancelarItem(restauranteId: string, itemId: string, motivo
 
 // --- Cuentas: ABIERTA | PIDIO_CUENTA → CERRADA ---
 
+// Pasos comunes al cerrar: la sesión del comensal deja de servir y la mesa queda libre.
+async function cerrarEnTx(
+  tx: Prisma.TransactionClient,
+  c: { restauranteId: string; mesaId: string; cuentaId: string; usuarioId: string },
+  data: Prisma.CuentaUpdateInput,
+) {
+  await tx.sesionCliente.updateMany({ where: { cuentaId: c.cuentaId }, data: { revocada: true } });
+  await tx.llamada.updateMany({
+    where: { restauranteId: c.restauranteId, mesaId: c.mesaId, atendida: false },
+    data: { atendida: true },
+  });
+  return tx.cuenta.update({
+    where: { id: c.cuentaId },
+    data: {
+      ...data,
+      estado: 'CERRADA',
+      cerradaPor: { connect: { id: c.usuarioId } },
+      cerradaEn: new Date(),
+    },
+    include: incluirCuenta,
+  });
+}
+
 export async function cerrarCuenta(
   restauranteId: string,
   usuarioId: string,
@@ -226,21 +252,150 @@ export async function cerrarCuenta(
     const pendientes = await tx.pedido.count({ where: { cuentaId, estado: 'PENDIENTE' } });
     if (pendientes > 0)
       throw new HttpError(409, 'PEDIDOS_PENDIENTES', 'Hay pedidos sin confirmar o cancelar');
+    if (await tx.pagoCuenta.count({ where: { cuentaId } }))
+      throw new HttpError(
+        409,
+        'PAGO_SEPARADO',
+        'Esta cuenta se está pagando por separado: cobre lo que falta como otro grupo',
+      );
     await recalcularCuenta(tx, cuentaId);
-    // La sesión del comensal deja de servir y la mesa queda libre.
-    await tx.sesionCliente.updateMany({ where: { cuentaId }, data: { revocada: true } });
-    await tx.llamada.updateMany({
-      where: { restauranteId, mesaId: existe.mesaId, atendida: false },
-      data: { atendida: true },
-    });
-    return tx.cuenta.update({
-      where: { id: cuentaId },
-      data: { estado: 'CERRADA', metodoPago, cerradaPorId: usuarioId, cerradaEn: new Date() },
-      include: incluirCuenta,
-    });
+    return cerrarEnTx(
+      tx,
+      { restauranteId, mesaId: existe.mesaId, cuentaId, usuarioId },
+      { metodoPago },
+    );
   });
   avisar.cuentaCerrada({ restauranteId, cuentaId, mesa: existe.mesa }, cuenta.updatedAt);
   return aCuenta(cuenta);
+}
+
+// Cuenta separada: cobra un grupo de ítems. Si se cobra una parte de un ítem con cantidad > 1, el
+// ítem se divide en dos filas (la cobrada y el resto). Al cobrar lo último, la cuenta se cierra con
+// el total igual a la suma de los grupos.
+export async function cobrarParte(
+  restauranteId: string,
+  usuarioId: string,
+  cuentaId: string,
+  { nombre, metodoPago, items }: CobrarParteInput,
+) {
+  const existe = await prisma.cuenta.findFirst({
+    where: { id: cuentaId, restauranteId },
+    select: {
+      mesaId: true,
+      mesa: { select: { numero: true } },
+      restaurante: {
+        select: { porcentajeIva: true, porcentajeServicio: true, preciosIncluyenImpuestos: true },
+      },
+    },
+  });
+  if (!existe) throw noExiste('Cuenta');
+
+  const { cuenta, cerrada, pagoId } = await prisma.$transaction(async (tx) => {
+    await bloquearCuenta(tx, cuentaId);
+    const actual = await tx.cuenta.findUniqueOrThrow({ where: { id: cuentaId } });
+    if (actual.estado === 'CERRADA') throw invalida('La cuenta ya está cerrada');
+    if (await tx.pedido.count({ where: { cuentaId, estado: 'PENDIENTE' } }))
+      throw new HttpError(409, 'PEDIDOS_PENDIENTES', 'Hay pedidos sin confirmar o cancelar');
+
+    const cobrados: { id: string; precioUnitario: number; cantidad: number }[] = [];
+    for (const { itemId, cantidad } of items) {
+      const item = await tx.pedidoItem.findFirst({
+        where: {
+          id: itemId,
+          pagoId: null,
+          cancelado: false,
+          pedido: { cuentaId, estado: 'CONFIRMADO' },
+        },
+        include: { modificadores: true },
+      });
+      if (!item) throw invalida('Un plato ya se cobró o no es de esta cuenta');
+      if (cantidad > item.cantidad)
+        throw invalida(`De ${item.cantidad} no se pueden cobrar ${cantidad}`);
+      if (cantidad === item.cantidad) {
+        cobrados.push({ id: item.id, precioUnitario: item.precioUnitario, cantidad });
+        continue;
+      }
+      // Parte de un ítem: la fila original queda con el resto y se crea otra con lo cobrado.
+      await tx.pedidoItem.update({
+        where: { id: item.id },
+        data: { cantidad: item.cantidad - cantidad },
+      });
+      const { id: _id, modificadores, createdAt: _c, updatedAt: _u, ...copia } = item;
+      const parte = await tx.pedidoItem.create({
+        data: {
+          ...copia,
+          cantidad,
+          modificadores: {
+            create: modificadores.map((m) => ({
+              modificadorId: m.modificadorId,
+              nombre: m.nombre,
+              precioExtra: m.precioExtra,
+            })),
+          },
+        },
+      });
+      cobrados.push({ id: parte.id, precioUnitario: item.precioUnitario, cantidad });
+    }
+
+    const pago = await tx.pagoCuenta.create({
+      data: {
+        cuentaId,
+        nombre: nombre || null,
+        metodoPago,
+        cobradoPorId: usuarioId,
+        ...calcularTotales(cobrados, existe.restaurante),
+      },
+    });
+    await tx.pedidoItem.updateMany({
+      where: { id: { in: cobrados.map((c) => c.id) } },
+      data: { pagoId: pago.id },
+    });
+
+    const faltan = await tx.pedidoItem.count({
+      where: { pagoId: null, cancelado: false, pedido: { cuentaId, estado: 'CONFIRMADO' } },
+    });
+    if (faltan) {
+      const c = await tx.cuenta.findUniqueOrThrow({
+        where: { id: cuentaId },
+        include: incluirCuenta,
+      });
+      return { cuenta: c, cerrada: false, pagoId: pago.id };
+    }
+    // Se cobró todo: el total de la cuenta es lo que efectivamente se cobró.
+    const pagos = await tx.pagoCuenta.findMany({ where: { cuentaId } });
+    const suma = (k: 'subtotal' | 'montoServicio' | 'montoIva' | 'total') =>
+      pagos.reduce((n, p) => n + p[k], 0);
+    const metodos = new Set(pagos.map((p) => p.metodoPago));
+    const c = await cerrarEnTx(
+      tx,
+      { restauranteId, mesaId: existe.mesaId, cuentaId, usuarioId },
+      {
+        subtotal: suma('subtotal'),
+        montoServicio: suma('montoServicio'),
+        montoIva: suma('montoIva'),
+        total: suma('total'),
+        metodoPago: metodos.size === 1 ? pago.metodoPago : 'MIXTO',
+      },
+    );
+    return { cuenta: c, cerrada: true, pagoId: pago.id };
+  });
+
+  const ctx = { restauranteId, cuentaId, mesa: existe.mesa };
+  if (cerrada) avisar.cuentaCerrada(ctx, cuenta.updatedAt);
+  else avisar.cuentaActualizada(ctx, cuenta);
+  return { cuenta: aCuenta(cuenta), pagoId, cerrada };
+}
+
+// Deshacer un grupo cobrado por error (mientras la cuenta siga abierta).
+export async function deshacerPago(restauranteId: string, cuentaId: string, pagoId: string) {
+  const pago = await prisma.pagoCuenta.findFirst({
+    where: { id: pagoId, cuenta: { id: cuentaId, restauranteId } },
+    include: { cuenta: { select: { estado: true } } },
+  });
+  if (!pago) throw noExiste('Pago');
+  if (pago.cuenta.estado === 'CERRADA') throw invalida('La cuenta ya está cerrada');
+  await prisma.pagoCuenta.delete({ where: { id: pago.id } }); // los ítems quedan sin pagar
+  return detalleCuenta(restauranteId, cuentaId);
 }
 
 export async function detalleCuenta(restauranteId: string, cuentaId: string) {

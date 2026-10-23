@@ -86,3 +86,14 @@ export const cerrar = async (req: ConId, res: Response) => {
     await s.cerrarCuenta(restauranteDe(req), req.usuario!.id, req.params.id, req.body.metodoPago),
   );
 };
+
+type ConPago = Request<{ id: string; pagoId: string }>;
+
+// Cuenta separada: cobra un grupo; deshacer un grupo cobrado por error.
+export const cobrarParte = async (req: ConId, res: Response) => {
+  res.json(await s.cobrarParte(restauranteDe(req), req.usuario!.id, req.params.id, req.body));
+};
+
+export const deshacerPago = async (req: ConPago, res: Response) => {
+  res.json(await s.deshacerPago(restauranteDe(req), req.params.id, req.params.pagoId));
+};

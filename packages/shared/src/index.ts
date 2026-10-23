@@ -373,6 +373,17 @@ export const cambiarEstadoItemSchema = z.object({
   estado: z.enum(['EN_PREPARACION', 'LISTO', 'ENTREGADO']),
 });
 export const cerrarCuentaSchema = z.object({ metodoPago: metodoPagoSchema });
+// Cuenta separada: cobra un grupo de ítems (de un ítem con cantidad > 1 se puede cobrar una parte).
+export const cobrarParteSchema = z.object({
+  nombre: z.string().trim().max(40).optional(),
+  metodoPago: metodoPagoSchema,
+  items: z
+    .array(z.object({ itemId: z.uuid(), cantidad: z.number().int().min(1).max(999) }))
+    .min(1, 'Elija al menos un plato')
+    .max(200),
+});
+export type CobrarParteInput = z.infer<typeof cobrarParteSchema>;
+export const pagoParamSchema = z.object({ id: z.uuid(), pagoId: z.uuid() });
 export const llamarSchema = z.object({ tipo: z.literal('MESERO') });
 // Cuántas personas van en la cuenta (lo dice el primero que escanea el QR).
 export const personasSchema = z.object({ personas: z.number().int().min(1).max(30) });
@@ -402,7 +413,18 @@ export type ItemDetalle = {
   cancelado: boolean;
   motivoCancelacion: string | null;
   modificadores: ModificadorElegido[];
+  pagoId: string | null; // cuentas separadas: grupo en el que se cobró
   updatedAt: string;
+};
+export type PagoDetalle = {
+  id: string;
+  nombre: string | null;
+  metodoPago: MetodoPago;
+  subtotal: number;
+  montoServicio: number;
+  montoIva: number;
+  total: number;
+  createdAt: string;
 };
 export type PedidoDetalle = {
   id: string;
@@ -428,6 +450,7 @@ export type CuentaDetalle = {
   cerradaEn: string | null;
   personas: number | null;
   ingresoBloqueado: boolean;
+  pagos: PagoDetalle[];
   updatedAt: string;
   pedidos: PedidoDetalle[];
 };

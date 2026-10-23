@@ -23,7 +23,7 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
 | 4.2  | Animación de carga (cuchillo y tenedor), transiciones generales, ícono de mesa + hover                                                                | ✅     |
 | 4.3  | Navegación: barra lateral que se esconde, menú desplegable en el celular                                                                              | ✅     |
 | 4.4  | Cantidad de personas al escanear el QR (y cómo se une alguien a una cuenta abierta)                                                                   | ✅     |
-| 4.5  | Caja: pagar junto o separado, grupos de ítems con su método de pago y comprobante                                                                     | ⬜     |
+| 4.5  | Caja: pagar junto o separado, grupos de ítems con su método de pago y comprobante                                                                     | ✅     |
 | 4.6  | Registro de restaurante + dueño                                                                                                                       | ⬜     |
 | 4.7  | Personalización: ubicación (Google Maps), logo, eslogan, banner; vista bonita para el cliente                                                         | ⬜     |
 | 4.8  | Tests, seed y README de la Fase 4                                                                                                                     | ⬜     |
@@ -63,6 +63,14 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
   PersonasModal (bloquea hasta responder; "Cambiar" en Mi cuenta), SolicitudesIngreso (modal para los
   de la mesa). Mesero ve las personas en la tarjeta (MesaOperacion.cuenta.personas). Las cuentas
   abiertas antes de esto también piden la cantidad.
+- 4.5: migración `20261023110000_cuentas_separadas` (PagoCuenta con método y totales;
+  PedidoItem.pagoId). POST /operacion/cuentas/:id/pagos {nombre?, metodoPago, items:[{itemId,
+  cantidad}]}: si se cobra parte de un ítem con cantidad > 1 se divide en dos filas (resto y cobrado,
+  copiando modificadores). Al cobrar lo último la cuenta se cierra (`cerrarEnTx`, común con "todo
+  junto") con totales = suma de los grupos y método MIXTO si hubo varios. "Todo junto" con pagos
+  separados → 409 PAGO_SEPARADO. DELETE /operacion/cuentas/:id/pagos/:pagoId deshace (cuenta abierta;
+  las filas divididas no se vuelven a juntar). Caja: selector "¿Cómo pagan?", grupos cobrados con
+  "Imprimir comprobante" (ticket 80 mm por grupo, "NO ES FACTURA ELECTRÓNICA") y "Deshacer".
 
 ## Plan de la Fase 3 (sub-fases) — aprobado 2026-10-22; el usuario autorizó commit + push al cerrar cada sub-fase
 

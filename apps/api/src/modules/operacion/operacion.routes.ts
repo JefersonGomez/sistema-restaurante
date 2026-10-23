@@ -2,11 +2,13 @@ import { Router } from 'express';
 import {
   cambiarEstadoItemSchema,
   cerrarCuentaSchema,
+  cobrarParteSchema,
   crearPedidoSchema,
   idParamSchema,
   itemsQuerySchema,
   llamadasQuerySchema,
   motivoSchema,
+  pagoParamSchema,
   pedidosQuerySchema,
 } from '@menu-qr/shared';
 import { autenticar } from '../../middlewares/auth';
@@ -34,6 +36,18 @@ operacionRouter.post(
 );
 
 operacionRouter.get('/cuentas/:id', salaYCaja, conId, c.detalleCuenta);
+operacionRouter.post(
+  '/cuentas/:id/pagos',
+  caja,
+  validate({ params: idParamSchema, body: cobrarParteSchema }),
+  c.cobrarParte,
+);
+operacionRouter.delete(
+  '/cuentas/:id/pagos/:pagoId',
+  caja,
+  validate({ params: pagoParamSchema }),
+  c.deshacerPago,
+);
 operacionRouter.post(
   '/cuentas/:id/cerrar',
   caja,
