@@ -1,4 +1,7 @@
-import { Hand, Plus, ReceiptText } from 'lucide-react';
+import { Hand, Plus, ReceiptText, Users } from 'lucide-react';
+import { useState } from 'react';
+import * as api from '../api';
+import { PersonasModal } from '../componentes/ingreso';
 import { useNavigate } from 'react-router-dom';
 import { useLlamadas } from '../datos/acciones';
 import { useMesa } from '../datos/mesa';
@@ -8,7 +11,8 @@ import { Pastilla, formatoPrecio } from '@menu-qr/ui';
 import { useTextos } from '../estado/idioma';
 
 export function AccountScreen() {
-  const { menu, mesa, cuenta, tokenQr } = useMesa();
+  const { menu, mesa, cuenta, tokenQr, refrescarCuenta } = useMesa();
+  const [editando, setEditando] = useState(false);
   const t = useTextos();
   const navegar = useNavigate();
   const { llamar, pedirCuenta, cuentaPedida } = useLlamadas();
@@ -26,6 +30,41 @@ export function AccountScreen() {
           {t.mesa} {mesa!.numero}
         </Pastilla>
       </BarraTitulo>
+
+      {cuenta && (
+        <div className="flex items-center justify-between gap-3 rounded-md bg-surface px-4 py-2 text-sm md:mx-auto md:w-full md:max-w-md">
+          <span className="flex items-center gap-2">
+            <Users className="size-4 text-muted" aria-hidden />
+            {cuenta.personas ? t.somos(cuenta.personas) : t.personasTitulo}
+          </span>
+          <button
+            type="button"
+            onClick={() => setEditando(true)}
+            className="min-h-11 px-2 font-semibold text-purple"
+          >
+            {t.cambiar}
+          </button>
+        </div>
+      )}
+      {cuenta?.ingresoBloqueado && (
+        <div
+          role="status"
+          className="flex items-center gap-3 rounded-md bg-amber-soft px-4 py-3 text-sm text-amber-ink md:mx-auto md:w-full md:max-w-md"
+        >
+          <span className="flex-1">{t.ingresoBloqueadoAviso}</span>
+          <button
+            type="button"
+            onClick={async () => {
+              await api.desbloquearIngreso(mesa!.token).catch(() => {});
+              refrescarCuenta();
+            }}
+            className="min-h-11 rounded-md bg-amber px-3 font-semibold text-on-amber"
+          >
+            {t.desbloquear}
+          </button>
+        </div>
+      )}
+      {editando && <PersonasModal onCerrar={() => setEditando(false)} />}
 
       {!cuenta ? (
         <div className="flex flex-col gap-3" aria-busy="true">

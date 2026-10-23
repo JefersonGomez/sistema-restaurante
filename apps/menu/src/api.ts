@@ -14,6 +14,7 @@ export class ErrorApi extends Error {
     public status: number,
     public code: string,
     message: string,
+    public details?: unknown,
   ) {
     super(message);
   }
@@ -38,7 +39,12 @@ async function llamar<T>(
   }
   const datos = await res.json().catch(() => null);
   if (!res.ok)
-    throw new ErrorApi(res.status, datos?.error?.code ?? 'ERROR', datos?.error?.message ?? 'Error');
+    throw new ErrorApi(
+      res.status,
+      datos?.error?.code ?? 'ERROR',
+      datos?.error?.message ?? 'Error',
+      datos?.error?.details,
+    );
   return datos as T;
 }
 
@@ -73,3 +79,30 @@ export const pedirCuenta = (sesion: string) =>
 // Vista del detalle de un plato (anónima, para reportes). Si falla no importa.
 export const registrarVista = (sesion: string, platoId: string) =>
   llamar(`/public/cuenta/vistas/${platoId}`, { method: 'POST', sesion }).catch(() => {});
+
+// --- Personas por mesa e ingreso con el cupo lleno ---
+export const fijarPersonas = (sesion: string, personas: number) =>
+  llamar('/public/cuenta/personas', { method: 'POST', sesion, body: JSON.stringify({ personas }) });
+
+export type Solicitud = { id: string; clave: string; expiraEn: string };
+export type EstadoSolicitud =
+  { estado: 'PENDIENTE' | 'RECHAZADA' | 'VENCIDA' } | { estado: 'ACEPTADA'; token: string };
+
+export const pedirIngreso = (tokenQr: string) =>
+  llamar<Solicitud>(`/public/mesa/${encodeURIComponent(tokenQr)}/ingreso`, { method: 'POST' });
+
+export const estadoIngreso = (tokenQr: string, s: Solicitud) =>
+  llamar<EstadoSolicitud>(`/public/mesa/${encodeURIComponent(tokenQr)}/ingreso/${s.id}`, {
+    method: 'POST',
+    body: JSON.stringify({ clave: s.clave }),
+  });
+
+export const responderIngreso = (sesion: string, id: string, aceptar: boolean) =>
+  llamar(`/public/cuenta/ingresos/${id}`, {
+    method: 'POST',
+    sesion,
+    body: JSON.stringify({ aceptar }),
+  });
+
+export const desbloquearIngreso = (sesion: string) =>
+  llamar('/public/cuenta/desbloquear-ingreso', { method: 'POST', sesion });

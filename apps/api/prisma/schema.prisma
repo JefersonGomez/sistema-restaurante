@@ -288,16 +288,19 @@ model Cuenta {
   total            Int          @default(0)
   metodoPago       MetodoPago?
   cerradaPorId     String?      @db.Uuid
-  numeroComensales Int?
+  numeroComensales Int? // cupo: lo dice el primero que escanea; sube al aceptar a alguien
+  ingresoBloqueado Boolean      @default(false) // demasiados intentos de entrar: nadie más se une
+  rechazosIngreso  Int          @default(0)
   abiertaEn        DateTime     @default(now())
   cerradaEn        DateTime?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  restaurante Restaurante     @relation(fields: [restauranteId], references: [id])
-  mesa        Mesa            @relation(fields: [mesaId], references: [id])
-  cerradaPor  Usuario?        @relation(fields: [cerradaPorId], references: [id])
+  restaurante Restaurante        @relation(fields: [restauranteId], references: [id])
+  mesa        Mesa               @relation(fields: [mesaId], references: [id])
+  cerradaPor  Usuario?           @relation(fields: [cerradaPorId], references: [id])
   pedidos     Pedido[]
+  solicitudes SolicitudIngreso[]
   sesiones    SesionCliente[]
 
   @@index([restauranteId])
@@ -454,4 +457,27 @@ model VistaPlato {
 
   @@unique([platoId, dia])
   @@index([restauranteId, dia])
+}
+
+enum EstadoSolicitud {
+  PENDIENTE
+  ACEPTADA
+  RECHAZADA
+}
+
+// Alguien escanea el QR de una mesa con el cupo lleno: los que ya están en la mesa lo aceptan o
+// rechazan. El que pide espera con una clave secreta (solo se guarda su hash).
+model SolicitudIngreso {
+  id        String          @id @default(uuid()) @db.Uuid
+  cuentaId  String          @db.Uuid
+  claveHash String          @unique
+  estado    EstadoSolicitud @default(PENDIENTE)
+  expiraEn  DateTime
+  entregada Boolean         @default(false) // la sesión del aceptado ya se entregó
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  cuenta Cuenta @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
+
+  @@index([cuentaId, createdAt])
 }

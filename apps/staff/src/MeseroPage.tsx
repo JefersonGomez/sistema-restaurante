@@ -1,4 +1,4 @@
-import { Bell, CheckCheck, ClipboardList, ReceiptText, Utensils } from 'lucide-react';
+import { Bell, CheckCheck, ClipboardList, ReceiptText, Users, Utensils } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type {
   CuentaDetalle,
@@ -255,7 +255,14 @@ export function MeseroPage() {
                     </span>
                   )}
                 </span>
-                <span className="text-xs font-semibold">{TEXTO_MESA[m.estado]}</span>
+                <span className="flex items-center gap-1.5 text-xs font-semibold">
+                  {TEXTO_MESA[m.estado]}
+                  {m.cuenta?.personas && (
+                    <span className="inline-flex items-center gap-0.5 font-normal text-muted">
+                      · <Users className="size-3" aria-hidden /> {m.cuenta.personas}
+                    </span>
+                  )}
+                </span>
                 <span className="mt-auto flex flex-wrap gap-1">
                   {b.pedidos > 0 && (
                     <Insignia

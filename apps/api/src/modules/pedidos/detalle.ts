@@ -67,6 +67,8 @@ export const aCuenta = (c: CuentaDB): CuentaDetalle => ({
   metodoPago: c.metodoPago,
   abiertaEn: c.abiertaEn.toISOString(),
   cerradaEn: c.cerradaEn?.toISOString() ?? null,
+  personas: c.numeroComensales,
+  ingresoBloqueado: c.ingresoBloqueado,
   updatedAt: c.updatedAt.toISOString(),
   pedidos: c.pedidos.map(aPedido),
 });

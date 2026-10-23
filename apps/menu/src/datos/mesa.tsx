@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { Socket } from 'socket.io-client';
-import type { CuentaDetalle, MenuPublico, MesaPublica } from '@menu-qr/shared';
+import type { CuentaDetalle, MenuPublico, MesaLlena, MesaPublica } from '@menu-qr/shared';
 import { guardar, leer } from '../almacen';
 import * as api from '../api';
 import { avisar } from '../estado/avisos';
@@ -25,16 +25,20 @@ export const claves = {
   cuenta: (cuentaId: string) => ['cuenta', cuentaId] as const,
 };
 
-// No reintentar errores "definitivos" (mesa inexistente, sesión inválida, cuenta cerrada).
+// No reintentar errores "definitivos" (mesa inexistente o llena, sesión inválida, cuenta cerrada).
 const reintentar = (n: number, e: unknown) =>
-  !(e instanceof api.ErrorApi && [400, 401, 404, 410].includes(e.status)) && n < 2;
+  !(e instanceof api.ErrorApi && [400, 401, 404, 409, 410, 423].includes(e.status)) && n < 2;
 
 type Ctx = {
   tokenQr: string;
   mesa: MesaPublica | undefined;
   menu: MenuPublico | undefined;
   cuenta: CuentaDetalle | undefined;
-  estado: 'cargando' | 'listo' | 'noEncontrado' | 'error' | 'cerrada';
+  estado: 'cargando' | 'listo' | 'noEncontrado' | 'error' | 'cerrada' | 'llena';
+  llena: MesaLlena | undefined; // cupo lleno: hay que pedir permiso para unirse
+  entrar: (token: string) => void; // sesión entregada al aceptar el ingreso
+  solicitudes: string[]; // ids de personas que piden unirse (para los de la mesa)
+  responder: (id: string, aceptar: boolean) => Promise<void>;
   conectado: boolean;
   cerrarCuenta: () => void;
   refrescarCuenta: () => void;
@@ -49,6 +53,7 @@ export function MesaProvider({ tokenQr, children }: { tokenQr: string; children:
   const t = useTextos();
   const [cerrada, setCerrada] = useState(false);
   const [conectado, setConectado] = useState(true);
+  const [solicitudes, setSolicitudes] = useState<string[]>([]);
 
   // 1) Abrir u obtener la cuenta de la mesa (reutiliza la sesión guardada si sigue válida).
   const mesaQ = useQuery({
@@ -152,6 +157,13 @@ export function MesaProvider({ tokenQr, children }: { tokenQr: string; children:
           qc.invalidateQueries({ queryKey: claves.mesa(tokenQr) });
         }
       });
+      // Alguien con el cupo lleno pide unirse; cualquiera de la mesa responde.
+      socket.on('ingreso:solicitado', (p: { id: string }) =>
+        setSolicitudes((ids) => (ids.includes(p.id) ? ids : [...ids, p.id])),
+      );
+      socket.on('ingreso:resuelto', (p: { id: string }) =>
+        setSolicitudes((ids) => ids.filter((x) => x !== p.id)),
+      );
       for (const ev of [
         'pedido:nuevo',
         'pedido:confirmado',
@@ -206,15 +218,35 @@ export function MesaProvider({ tokenQr, children }: { tokenQr: string; children:
   }, [pedidos, t]);
 
   const errorMesa = mesaQ.error;
+  const llena =
+    errorMesa instanceof api.ErrorApi && errorMesa.code === 'MESA_LLENA'
+      ? (errorMesa.details as MesaLlena)
+      : undefined;
+  const entrar = useCallback(
+    (token: string) => {
+      guardar(claveSesion(tokenQr), token);
+      qc.invalidateQueries({ queryKey: claves.mesa(tokenQr) });
+    },
+    [qc, tokenQr],
+  );
+  const responder = useCallback(
+    async (id: string, aceptar: boolean) => {
+      setSolicitudes((ids) => ids.filter((x) => x !== id));
+      if (mesa) await api.responderIngreso(mesa.token, id, aceptar).catch(() => {});
+    },
+    [mesa],
+  );
   const estado: Ctx['estado'] = cerrada
     ? 'cerrada'
-    : errorMesa instanceof api.ErrorApi && errorMesa.status === 404
-      ? 'noEncontrado'
-      : mesaQ.isError || menuQ.isError
-        ? 'error'
-        : mesa && menuQ.data
-          ? 'listo'
-          : 'cargando';
+    : llena
+      ? 'llena'
+      : errorMesa instanceof api.ErrorApi && errorMesa.status === 404
+        ? 'noEncontrado'
+        : mesaQ.isError || menuQ.isError
+          ? 'error'
+          : mesa && menuQ.data
+            ? 'listo'
+            : 'cargando';
 
   const valor: Ctx = {
     tokenQr,
@@ -222,6 +254,10 @@ export function MesaProvider({ tokenQr, children }: { tokenQr: string; children:
     menu: menuQ.data,
     cuenta: cuentaQ.data,
     estado,
+    llena,
+    entrar,
+    solicitudes,
+    responder,
     conectado,
     cerrarCuenta,
     refrescarCuenta,

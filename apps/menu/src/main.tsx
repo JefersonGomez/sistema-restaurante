@@ -16,6 +16,7 @@ import {
 import { useCarrito } from './estado/carrito';
 import { useIdioma, useTextos } from './estado/idioma';
 import { Cargando, pasoPedido, UiProvider } from '@menu-qr/ui';
+import { MesaLlenaScreen, PersonasModal, SolicitudesIngreso } from './componentes/ingreso';
 import { AccountScreen } from './pantallas/AccountScreen';
 import { CartScreen } from './pantallas/CartScreen';
 import { MenuScreen } from './pantallas/MenuScreen';
@@ -54,6 +55,7 @@ function Mesa() {
   if (estado === 'cerrada') return <ThankYouScreen />;
   if (estado === 'noEncontrado') return <ErrorScreen tipo="noEncontrado" />;
   if (estado === 'error') return <ErrorScreen tipo="error" onReintentar={reintentar} />;
+  if (estado === 'llena') return <MesaLlenaScreen />;
   if (estado === 'cargando') return <Cargando texto={t.cargandoMenu} />;
 
   const sinEntregar = (cuenta?.pedidos ?? []).filter((p) => {
@@ -69,6 +71,9 @@ function Mesa() {
       </div>
       <BottomNav base={`/m/${tokenQr}`} enCarrito={enCarrito} sinEntregar={sinEntregar} />
       <Toast />
+      {/* El primero que escanea dice cuántos son; los de la mesa aceptan a quien pide unirse. */}
+      {cuenta && cuenta.personas === null && <PersonasModal />}
+      <SolicitudesIngreso />
     </>
   );
 }

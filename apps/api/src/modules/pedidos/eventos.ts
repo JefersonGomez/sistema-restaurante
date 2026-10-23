@@ -119,3 +119,14 @@ export function mesaLlamada(
     updatedAt: llamada.updatedAt.toISOString(),
   });
 }
+
+// Alguien con el cupo lleno pide unirse: les llega a los celulares de la mesa para aceptar o no.
+export function ingresoSolicitado(cuentaId: string, solicitud: { id: string; createdAt: Date }) {
+  emitToCuenta(cuentaId, 'ingreso:solicitado', {
+    id: solicitud.id,
+    createdAt: solicitud.createdAt.toISOString(),
+  });
+}
+export function ingresoResuelto(cuentaId: string, id: string, estado: string) {
+  emitToCuenta(cuentaId, 'ingreso:resuelto', { id, estado });
+}

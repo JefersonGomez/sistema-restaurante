@@ -329,7 +329,10 @@ export type MesaPublica = {
   nombre: string | null;
   cuentaId: string;
   token: string; // sesión del comensal (Authorization: Bearer)
+  personas: number | null; // cupo de la cuenta; null = todavía nadie dijo cuántos son
 };
+// 409 MESA_LLENA al escanear: la cuenta ya tiene todo su cupo (details).
+export type MesaLlena = { numero: number; personas: number; bloqueada: boolean };
 
 // --- Operación (Fase 2) ---
 
@@ -371,6 +374,10 @@ export const cambiarEstadoItemSchema = z.object({
 });
 export const cerrarCuentaSchema = z.object({ metodoPago: metodoPagoSchema });
 export const llamarSchema = z.object({ tipo: z.literal('MESERO') });
+// Cuántas personas van en la cuenta (lo dice el primero que escanea el QR).
+export const personasSchema = z.object({ personas: z.number().int().min(1).max(30) });
+export const responderIngresoSchema = z.object({ aceptar: z.boolean() });
+export const claveIngresoSchema = z.object({ clave: z.string().min(20).max(100) });
 export const pedidosQuerySchema = z.object({ estado: estadoPedidoSchema.optional() });
 export const itemsQuerySchema = z.object({ estado: estadoItemSchema.optional() });
 export const llamadasQuerySchema = z.object({
@@ -419,6 +426,8 @@ export type CuentaDetalle = {
   metodoPago: MetodoPago | null;
   abiertaEn: string;
   cerradaEn: string | null;
+  personas: number | null;
+  ingresoBloqueado: boolean;
   updatedAt: string;
   pedidos: PedidoDetalle[];
 };
@@ -435,6 +444,7 @@ export type MesaOperacion = {
     total: number;
     abiertaEn: string;
     pedidosPendientes: number;
+    personas: number | null;
   } | null;
   llamadasActivas: number;
 };

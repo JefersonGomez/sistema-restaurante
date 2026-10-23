@@ -293,6 +293,7 @@ export async function mesas(restauranteId: string): Promise<MesaOperacion[]> {
           estado: true,
           total: true,
           abiertaEn: true,
+          numeroComensales: true,
           pedidos: { select: { estado: true } },
         },
       },
@@ -326,6 +327,7 @@ export async function mesas(restauranteId: string): Promise<MesaOperacion[]> {
               total: c.total,
               abiertaEn: c.abiertaEn.toISOString(),
               pedidosPendientes: pendientes,
+              personas: c.numeroComensales,
             }
           : null,
       llamadasActivas: m.llamadas.length,

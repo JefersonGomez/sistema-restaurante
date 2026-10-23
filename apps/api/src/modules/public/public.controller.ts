@@ -42,3 +42,27 @@ export const vista = async (req: Request<{ id: string }>, res: Response) => {
   await registrarVista(clienteDe(req).restauranteId, req.params.id);
   res.status(204).end();
 };
+
+// --- Personas por mesa e ingreso con el cupo lleno ---
+type ConToken = Request<{ token: string }>;
+type ConTokenId = Request<{ token: string; id: string }>;
+
+export const personas = async (req: Request, res: Response) => {
+  res.json(await comensal.fijarPersonas(clienteDe(req), req.body.personas));
+};
+
+export const solicitarIngreso = async (req: ConToken, res: Response) => {
+  res.status(201).json(await comensal.solicitarIngreso(req.params.token));
+};
+
+export const estadoIngreso = async (req: ConTokenId, res: Response) => {
+  res.json(await comensal.estadoIngreso(req.params.token, req.params.id, req.body.clave));
+};
+
+export const responderIngreso = async (req: Request<{ id: string }>, res: Response) => {
+  res.json(await comensal.responderIngreso(clienteDe(req), req.params.id, req.body.aceptar));
+};
+
+export const desbloquearIngreso = async (req: Request, res: Response) => {
+  res.json(await comensal.desbloquearIngreso(clienteDe(req)));
+};

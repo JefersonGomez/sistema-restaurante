@@ -22,7 +22,7 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
 | 4.1  | Alertas: arreglar sonido de llamada al mesero; cocina >10 min sin empezar (rojo animado); listos sin entregar (verde animado); un solo aviso agrupado | ✅     |
 | 4.2  | Animación de carga (cuchillo y tenedor), transiciones generales, ícono de mesa + hover                                                                | ✅     |
 | 4.3  | Navegación: barra lateral que se esconde, menú desplegable en el celular                                                                              | ✅     |
-| 4.4  | Cantidad de personas al escanear el QR (y cómo se une alguien a una cuenta abierta)                                                                   | ⬜     |
+| 4.4  | Cantidad de personas al escanear el QR (y cómo se une alguien a una cuenta abierta)                                                                   | ✅     |
 | 4.5  | Caja: pagar junto o separado, grupos de ítems con su método de pago y comprobante                                                                     | ⬜     |
 | 4.6  | Registro de restaurante + dueño                                                                                                                       | ⬜     |
 | 4.7  | Personalización: ubicación (Google Maps), logo, eslogan, banner; vista bonita para el cliente                                                         | ⬜     |
@@ -52,6 +52,17 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
   opacidad. En el celular se quitó la barra inferior: encabezado con botón de menú → cajón lateral
   (`anim-cajon`, se cierra con Escape, tocando afuera o al elegir una opción). Campanita y "Activar
   sonido" en el encabezado del celular y arriba a la derecha en escritorio.
+- 4.4: migración `20261023100000_personas_mesa` (Cuenta.ingresoBloqueado, rechazosIngreso; modelo
+  SolicitudIngreso con claveHash, expiraEn 3 min, entregada). `numeroComensales` = cupo (null = sin
+  definir, no limita). Al escanear: si las sesiones activas de la cuenta ≥ cupo → 409 MESA_LLENA
+  {numero, personas, bloqueada}. Rutas: POST /public/cuenta/personas, POST /public/mesa/:token/ingreso
+  (crea solicitud; emite `ingreso:solicitado` a la cuenta), POST /public/mesa/:token/ingreso/:id
+  {clave} (el que espera consulta cada 2 s; ACEPTADA entrega la sesión una sola vez), POST
+  /public/cuenta/ingresos/:id {aceptar} (cupo +1 o rechazo +1), POST /public/cuenta/desbloquear-ingreso.
+  Bloqueo: 3 rechazos o 5 solicitudes en 10 min → 423 MESA_BLOQUEADA. Menú: MesaLlenaScreen,
+  PersonasModal (bloquea hasta responder; "Cambiar" en Mi cuenta), SolicitudesIngreso (modal para los
+  de la mesa). Mesero ve las personas en la tarjeta (MesaOperacion.cuenta.personas). Las cuentas
+  abiertas antes de esto también piden la cantidad.
 
 ## Plan de la Fase 3 (sub-fases) — aprobado 2026-10-22; el usuario autorizó commit + push al cerrar cada sub-fase
 

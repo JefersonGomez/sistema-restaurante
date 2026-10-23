@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import {
+  claveIngresoSchema,
   crearPedidoSchema,
   idParamSchema,
   llamarSchema,
+  personasSchema,
+  responderIngresoSchema,
   slugParamSchema,
   tokenParamSchema,
 } from '@menu-qr/shared';
@@ -16,6 +19,17 @@ export const publicRouter = Router();
 publicRouter.use(limitePublico);
 publicRouter.get('/mesa/:token', validate({ params: tokenParamSchema }), c.mesa);
 publicRouter.get('/:slug/menu', validate({ params: slugParamSchema }), c.menu);
+// Mesa con el cupo lleno: pedir unirse y consultar la respuesta (con la clave de la solicitud).
+publicRouter.post(
+  '/mesa/:token/ingreso',
+  validate({ params: tokenParamSchema }),
+  c.solicitarIngreso,
+);
+publicRouter.post(
+  '/mesa/:token/ingreso/:id',
+  validate({ params: tokenParamSchema.extend(idParamSchema.shape), body: claveIngresoSchema }),
+  c.estadoIngreso,
+);
 
 // /public/cuenta — comensal con token de sesión de cliente.
 const cuenta = Router();
@@ -25,4 +39,11 @@ cuenta.post('/pedidos', validate({ body: crearPedidoSchema }), c.pedir);
 cuenta.post('/llamar', validate({ body: llamarSchema }), c.llamar);
 cuenta.post('/solicitar', c.solicitar);
 cuenta.post('/vistas/:id', validate({ params: idParamSchema }), c.vista);
+cuenta.post('/personas', validate({ body: personasSchema }), c.personas);
+cuenta.post(
+  '/ingresos/:id',
+  validate({ params: idParamSchema, body: responderIngresoSchema }),
+  c.responderIngreso,
+);
+cuenta.post('/desbloquear-ingreso', c.desbloquearIngreso);
 publicRouter.use('/cuenta', cuenta);
