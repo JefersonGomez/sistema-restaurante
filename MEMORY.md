@@ -13,13 +13,13 @@
   próxima fase. Lo que quedó fuera de alcance está en el README.
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
 
-## Plan de la Fase 4 (propuesto 2026-10-23, pendiente de aprobación) — spec: docs/especificacion-fase4.md
+## Plan de la Fase 4 (aprobado 2026-10-23) — spec: docs/especificacion-fase4.md
 
 El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3).
 
 | Paso | Qué                                                                                                                                                   | Estado |
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 4.1  | Alertas: arreglar sonido de llamada al mesero; cocina >10 min sin empezar (rojo animado); listos sin entregar (verde animado); un solo aviso agrupado | ⬜     |
+| 4.1  | Alertas: arreglar sonido de llamada al mesero; cocina >10 min sin empezar (rojo animado); listos sin entregar (verde animado); un solo aviso agrupado | ✅     |
 | 4.2  | Animación de carga (cuchillo y tenedor), transiciones generales, ícono de mesa + hover                                                                | ⬜     |
 | 4.3  | Navegación: barra lateral que se esconde, menú desplegable en el celular                                                                              | ⬜     |
 | 4.4  | Cantidad de personas al escanear el QR (y cómo se une alguien a una cuenta abierta)                                                                   | ⬜     |
@@ -27,6 +27,19 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
 | 4.6  | Registro de restaurante + dueño                                                                                                                       | ⬜     |
 | 4.7  | Personalización: ubicación (Google Maps), logo, eslogan, banner; vista bonita para el cliente                                                         | ⬜     |
 | 4.8  | Tests, seed y README de la Fase 4                                                                                                                     | ⬜     |
+
+- 4.1: causas de "no suena la llamada": (a) el audio del navegador queda bloqueado al recargar
+  hasta tocar "Activar sonido" → ahora el primer toque/tecla en cualquier parte lo activa
+  (`activarConPrimerToque`); (b) si una llamada anterior no se marcó atendida, las siguientes se
+  ignoraban → ahora se recuerda al mesero (re-emite `mesa:llamada`, como mucho cada 30 s).
+  Centro de avisos `apps/staff/src/avisos.ts` (store fuera de React, campanita `Campana` en
+  Encabezado y en el panel, sonido + vibración + Notification API si hay permiso y la pestaña no
+  está visible; solo en https/localhost). `AvisosGlobales` abre un socket por sesión y avisa según
+  rol (llamada, pedido nuevo, cuenta pedida; cocina: pedido confirmado); las pantallas ya no suenan
+  por su cuenta. Cocina: pedido con todos los ítems PENDIENTE y >10 min desde confirmado →
+  `alerta-roja`. Mesero: ítem LISTO con updatedAt >5 min → `alerta-verde` en la bandeja y la mesa.
+  Aviso agrupado (`avisoAgrupado` en shared, con test): un aviso por tanda, solo con ids nuevos.
+  Ojo dev: al cambiar `packages/shared` el `tsx watch` de la API se cayó una vez; reiniciar `pnpm dev`.
 
 ## Plan de la Fase 3 (sub-fases) — aprobado 2026-10-22; el usuario autorizó commit + push al cerrar cada sub-fase
 
