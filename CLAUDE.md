@@ -7,7 +7,7 @@ SaaS multi-restaurante de pedidos por QR (Costa Rica). Monorepo pnpm: `apps/api`
 
 1. Leer `MEMORY.md` (estado actual, decisiones, pendientes).
 2. Si la tarea toca alcance, leer la spec de la fase en curso (fuente de verdad):
-   `docs/especificacion-fase1.md`, `docs/especificacion-fase2.md`, `docs/especificacion-frontend-menu.md`
+   `docs/especificacion-fase1.md`, `docs/especificacion-fase2.md`, `docs/especificacion-frontend-menu.md`,
    `docs/especificacion-fase3.md` (hechas) y `docs/especificacion-fase4.md` (en curso: se va
    ampliando con cada pedido del usuario; anotar ahí cada pedido nuevo antes de programarlo).
 

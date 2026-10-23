@@ -3,10 +3,21 @@
 
 let ctx: AudioContext | null = null;
 
-export function activarSonido() {
+export function activarSonido(probar = true) {
   ctx ??= new AudioContext();
-  void ctx.resume();
-  sonar(1);
+  void ctx.resume().then(() => probar && sonar(1));
+}
+
+// Al recargar la página el navegador vuelve a bloquear el audio: el primer toque o tecla en
+// cualquier parte lo reactiva solo (sin pitido), sin tener que buscar el botón.
+export function activarConPrimerToque() {
+  const activar = () => {
+    activarSonido(false);
+    window.removeEventListener('pointerdown', activar);
+    window.removeEventListener('keydown', activar);
+  };
+  window.addEventListener('pointerdown', activar);
+  window.addEventListener('keydown', activar);
 }
 
 export const sonidoActivo = () => ctx?.state === 'running';

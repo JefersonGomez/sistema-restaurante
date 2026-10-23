@@ -147,6 +147,32 @@ describe('Socket.IO', () => {
     expect(enB).toBeNull();
   });
 
+  it('llamar al mesero suena; si vuelve a llamar sin ser atendida, se recuerda (no antes de 30 s)', async () => {
+    const mesero = await conectar({ token: await tokenDe('mesero@resto-a.test') });
+    const sesion = await abrirSesion(m.mesa2.tokenQr);
+    const llamar = () =>
+      request(app)
+        .post('/public/cuenta/llamar')
+        .set('Authorization', `Bearer ${sesion.token}`)
+        .send({ tipo: 'MESERO' });
+    const primera = esperar(mesero, 'mesa:llamada');
+    await llamar();
+    expect(await primera).toMatchObject({ mesa: { numero: 2 }, tipo: 'MESERO' });
+
+    const enseguida = esperar(mesero, 'mesa:llamada', 300);
+    await llamar();
+    expect(await enseguida).toBeNull(); // spam: no suena otra vez
+
+    await prisma.llamada.updateMany({
+      where: { mesaId: m.mesa2.id },
+      data: { updatedAt: new Date(Date.now() - 60_000) },
+    });
+    const recordatorio = esperar(mesero, 'mesa:llamada');
+    await llamar();
+    expect(await recordatorio).toMatchObject({ mesa: { numero: 2 } });
+    expect(await prisma.llamada.count({ where: { mesaId: m.mesa2.id, atendida: false } })).toBe(1);
+  });
+
   it('la sesión de una cuenta cerrada no se puede conectar', async () => {
     const s = await abrirSesion(m.mesa2.tokenQr);
     await prisma.cuenta.update({ where: { id: s.cuentaId }, data: { estado: 'CERRADA' } });

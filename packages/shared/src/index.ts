@@ -487,6 +487,7 @@ export type ReporteHoy = {
   tiempoPromedioPreparacionSeg: number | null;
 };
 
+export * from './avisos';
 export * from './totales';
 export * from './seleccion';
 export * from './horario';

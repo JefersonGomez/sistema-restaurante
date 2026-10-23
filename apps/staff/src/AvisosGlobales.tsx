@@ -1,0 +1,40 @@
+import { useAuth } from './auth';
+import { avisar } from './avisos';
+import { useTiempoReal } from './tiempoReal';
+
+type ConMesa = { mesa: { numero: number } };
+
+// Escucha los eventos que merecen aviso para el rol de la sesión, en cualquier pantalla. Las
+// pantallas siguen escuchando por su cuenta solo para refrescar sus datos (sin sonar).
+function Oyente({ rol }: { rol: string }) {
+  const sala = rol === 'DUENO' || rol === 'MESERO';
+  const caja = rol === 'DUENO' || rol === 'CAJA';
+  useTiempoReal(
+    {
+      ...(sala && {
+        'mesa:llamada': (p: ConMesa & { tipo: string }) =>
+          avisar('llamada', `Mesa ${p.mesa.numero} llama al mesero`, 3),
+        'pedido:nuevo': (p: ConMesa) =>
+          avisar('pedido', `Mesa ${p.mesa.numero}: pedido nuevo por confirmar`),
+      }),
+      ...((sala || caja) && {
+        'cuenta:solicitada': (p: ConMesa) =>
+          avisar('cuenta', `Mesa ${p.mesa.numero} pidió la cuenta`),
+      }),
+      // El dueño ya recibe los pedidos nuevos; a cocina le avisa cuando entran a preparar.
+      ...(rol === 'COCINA' && {
+        'pedido:confirmado': (p: ConMesa) =>
+          avisar('cocina', `Mesa ${p.mesa.numero}: pedido nuevo para cocina`, 3),
+      }),
+    },
+    () => {},
+  );
+  return null;
+}
+
+export function AvisosGlobales() {
+  const { usuario } = useAuth();
+  if (!usuario || usuario.rol === 'SUPERADMIN' || usuario.debeCambiarPassword) return null;
+  // key: si cambia la sesión, el socket se vuelve a abrir con el token nuevo.
+  return <Oyente key={usuario.id} rol={usuario.rol} />;
+}

@@ -76,11 +76,23 @@ const ctxDe = async (c: Cliente) => {
 };
 
 // Llamar al mesero: si ya hay una llamada sin atender de esta mesa, no se duplica.
+const RECORDAR_LLAMADA_MS = 30_000;
+
 export async function llamarMesero(c: Cliente) {
   const existente = await prisma.llamada.findFirst({
     where: { restauranteId: c.restauranteId, mesaId: c.mesaId, tipo: 'MESERO', atendida: false },
   });
-  if (existente) return existente;
+  if (existente) {
+    // Vuelve a llamar sin que la hayan atendido: se le recuerda al mesero (como mucho cada 30 s).
+    // Antes se ignoraba y, si nadie marcó la anterior como atendida, la mesa nunca sonaba.
+    if (Date.now() - existente.updatedAt.getTime() < RECORDAR_LLAMADA_MS) return existente;
+    const otra = await prisma.llamada.update({
+      where: { id: existente.id },
+      data: { updatedAt: new Date() },
+    });
+    avisar.mesaLlamada(await ctxDe(c), otra);
+    return otra;
+  }
   const llamada = await prisma.llamada.create({
     data: { restauranteId: c.restauranteId, mesaId: c.mesaId, tipo: 'MESERO' },
   });

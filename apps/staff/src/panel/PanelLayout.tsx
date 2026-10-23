@@ -16,6 +16,7 @@ import {
 import { useState, type ComponentType } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth';
+import { BotonSonido, Campana } from '../ui';
 
 type Enlace = {
   a: string;
@@ -100,7 +101,11 @@ export function PanelLayout() {
         <Navegacion />
       </aside>
 
-      <main className="mx-auto w-full max-w-6xl px-4 pt-6 pb-28 md:px-8 md:pb-10">
+      <main className="mx-auto w-full max-w-6xl px-4 pt-3 pb-28 md:px-8 md:pb-10">
+        <div className="mb-2 flex justify-end gap-2">
+          <BotonSonido />
+          <Campana />
+        </div>
         <Outlet />
       </main>
 

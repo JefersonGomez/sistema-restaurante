@@ -59,6 +59,26 @@ aquí antes de programarlo. Fuente de verdad del alcance de la Fase 4.
 - La barra lateral del panel se esconde si el cursor no está encima (se despliega al acercarlo).
 - En el celular, el menú de opciones es desplegable y se ve bonito.
 
+## Decisiones del usuario (2026-10-23)
+
+- **Platos listos:** avisar al mesero a los **5 minutos** sin entregar.
+- **Avisos:** de las dos maneras a la vez: dentro de la app y notificación del sistema. La
+  campanita con sus avisos está siempre visible y no se pierde al cambiar de pantalla.
+- **Personas por mesa:** el primero que escanea dice cuántos son (el cupo). Si alguien más entra
+  y el cupo está lleno, ve "Mesa N ya tiene una cuenta de X personas, ¿está en esta mesa?"; si
+  sigue, a quienes ya están en la mesa les llega un aviso para **aceptarlo o rechazarlo** (al
+  aceptar, el cupo sube en 1). El mesero NO aprueba. Si hay insistencia (2–3 intentos
+  rechazados), la mesa se **bloquea** para nuevos ingresos y se puede desbloquear después (por
+  si llega alguien de verdad).
+- **Cuentas separadas:** cada grupo sale con su pre-cuenta impresa ("NO ES FACTURA ELECTRÓNICA").
+- **Registro** (el usuario pidió recomendación; se adopta): el restaurante queda **activo al
+  instante**, sin confirmar el correo por ahora (enviar correos requiere un servicio y una
+  librería nueva; se puede agregar después). Protección: límite de registros por IP, slug único y
+  el superadmin puede desactivar un restaurante (ya existe en la API).
+- **Mapa:** a criterio, pero que se vea bonito. Se hace sin clave de Google: el dueño pega la
+  dirección o el enlace de Google Maps y el cliente ve una tarjeta con el mapa incrustado y el
+  botón "Cómo llegar".
+
 ## Fuera de alcance (heredado de la Fase 3, salvo que el usuario lo pida)
 
 Pagos en línea, SINPE automático, factura electrónica de Hacienda (los comprobantes de cuentas

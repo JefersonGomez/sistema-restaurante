@@ -1,12 +1,13 @@
 import { Ban, Undo2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  avisoAgrupado,
   MINUTOS_DEMORA,
   type EstadoItem,
   type ItemDetalle,
   type PedidoEstacion,
 } from '@menu-qr/shared';
-import { activarSonido, sonar, sonidoActivo } from './alertas';
+import { avisar } from './avisos';
 import { api } from './api';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
 import { BotonSonido, Conexion, Encabezado, hora } from './ui';
@@ -16,6 +17,8 @@ import { BotonSonido, Conexion, Encabezado, hora } from './ui';
 const UMBRAL_AMARILLO_MIN = 10;
 const UMBRAL_ROJO_MIN = MINUTOS_DEMORA;
 const DESHACER_MS = 5000;
+// Pedido sin empezar (ningún ítem en preparación) por más de esto → contorno rojo animado y aviso.
+const SIN_EMPEZAR_MIN = 10;
 
 const SIGUIENTE: Partial<Record<EstadoItem, EstadoItem>> = {
   PENDIENTE: 'EN_PREPARACION',
@@ -99,7 +102,6 @@ export function EstacionPage() {
   const [pedidos, setPedidos] = useState<PedidoEstacion[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [ahora, setAhora] = useState(Date.now());
-  const [sonido, setSonido] = useState(sonidoActivo());
   const [verAgotados, setVerAgotados] = useState(false);
   const [platos, setPlatos] = useState<Plato[]>([]);
   useWakeLock();
@@ -163,10 +165,7 @@ export function EstacionPage() {
   const conectado = useTiempoReal(
     {
       // Llega solo a las salas de estación correspondientes; el dueño recibe las de todas.
-      'pedido:confirmado': (p: { items: ItemDetalle[] }) => {
-        if (estacionId === TODAS || p.items.some((i) => i.estacionId === estacionId)) sonar(3);
-        refrescar();
-      },
+      'pedido:confirmado': refrescar, // el aviso con sonido lo da AvisosGlobales
       'item:estado': refrescar,
       'pedido:cancelado': refrescar,
       'cuenta:cerrada': refrescar,
@@ -217,6 +216,26 @@ export function EstacionPage() {
     cargarPlatos();
   };
 
+  const sinEmpezar = pedidos
+    .filter(
+      (p) =>
+        p.items.every((i) => i.estado === 'PENDIENTE') &&
+        ahora - new Date(p.confirmadoEn).getTime() >= SIN_EMPEZAR_MIN * 60_000,
+    )
+    .map((p) => p.pedidoId);
+  const yaAvisados = useRef(new Set<string>());
+  const claveSinEmpezar = sinEmpezar.join(',');
+  useEffect(() => {
+    avisoAgrupado(yaAvisados.current, claveSinEmpezar ? claveSinEmpezar.split(',') : [], (n) =>
+      avisar(
+        'cocina',
+        n === 1
+          ? `Un pedido lleva más de ${SIN_EMPEZAR_MIN} min sin empezar`
+          : `${n} pedidos llevan más de ${SIN_EMPEZAR_MIN} min sin empezar`,
+      ),
+    );
+  }, [claveSinEmpezar]);
+
   const nombreEstacion =
     estacionId === TODAS
       ? 'Cocina y bar'
@@ -253,13 +272,7 @@ export function EstacionPage() {
         >
           <Ban className="size-4" aria-hidden /> <span className="max-sm:sr-only">Agotados</span>
         </button>
-        <BotonSonido
-          activo={sonido}
-          onActivar={() => {
-            activarSonido();
-            setSonido(true);
-          }}
-        />
+        <BotonSonido />
         <Conexion conectado={conectado} />
       </Encabezado>
 
@@ -322,8 +335,9 @@ export function EstacionPage() {
               )}
               {lista.map((p) => {
                 const minutos = Math.floor((ahora - new Date(p.confirmadoEn).getTime()) / 60_000);
-                const borde =
-                  col.id === 'listos'
+                const borde = sinEmpezar.includes(p.pedidoId)
+                  ? 'border-danger alerta-roja'
+                  : col.id === 'listos'
                     ? 'border-ok'
                     : minutos >= UMBRAL_ROJO_MIN
                       ? 'border-danger'

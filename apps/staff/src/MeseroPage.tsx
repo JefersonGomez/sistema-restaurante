@@ -1,5 +1,5 @@
 import { Bell, CheckCheck, ClipboardList, ReceiptText, Utensils } from 'lucide-react';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type {
   CuentaDetalle,
   EstadoMesa,
@@ -8,8 +8,9 @@ import type {
   MesaOperacion,
   PedidoDetalle,
 } from '@menu-qr/shared';
+import { avisoAgrupado } from '@menu-qr/shared';
 import { Modal } from '@menu-qr/ui';
-import { activarSonido, sonar, sonidoActivo, vibrar } from './alertas';
+import { avisar } from './avisos';
 import { api, obtenerMenu } from './api';
 import { useAuth } from './auth';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
@@ -27,6 +28,9 @@ type Llamada = {
   createdAt: string;
   mesa: { numero: number };
 };
+
+// Plato listo que espera más de esto sin entregarse → verde animado y aviso al mesero.
+const LISTO_ESPERA_MIN = 5;
 
 const COLOR_MESA: Record<EstadoMesa, string> = {
   LIBRE: 'bg-surface border-transparent text-muted',
@@ -79,7 +83,7 @@ export function MeseroPage() {
   const [cuenta, setCuenta] = useState<CuentaDetalle | null>(null);
   const [tomando, setTomando] = useState<MesaOperacion | null>(null);
   const [menu, setMenu] = useState<MenuPublico>();
-  const [sonido, setSonido] = useState(sonidoActivo());
+  const [ahora, setAhora] = useState(Date.now());
   const [error, setError] = useState<string | null>(null);
   const slug = usuario?.restaurante?.slug ?? '';
 
@@ -108,6 +112,8 @@ export function MeseroPage() {
   }, []);
   useEffect(() => {
     cargar();
+    const reloj = setInterval(() => setAhora(Date.now()), 15_000);
+    return () => clearInterval(reloj);
   }, [cargar]);
 
   const cargarCuenta = useCallback(async (id: string | undefined) => {
@@ -118,12 +124,8 @@ export function MeseroPage() {
     cargar();
     if (mesaAbierta) cargarCuenta(mesaAbierta.cuenta?.id);
   });
-  // Algo nuevo para el mesero: sonido + vibración.
-  const alerta = () => {
-    sonar(2);
-    vibrar();
-    refrescar();
-  };
+  // El sonido y la vibración los da AvisosGlobales (en cualquier pantalla); aquí solo se refresca.
+  const alerta = refrescar;
   const conectado = useTiempoReal(
     {
       'pedido:nuevo': alerta,
@@ -148,6 +150,23 @@ export function MeseroPage() {
     cargarCuenta(m.cuenta?.id);
   };
 
+  // Platos listos esperando a ser llevados (updatedAt = cuándo quedó listo).
+  const esperando = listos
+    .filter((i) => ahora - new Date(i.updatedAt).getTime() >= LISTO_ESPERA_MIN * 60_000)
+    .map((i) => i.id);
+  const yaAvisados = useRef(new Set<string>());
+  const claveEsperando = esperando.join(',');
+  useEffect(() => {
+    avisoAgrupado(yaAvisados.current, claveEsperando ? claveEsperando.split(',') : [], (n) =>
+      avisar(
+        'listo',
+        n === 1
+          ? `Un plato listo espera más de ${LISTO_ESPERA_MIN} min para llevarse`
+          : `${n} platos listos esperan más de ${LISTO_ESPERA_MIN} min para llevarse`,
+      ),
+    );
+  }, [claveEsperando]);
+
   const bandeja: Entrada[] = [
     ...llamadas.map((l) => ({ tipo: 'llamada' as const, fecha: l.createdAt, llamada: l })),
     ...pendientes.map((p) => ({ tipo: 'pedido' as const, fecha: p.createdAt, pedido: p })),
@@ -159,6 +178,7 @@ export function MeseroPage() {
     llamadas: llamadas.filter((l) => l.mesa.numero === n && l.tipo === 'MESERO').length,
     cuenta: llamadas.some((l) => l.mesa.numero === n && l.tipo === 'CUENTA'),
     listos: listos.filter((i) => i.mesa.numero === n).length,
+    esperando: listos.some((i) => i.mesa.numero === n && esperando.includes(i.id)),
   });
 
   const tabs = [
@@ -173,7 +193,7 @@ export function MeseroPage() {
   return (
     <div className="min-h-dvh bg-bg pb-6">
       <Encabezado titulo="Meseros">
-        <BotonSonido activo={sonido} onActivar={() => (activarSonido(), setSonido(true))} />
+        <BotonSonido />
         <Conexion conectado={conectado} />
       </Encabezado>
 
@@ -222,7 +242,7 @@ export function MeseroPage() {
                 type="button"
                 onClick={() => abrirMesa(m)}
                 aria-label={`Mesa ${m.numero}: ${TEXTO_MESA[m.estado]}`}
-                className={`flex min-h-28 flex-col items-start gap-1 rounded-lg border-2 p-3 text-left ${COLOR_MESA[m.estado]}`}
+                className={`flex min-h-28 flex-col items-start gap-1 rounded-lg border-2 p-3 text-left ${b.esperando ? 'alerta-verde' : ''} ${COLOR_MESA[m.estado]}`}
               >
                 <span className="flex w-full items-baseline justify-between">
                   <span className="text-3xl font-bold text-fg">{m.numero}</span>
@@ -354,7 +374,7 @@ export function MeseroPage() {
             ) : (
               <article
                 key={e.item.id}
-                className="flex items-center gap-3 rounded-lg border-l-4 border-ok bg-app p-3 shadow-tarjeta"
+                className={`flex items-center gap-3 rounded-lg border-l-4 border-ok bg-app p-3 shadow-tarjeta ${esperando.includes(e.item.id) ? 'alerta-verde' : ''}`}
               >
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-ok-soft font-bold text-ok">
                   {e.item.mesa.numero}

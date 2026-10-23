@@ -22,3 +22,63 @@
     margin: 4px 0;
   }
 }
+
+/* Alertas por tiempo: anillo que late alrededor de la tarjeta (cocina demorada en rojo, plato
+   listo esperando en verde). Con "reducir movimiento" queda un anillo fijo. */
+@keyframes latido-rojo {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px var(--danger);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--danger) 35%, transparent);
+  }
+}
+@keyframes latido-verde {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px var(--ok);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--ok) 35%, transparent);
+  }
+}
+.alerta-roja {
+  animation: latido-rojo 1.6s ease-in-out infinite;
+}
+.alerta-verde {
+  animation: latido-verde 1.6s ease-in-out infinite;
+}
+/* Campanita con avisos sin leer. */
+@keyframes campana {
+  0%,
+  60%,
+  100% {
+    transform: rotate(0);
+  }
+  10%,
+  30% {
+    transform: rotate(14deg);
+  }
+  20%,
+  40% {
+    transform: rotate(-14deg);
+  }
+}
+.campana-sonando {
+  transform-origin: 50% 10%;
+  animation: campana 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .alerta-roja {
+    animation: none;
+    box-shadow: 0 0 0 3px var(--danger);
+  }
+  .alerta-verde {
+    animation: none;
+    box-shadow: 0 0 0 3px var(--ok);
+  }
+  .campana-sonando {
+    animation: none;
+  }
+}

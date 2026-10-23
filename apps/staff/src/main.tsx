@@ -3,7 +3,9 @@ import { StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import type { Rol } from '@menu-qr/shared';
+import { activarConPrimerToque } from './alertas';
 import { AuthProvider, useAuth } from './auth';
+import { AvisosGlobales } from './AvisosGlobales';
 import { CajaPage } from './CajaPage';
 import { EstacionPage } from './EstacionPage';
 import { LoginPage } from './LoginPage';
@@ -58,63 +60,71 @@ function App() {
   // Una tablet vinculada vuelve a la pantalla de PIN, no al login con correo.
   const inicio = usuario ? INICIO[usuario.rol] : tokenTablet() ? '/tablet' : '/login';
   return (
-    <Routes>
-      <Route path="/login" element={usuario ? <Navigate to={inicio} replace /> : <LoginPage />} />
-      <Route path="/tablet" element={usuario ? <Navigate to={inicio} replace /> : <TabletPage />} />
-      <Route
-        path="/admin"
-        element={
-          <Solo roles={['SUPERADMIN']}>
-            <Admin />
-          </Solo>
-        }
-      />
-      <Route path="/dueno" element={<Navigate to="/panel" replace />} />
-      <Route
-        path="/panel"
-        element={
-          <Solo roles={['DUENO']}>
-            <PanelLayout />
-          </Solo>
-        }
-      >
-        <Route index element={<InicioPage />} />
-        <Route path="menu" element={<MenuPanelPage />} />
-        <Route path="menu/plato/:id" element={<PlatoForm />} />
-        <Route path="mesas" element={<MesasPage />} />
-        <Route path="personal" element={<PersonalPage />} />
-        <Route path="ajustes" element={<AjustesPage />} />
-        <Route path="dispositivos" element={<DispositivosPage />} />
-        <Route path="reportes" element={<ReportesPage />} />
-      </Route>
-      <Route
-        path="/cocina"
-        element={
-          <Solo roles={['COCINA', 'DUENO']}>
-            <EstacionPage />
-          </Solo>
-        }
-      />
-      <Route
-        path="/mesero"
-        element={
-          <Solo roles={['MESERO', 'DUENO']}>
-            <MeseroPage />
-          </Solo>
-        }
-      />
-      <Route
-        path="/caja"
-        element={
-          <Solo roles={['CAJA', 'DUENO']}>
-            <CajaPage />
-          </Solo>
-        }
-      />
-      <Route path="*" element={<Navigate to={inicio} replace />} />
-    </Routes>
+    <>
+      <AvisosGlobales />
+      <Routes>
+        <Route path="/login" element={usuario ? <Navigate to={inicio} replace /> : <LoginPage />} />
+        <Route
+          path="/tablet"
+          element={usuario ? <Navigate to={inicio} replace /> : <TabletPage />}
+        />
+        <Route
+          path="/admin"
+          element={
+            <Solo roles={['SUPERADMIN']}>
+              <Admin />
+            </Solo>
+          }
+        />
+        <Route path="/dueno" element={<Navigate to="/panel" replace />} />
+        <Route
+          path="/panel"
+          element={
+            <Solo roles={['DUENO']}>
+              <PanelLayout />
+            </Solo>
+          }
+        >
+          <Route index element={<InicioPage />} />
+          <Route path="menu" element={<MenuPanelPage />} />
+          <Route path="menu/plato/:id" element={<PlatoForm />} />
+          <Route path="mesas" element={<MesasPage />} />
+          <Route path="personal" element={<PersonalPage />} />
+          <Route path="ajustes" element={<AjustesPage />} />
+          <Route path="dispositivos" element={<DispositivosPage />} />
+          <Route path="reportes" element={<ReportesPage />} />
+        </Route>
+        <Route
+          path="/cocina"
+          element={
+            <Solo roles={['COCINA', 'DUENO']}>
+              <EstacionPage />
+            </Solo>
+          }
+        />
+        <Route
+          path="/mesero"
+          element={
+            <Solo roles={['MESERO', 'DUENO']}>
+              <MeseroPage />
+            </Solo>
+          }
+        />
+        <Route
+          path="/caja"
+          element={
+            <Solo roles={['CAJA', 'DUENO']}>
+              <CajaPage />
+            </Solo>
+          }
+        />
+        <Route path="*" element={<Navigate to={inicio} replace />} />
+      </Routes>
+    </>
   );
 }
+
+activarConPrimerToque();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
