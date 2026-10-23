@@ -74,6 +74,9 @@ model Restaurante {
   logoUrl                  String?
   telefono                 String?
   direccion                String?
+  eslogan                  String? // personalización: frase bajo el nombre
+  bannerUrl                String? // imagen ancha de portada del menú
+  ubicacionUrl             String? // enlace de Google Maps ("Cómo llegar")
   colorAcento              String? // acento del menú del comensal; null = morado del diseño
   moneda                   Moneda           @default(CRC)
   idiomas                  Idioma[]         @default([es, en])

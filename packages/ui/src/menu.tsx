@@ -1,4 +1,5 @@
-import { Bell, Plus, Search } from 'lucide-react';
+import { Bell, MapPin, Navigation, Phone, Plus, Search } from 'lucide-react';
+import { comoLlegar, mapaIncrustado } from '@menu-qr/shared/mapa';
 import type { MenuPublico, PlatoPublico } from '@menu-qr/shared';
 import { useUi } from './contexto';
 import { formatoHora, nombreEn } from './util';
@@ -46,14 +47,44 @@ export function Header({
     : null;
   return (
     <>
+      {/* Portada del restaurante (personalización): banner a todo lo ancho en el celular. */}
+      {r.bannerUrl && (
+        <div className="relative -mx-5 -mt-[22px] aspect-[16/7] overflow-hidden bg-surface-2 md:mx-0 md:mt-0 md:aspect-[16/5] md:rounded-lg">
+          <img
+            src={r.bannerUrl}
+            alt=""
+            width={1600}
+            height={600}
+            className="size-full object-cover"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent"
+          />
+        </div>
+      )}
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-[22px] font-semibold tracking-[-0.01em] text-balance">{r.nombre}</h1>
-          <div className="mt-2.5 flex flex-wrap items-center gap-2.5 text-[13px] text-muted">
-            <Pastilla tono={r.abierto ? 'amber' : 'danger'}>
-              {r.abierto ? t.abierto : t.cerrado}
-            </Pastilla>
-            {horario && <span>{horario}</span>}
+        <div className="flex min-w-0 items-start gap-3">
+          {r.logoUrl && (
+            <img
+              src={r.logoUrl}
+              alt=""
+              width={72}
+              height={72}
+              className={`size-[72px] shrink-0 rounded-full bg-app object-cover shadow-tarjeta ring-4 ring-app ${r.bannerUrl ? 'relative -mt-12' : ''}`}
+            />
+          )}
+          <div className="min-w-0">
+            <h1 className="text-[22px] font-semibold tracking-[-0.01em] text-balance">
+              {r.nombre}
+            </h1>
+            {r.eslogan && <p className="mt-0.5 text-[13.5px] text-muted">{r.eslogan}</p>}
+            <div className="mt-2.5 flex flex-wrap items-center gap-2.5 text-[13px] text-muted">
+              <Pastilla tono={r.abierto ? 'amber' : 'danger'}>
+                {r.abierto ? t.abierto : t.cerrado}
+              </Pastilla>
+              {horario && <span>{horario}</span>}
+            </div>
           </div>
         </div>
         <div className="flex gap-1.5">
@@ -289,5 +320,55 @@ export function DishCard({
         </span>
       </span>
     </button>
+  );
+}
+
+// "Encuéntrenos": dirección, teléfono, mapa incrustado (sin clave de Google) y "Cómo llegar".
+export function InfoLocal({ restaurante: r }: { restaurante: Restaurante }) {
+  const { t } = useUi();
+  const llegar = comoLlegar(r.ubicacionUrl, r.direccion);
+  if (!r.direccion && !r.telefono && !llegar) return null;
+  return (
+    <section aria-labelledby="encuentrenos" className="overflow-hidden rounded-lg bg-surface">
+      {r.direccion && (
+        <iframe
+          title={t.mapaDe(r.nombre)}
+          src={mapaIncrustado(`${r.nombre}, ${r.direccion}`)}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          className="block h-52 w-full border-0 md:h-64"
+        />
+      )}
+      <div className="flex flex-col gap-3 p-4">
+        <h2 id="encuentrenos" className="text-[17px] font-semibold">
+          {t.encuentrenos}
+        </h2>
+        {r.direccion && (
+          <p className="flex items-start gap-2 text-sm text-muted">
+            <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden /> {r.direccion}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2">
+          {llegar && (
+            <a
+              href={llegar}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-11 items-center gap-2 rounded-md bg-purple px-4 text-sm font-semibold text-on-accent"
+            >
+              <Navigation className="size-4" aria-hidden /> {t.comoLlegar}
+            </a>
+          )}
+          {r.telefono && (
+            <a
+              href={`tel:${r.telefono.replace(/[^0-9+]/g, '')}`}
+              className="inline-flex min-h-11 items-center gap-2 rounded-md bg-app px-4 text-sm font-semibold"
+            >
+              <Phone className="size-4" aria-hidden /> {r.telefono}
+            </a>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }

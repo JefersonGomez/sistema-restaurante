@@ -72,7 +72,10 @@ export async function actualizarPropio(restauranteId: string, data: RestauranteC
     data,
     include: conHorarios,
   });
-  if (data.logoUrl !== undefined && data.logoUrl !== previo.logoUrl)
-    await borrarImagenes(restauranteId, [previo.logoUrl]);
+  // La imagen reemplazada (logo o banner) se borra del almacenamiento.
+  const viejas = (['logoUrl', 'bannerUrl'] as const)
+    .filter((k) => data[k] !== undefined && data[k] !== previo[k])
+    .map((k) => previo[k]);
+  if (viejas.length) await borrarImagenes(restauranteId, viejas);
   return r;
 }

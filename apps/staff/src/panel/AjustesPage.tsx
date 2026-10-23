@@ -1,14 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Upload } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import {
-  acentoLegible,
   restauranteConfigSchema,
   type Idioma,
   type ModoConfirmacion,
   type Moneda,
 } from '@menu-qr/shared';
-import { api, subirImagen, type ErrorApi } from '../api';
+import { api, type ErrorApi } from '../api';
 import {
   Boton,
   Campo,
@@ -43,7 +42,6 @@ type Restaurante = {
 
 const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const diaDe = (i: number) => (i + 1) % 7; // índice de la lista (lunes primero) → diaSemana (0 = domingo)
-const MORADO = '#5b2db5';
 const MODOS: { id: ModoConfirmacion; texto: string }[] = [
   { id: 'SIEMPRE', texto: 'Siempre: el mesero confirma cada pedido' },
   { id: 'PRIMER_PEDIDO', texto: 'Solo el primer pedido de cada mesa' },
@@ -176,9 +174,6 @@ function Horarios({ inicial }: { inicial: Turno[] }) {
 function Formulario({ r }: { r: Restaurante }) {
   const qc = useQueryClient();
   const [f, setF] = useState({
-    nombre: r.nombre,
-    logoUrl: r.logoUrl,
-    colorAcento: r.colorAcento,
     moneda: r.moneda,
     idiomas: r.idiomas,
     porcentajeIva: String(r.porcentajeIva),
@@ -191,7 +186,6 @@ function Formulario({ r }: { r: Restaurante }) {
     precioPromo: r.precioPromo === null ? '' : aColones(r.precioPromo),
   });
   const [errores, setErrores] = useState<Record<string, string>>({});
-  const [subiendo, setSubiendo] = useState(false);
   const [guardado, setGuardado] = useState(false);
   const platos = useQuery({
     queryKey: ['platos'],
@@ -228,99 +222,8 @@ function Formulario({ r }: { r: Restaurante }) {
     guardar.mutate(r.data);
   };
 
-  const subirLogo = async (archivo: File) => {
-    setSubiendo(true);
-    try {
-      poner('logoUrl', (await subirImagen<{ url: string }>(archivo, 'logo')).url);
-    } catch (e) {
-      setErrores({ logoUrl: (e as Error).message });
-    } finally {
-      setSubiendo(false);
-    }
-  };
-
-  const acento = f.colorAcento ?? MORADO;
-  const legible = acentoLegible(acento);
-
   return (
     <>
-      <Seccion titulo="Datos del restaurante">
-        <Campo
-          etiqueta="Nombre"
-          value={f.nombre}
-          onChange={(e) => poner('nombre', e.target.value)}
-          error={errores.nombre}
-        />
-        <div className="flex flex-wrap items-center gap-3">
-          {f.logoUrl ? (
-            <img
-              src={f.logoUrl}
-              alt="Logo actual"
-              className="size-16 rounded-full bg-surface object-cover"
-            />
-          ) : (
-            <span className="grid size-16 place-items-center rounded-full bg-surface text-xs text-muted">
-              Sin logo
-            </span>
-          )}
-          <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md bg-surface px-4 text-sm font-semibold hover:bg-surface-2">
-            <Upload className="size-4" aria-hidden /> {subiendo ? 'Subiendo…' : 'Subir logo'}
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="sr-only"
-              disabled={subiendo}
-              onChange={(e) => e.target.files?.[0] && subirLogo(e.target.files[0])}
-            />
-          </label>
-          {f.logoUrl && (
-            <Boton variante="suave" onClick={() => poner('logoUrl', null)}>
-              Quitar
-            </Boton>
-          )}
-          {errores.logoUrl && <p className="w-full text-sm text-danger">{errores.logoUrl}</p>}
-        </div>
-      </Seccion>
-
-      <Seccion
-        titulo="Color del menú"
-        detalle="El color de los botones que ve el cliente. Tiene que ser oscuro para que el texto blanco se lea."
-      >
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            type="color"
-            aria-label="Elegir color"
-            value={acento}
-            onChange={(e) => poner('colorAcento', e.target.value)}
-            className="h-11 w-16 cursor-pointer rounded-md border border-line bg-surface"
-          />
-          <Campo
-            etiqueta="Código"
-            className="w-32"
-            value={f.colorAcento ?? ''}
-            placeholder={MORADO}
-            onChange={(e) => poner('colorAcento', e.target.value || null)}
-          />
-          <span
-            style={{ background: acento }}
-            className="inline-flex min-h-11 items-center rounded-md px-4 text-sm font-semibold text-white"
-          >
-            Agregar al pedido
-          </span>
-          {f.colorAcento && (
-            <Boton variante="suave" onClick={() => poner('colorAcento', null)}>
-              Usar el morado original
-            </Boton>
-          )}
-        </div>
-        {(errores.colorAcento || !legible) && (
-          <p role="alert" className="text-sm text-danger">
-            {errores.colorAcento ??
-              'Ese color no contrasta con el texto blanco; elija uno más oscuro'}
-          </p>
-        )}
-      </Seccion>
-
       <Seccion titulo="Idiomas y moneda">
         <fieldset className="flex flex-wrap gap-4 text-sm">
           <legend className="mb-1 font-medium">Idiomas del menú</legend>
@@ -459,7 +362,7 @@ function Formulario({ r }: { r: Restaurante }) {
       </Seccion>
 
       <div className="sticky bottom-4 z-10 flex items-center gap-3 rounded-lg bg-app p-3 shadow-tarjeta">
-        <Boton onClick={enviar} disabled={guardar.isPending || subiendo || !legible}>
+        <Boton onClick={enviar} disabled={guardar.isPending}>
           Guardar cambios
         </Boton>
         {guardado && (

@@ -25,7 +25,7 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
 | 4.4  | Cantidad de personas al escanear el QR (y cómo se une alguien a una cuenta abierta)                                                                   | ✅     |
 | 4.5  | Caja: pagar junto o separado, grupos de ítems con su método de pago y comprobante                                                                     | ✅     |
 | 4.6  | Registro de restaurante + dueño                                                                                                                       | ✅     |
-| 4.7  | Personalización: ubicación (Google Maps), logo, eslogan, banner; vista bonita para el cliente                                                         | ⬜     |
+| 4.7  | Personalización: ubicación (Google Maps), logo, eslogan, banner; vista bonita para el cliente                                                         | ✅     |
 | 4.8  | Tests, seed y README de la Fase 4                                                                                                                     | ⬜     |
 
 - 4.1: causas de "no suena la llamada": (a) el audio del navegador queda bloqueado al recargar
@@ -77,6 +77,15 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
   sin tildes (`p{Diacritic}`), con -2, -3 si existe. Correo repetido → 409 CORREO_EN_USO. Sin
   confirmación de correo (decisión del usuario: recomendación aceptada). Staff: /registro en 2 pasos
   ("Su local" / "Sus datos"), enlace "Cree su cuenta" en el login; `erroresDe(e, prefijo)`.
+- 4.7: migración `20261023130000_personalizacion` (Restaurante.eslogan, bannerUrl, ubicacionUrl).
+  Upload destino `banner` (1600×600 cover, webp; el reemplazado se borra). `shared/mapa.ts`
+  (subruta `@menu-qr/shared/mapa` para no meter zod en el menú): `esEnlaceDeMaps` (https + dominio de
+  Google o goo.gl, por URL, no regex), `mapaIncrustado` (iframe `google.com/maps?q=…&output=embed`, sin
+  clave) y `comoLlegar`. UI: Header con portada (banner a todo lo ancho en celular, logo que se monta
+  encima, eslogan) e `InfoLocal` ("Encuéntrenos": mapa, dirección, Cómo llegar, teléfono) al final del
+  menú. Panel: /panel/personalizar (nombre, eslogan, logo, banner, color, teléfono, dirección, enlace
+  Maps, vista previa con los mismos componentes); logo y color salieron de Ajustes. Tras registrarse,
+  el dueño cae en /panel/personalizar?bienvenida.
 
 ## Plan de la Fase 3 (sub-fases) — aprobado 2026-10-22; el usuario autorizó commit + push al cerrar cada sub-fase
 

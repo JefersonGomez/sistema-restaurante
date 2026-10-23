@@ -21,6 +21,7 @@ import { PersonalPage } from './panel/PersonalPage';
 import { CambiarPasswordPage } from './CambiarPasswordPage';
 import { DispositivosPage } from './panel/DispositivosPage';
 import { ReportesPage } from './panel/reportes/ReportesPage';
+import { PersonalizarPage } from './panel/PersonalizarPage';
 import { TabletPage } from './TabletPage';
 import { RegistroPage } from './RegistroPage';
 import { tokenTablet } from './api';
@@ -71,7 +72,9 @@ function App() {
         />
         <Route
           path="/registro"
-          element={usuario ? <Navigate to={inicio} replace /> : <RegistroPage />}
+          element={
+            usuario ? <Navigate to="/panel/personalizar?bienvenida" replace /> : <RegistroPage />
+          }
         />
         <Route
           path="/admin"
@@ -96,6 +99,7 @@ function App() {
           <Route path="mesas" element={<MesasPage />} />
           <Route path="personal" element={<PersonalPage />} />
           <Route path="ajustes" element={<AjustesPage />} />
+          <Route path="personalizar" element={<PersonalizarPage />} />
           <Route path="dispositivos" element={<DispositivosPage />} />
           <Route path="reportes" element={<ReportesPage />} />
         </Route>

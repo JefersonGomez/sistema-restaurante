@@ -5,6 +5,7 @@ import {
   House,
   LogOut,
   Menu as MenuIcono,
+  Palette,
   QrCode,
   ReceiptText,
   Settings,
@@ -28,6 +29,7 @@ type Enlace = {
 const ADMINISTRAR: Enlace[] = [
   { a: '/panel', texto: 'Inicio', Icono: House, fin: true },
   { a: '/panel/menu', texto: 'Menú', Icono: UtensilsCrossed },
+  { a: '/panel/personalizar', texto: 'Personalizar', Icono: Palette },
   { a: '/panel/mesas', texto: 'Mesas y QR', Icono: QrCode },
   { a: '/panel/personal', texto: 'Personal', Icono: Users },
   { a: '/panel/dispositivos', texto: 'Dispositivos', Icono: TabletSmartphone },

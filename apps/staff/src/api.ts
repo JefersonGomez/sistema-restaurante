@@ -175,7 +175,10 @@ export function obtenerMenu(slug: string, recargar = false) {
 }
 
 // Sube una imagen (multipart) a /uploads/imagen. Plato → { url320, url960 }; logo → { url }.
-export async function subirImagen<T>(archivo: File, destino: 'plato' | 'logo'): Promise<T> {
+export async function subirImagen<T>(
+  archivo: File,
+  destino: 'plato' | 'logo' | 'banner',
+): Promise<T> {
   const enviar = () => {
     const datos = new FormData();
     datos.append('imagen', archivo);

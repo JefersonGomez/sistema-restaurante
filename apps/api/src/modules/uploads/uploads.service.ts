@@ -38,7 +38,7 @@ async function aWebp(datos: Buffer, ajuste: (img: Sharp) => Sharp) {
 export async function subirImagen(
   restauranteId: string,
   archivo: Buffer | undefined,
-  destino: 'plato' | 'logo',
+  destino: 'plato' | 'logo' | 'banner',
 ) {
   if (!archivo?.length)
     throw new HttpError(400, 'SIN_ARCHIVO', 'Adjunte una imagen en el campo "imagen"');
@@ -52,6 +52,13 @@ export async function subirImagen(
 
   const id = randomUUID();
   const carpeta = `restaurantes/${restauranteId}`;
+  if (destino === 'banner') {
+    // Banner de portada: ancho, recortado al centro en 1600×600.
+    const banner = await aWebp(archivo, (img) =>
+      img.resize(1600, 600, { fit: 'cover', position: 'centre', withoutEnlargement: false }),
+    );
+    return { url: await storage.guardar(`${carpeta}/banner/${id}.webp`, banner, 'image/webp') };
+  }
   if (destino === 'logo') {
     // Logo: sin recorte, máximo 512 px por lado.
     const logo = await aWebp(archivo, (img) =>

@@ -14,7 +14,7 @@ const recibir = multer({
 }).single('imagen');
 
 const subir = async (req: Request, res: Response) => {
-  const { destino } = req.query as { destino: 'plato' | 'logo' };
+  const { destino } = req.query as { destino: 'plato' | 'logo' | 'banner' };
   res.status(201).json(await service.subirImagen(restauranteDe(req), req.file?.buffer, destino));
 };
 
@@ -28,7 +28,7 @@ export const uploadsRouter = Router();
 uploadsRouter.use(autenticar, requireRole('DUENO'), tenant);
 uploadsRouter.post(
   '/imagen',
-  validate({ query: z.object({ destino: z.enum(['plato', 'logo']).default('plato') }) }),
+  validate({ query: z.object({ destino: z.enum(['plato', 'logo', 'banner']).default('plato') }) }),
   recibir,
   subir,
 );

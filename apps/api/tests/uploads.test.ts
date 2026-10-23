@@ -155,3 +155,39 @@ describe('borrado de imágenes', () => {
     expect((await descargar(ajena.url960)).status).toBe(200);
   });
 });
+
+describe('personalización: banner y datos que ve el cliente', () => {
+  const restaurante = (body: object) =>
+    request(app).patch('/restaurante').set('Authorization', `Bearer ${tokenA}`).send(body);
+
+  it('el banner se guarda en 1600×600 y al cambiarlo se borra el anterior', async () => {
+    const r = await subir(tokenA, await imagen(3000, 2000, 'jpeg'), 'portada.jpg', 'banner');
+    expect(r.status).toBe(201);
+    const meta = await sharp((await descargar(r.body.url)).body as Buffer).metadata();
+    expect([meta.width, meta.height, meta.format]).toEqual([1600, 600, 'webp']);
+    await restaurante({ bannerUrl: r.body.url });
+    const otro = await subir(tokenA, await imagen(1600, 600, 'png'), 'otra.png', 'banner');
+    await restaurante({ bannerUrl: otro.body.url });
+    expect((await descargar(r.body.url)).status).not.toBe(200);
+    expect((await descargar(otro.body.url)).status).toBe(200);
+  });
+
+  it('eslogan, dirección y enlace de Google Maps llegan al menú público', async () => {
+    expect((await restaurante({ ubicacionUrl: 'https://evil.com/maps' })).status).toBe(400);
+    expect((await restaurante({ telefono: '12' })).status).toBe(400);
+    const ok = await restaurante({
+      eslogan: 'La sazón de siempre',
+      telefono: '2222 3333',
+      direccion: 'Barrio Escalante, San José',
+      ubicacionUrl: 'https://maps.app.goo.gl/abc123',
+    });
+    expect(ok.status).toBe(200);
+    const menu = (await request(app).get('/public/resto-a/menu')).body;
+    expect(menu.restaurante).toMatchObject({
+      eslogan: 'La sazón de siempre',
+      telefono: '2222 3333',
+      direccion: 'Barrio Escalante, San José',
+      ubicacionUrl: 'https://maps.app.goo.gl/abc123',
+    });
+  });
+});

@@ -8,6 +8,7 @@ import {
   CategoryGrid,
   DishCard,
   Header,
+  InfoLocal,
   PromoBanner,
   SearchBar,
   formatoPrecio,
@@ -101,6 +102,8 @@ export function MenuScreen() {
           <p className="col-span-full px-2.5 py-8 text-center text-muted">{t.sinResultados}</p>
         )}
       </div>
+
+      {!q && <InfoLocal restaurante={r} />}
 
       {abierto && (
         <DishSheet

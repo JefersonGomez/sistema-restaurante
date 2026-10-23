@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { esEnlaceDeMaps } from './mapa';
 import { acentoLegible } from './color';
 import { HORA_REGEX, zonaHorariaValida } from './horario';
 
@@ -84,6 +85,16 @@ export const restauranteConfigSchema = z
     cerradoManual: z.boolean(), // "Cerrar temporalmente"
     telefono: telefonoSchema.nullable(),
     direccion: z.string().trim().max(200).nullable(),
+    // Personalización (lo ve el cliente en el menú).
+    eslogan: z.string().trim().max(120).nullable(),
+    bannerUrl: urlOpcional,
+    ubicacionUrl: z
+      .url('Pegue el enlace de Google Maps')
+      .refine(
+        esEnlaceDeMaps,
+        'Tiene que ser un enlace de Google Maps (maps.app.goo.gl o google.com/maps)',
+      )
+      .nullable(),
     // Promoción del banner: con precioPromo, ese es el precio que se cobra por el plato.
     platoDestacadoId: z.uuid().nullable(),
     textoPromoEs: z.string().trim().max(80).nullable(),
@@ -314,6 +325,11 @@ export type MenuPublico = {
     slug: string;
     logoUrl: string | null;
     colorAcento: string | null;
+    eslogan: string | null;
+    bannerUrl: string | null;
+    telefono: string | null;
+    direccion: string | null;
+    ubicacionUrl: string | null;
     moneda: Moneda;
     idiomas: Idioma[];
     porcentajeIva: number;
@@ -538,6 +554,7 @@ export type ReporteHoy = {
 };
 
 export * from './avisos';
+export * from './mapa';
 export * from './totales';
 export * from './seleccion';
 export * from './horario';
