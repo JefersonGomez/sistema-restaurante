@@ -18,7 +18,6 @@ import {
   Tarjeta,
   TituloPagina,
 } from './comunes';
-import { aCentimos, aColones } from './menu/PlatoForm';
 
 type Turno = { diaSemana: number; abre: string; cierra: string };
 type Restaurante = {
@@ -180,17 +179,9 @@ function Formulario({ r }: { r: Restaurante }) {
     porcentajeServicio: String(r.porcentajeServicio),
     preciosIncluyenImpuestos: r.preciosIncluyenImpuestos,
     modoConfirmacion: r.modoConfirmacion,
-    platoDestacadoId: r.platoDestacadoId ?? '',
-    textoPromoEs: r.textoPromoEs ?? '',
-    textoPromoEn: r.textoPromoEn ?? '',
-    precioPromo: r.precioPromo === null ? '' : aColones(r.precioPromo),
   });
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [guardado, setGuardado] = useState(false);
-  const platos = useQuery({
-    queryKey: ['platos'],
-    queryFn: () => api<{ id: string; nombreEs: string }[]>('/platos'),
-  });
   const poner = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => {
     setGuardado(false);
     setErrores(({ [k]: _, ...resto }) => resto);
@@ -206,17 +197,10 @@ function Formulario({ r }: { r: Restaurante }) {
     onError: (e: ErrorApi) => setErrores({ general: e.message }),
   });
   const enviar = () => {
-    const precioPromo = f.precioPromo.trim() ? aCentimos(f.precioPromo) : null;
-    if (precioPromo === null && f.precioPromo.trim())
-      return setErrores({ precioPromo: 'Escriba el precio en colones, por ejemplo 3500' });
     const r = restauranteConfigSchema.safeParse({
       ...f,
       porcentajeIva: Number(f.porcentajeIva),
       porcentajeServicio: Number(f.porcentajeServicio),
-      platoDestacadoId: f.platoDestacadoId || null,
-      textoPromoEs: f.textoPromoEs.trim() || null,
-      textoPromoEn: f.textoPromoEn.trim() || null,
-      precioPromo: f.platoDestacadoId ? precioPromo : null,
     });
     if (!r.success) return setErrores(erroresDe(r.error));
     guardar.mutate(r.data);
@@ -310,57 +294,6 @@ function Formulario({ r }: { r: Restaurante }) {
         </fieldset>
       </Seccion>
 
-      <Seccion
-        titulo="Promoción"
-        detalle="Aparece como banner arriba del menú. Si pone precio de promoción, ese es el que se cobra."
-      >
-        <label className="block text-sm">
-          <span className="font-medium">Plato en promoción</span>
-          <select
-            value={f.platoDestacadoId}
-            onChange={(e) => poner('platoDestacadoId', e.target.value)}
-            className={select}
-          >
-            <option value="">Sin promoción</option>
-            {platos.data?.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombreEs}
-              </option>
-            ))}
-          </select>
-        </label>
-        {f.platoDestacadoId && (
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Campo
-              etiqueta="Texto (español)"
-              maxLength={80}
-              placeholder="Jueves de"
-              value={f.textoPromoEs}
-              onChange={(e) => poner('textoPromoEs', e.target.value)}
-              error={errores.textoPromoEs}
-            />
-            {f.idiomas.includes('en') && (
-              <Campo
-                etiqueta="Texto (inglés)"
-                maxLength={80}
-                placeholder="Thursday special"
-                value={f.textoPromoEn}
-                onChange={(e) => poner('textoPromoEn', e.target.value)}
-                error={errores.textoPromoEn}
-              />
-            )}
-            <Campo
-              etiqueta="Precio de promoción (opcional)"
-              inputMode="decimal"
-              placeholder="3500"
-              value={f.precioPromo}
-              onChange={(e) => poner('precioPromo', e.target.value)}
-              error={errores.precioPromo}
-            />
-          </div>
-        )}
-      </Seccion>
-
       <div className="sticky bottom-4 z-10 flex items-center gap-3 rounded-lg bg-app p-3 shadow-tarjeta">
         <Boton onClick={enviar} disabled={guardar.isPending}>
           Guardar cambios
@@ -404,7 +337,7 @@ export function AjustesPage() {
     <>
       <TituloPagina
         titulo="Ajustes"
-        detalle="Datos del restaurante, horario, impuestos y promoción."
+        detalle="Horario, idiomas, moneda, impuestos y confirmación de pedidos."
       />
       {!r ? (
         <Esqueleto className="h-96" />

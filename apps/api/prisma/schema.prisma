@@ -93,6 +93,7 @@ model Restaurante {
   textoPromoEs             String?
   textoPromoEn             String?
   precioPromo              Int? // céntimos
+  colorPromo               String? // fondo del banner de la promoción; null = oscuro del diseño
   createdAt                DateTime         @default(now())
   updatedAt                DateTime         @updatedAt
 

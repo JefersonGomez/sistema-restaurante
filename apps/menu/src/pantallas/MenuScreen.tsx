@@ -76,6 +76,7 @@ export function MenuScreen() {
         <PromoBanner
           plato={destacado}
           texto={(idioma === 'en' ? promo?.textoEn : promo?.textoEs) ?? null}
+          color={promo?.color ?? null}
           icono={iconoDe.get(destacado.id) ?? null}
           precio={precio}
           onAbrir={() => abrir(destacado)}

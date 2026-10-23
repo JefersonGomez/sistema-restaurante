@@ -141,9 +141,11 @@ export function PromoBanner({
   icono,
   precio,
   onAbrir,
+  color = null,
 }: {
   plato: PlatoPublico;
   texto: string | null; // texto de la promoción en el idioma actual
+  color?: string | null; // fondo elegido por el dueño (null = el oscuro del diseño)
 
   icono: string | null;
   precio: (c: number) => string;
@@ -155,6 +157,7 @@ export function PromoBanner({
     <button
       type="button"
       onClick={onAbrir}
+      style={color ? { background: color } : undefined}
       className="relative flex min-h-[150px] w-full items-center overflow-hidden rounded-lg bg-banner p-5 md:min-h-[190px] md:px-8 md:before:w-[340px] text-left text-banner-fg before:absolute before:-top-[30px] before:-right-10 before:h-[260px] before:w-[190px] before:rotate-[24deg] before:bg-amber before:opacity-95 before:content-['']"
     >
       <span className="relative z-[1] flex max-w-[60%] flex-col gap-0.5">

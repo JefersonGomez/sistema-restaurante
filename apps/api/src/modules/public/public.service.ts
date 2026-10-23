@@ -30,6 +30,7 @@ export async function menu(slug: string): Promise<MenuPublico> {
       textoPromoEs: true,
       textoPromoEn: true,
       precioPromo: true,
+      colorPromo: true,
       horarios: { select: { diaSemana: true, abre: true, cierra: true } },
     },
   });
@@ -42,6 +43,7 @@ export async function menu(slug: string): Promise<MenuPublico> {
     textoPromoEs,
     textoPromoEn,
     precioPromo,
+    colorPromo,
     ...datos
   } = r;
   const ahora = new Date();
@@ -102,6 +104,7 @@ export async function menu(slug: string): Promise<MenuPublico> {
         textoEn: textoPromoEn,
         precio,
         precioAntes,
+        color: colorPromo,
       };
       return { ...p, precio, precioAntes };
     }),

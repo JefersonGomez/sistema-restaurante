@@ -172,6 +172,18 @@ describe('personalización: banner y datos que ve el cliente', () => {
     expect((await descargar(otro.body.url)).status).toBe(200);
   });
 
+  it('el color de fondo de la promoción se valida y llega al banner', async () => {
+    expect((await restaurante({ colorPromo: '#ffff00' })).status).toBe(400); // amarillo: no se lee
+    const ok = await restaurante({
+      platoDestacadoId: platoA,
+      precioPromo: 400000,
+      colorPromo: '#7a1f1f',
+    });
+    expect(ok.status).toBe(200);
+    const menu = (await request(app).get('/public/resto-a/menu')).body;
+    expect(menu.promocion).toMatchObject({ platoId: platoA, precio: 400000, color: '#7a1f1f' });
+  });
+
   it('eslogan, dirección y enlace de Google Maps llegan al menú público', async () => {
     expect((await restaurante({ ubicacionUrl: 'https://evil.com/maps' })).status).toBe(400);
     expect((await restaurante({ telefono: '12' })).status).toBe(400);

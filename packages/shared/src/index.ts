@@ -100,6 +100,12 @@ export const restauranteConfigSchema = z
     textoPromoEs: z.string().trim().max(80).nullable(),
     textoPromoEn: z.string().trim().max(80).nullable(),
     precioPromo: centimos.nullable(),
+    // Fondo del banner de la promoción (texto blanco encima: necesita contraste).
+    colorPromo: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/, 'Color hex, ej. #17131f')
+      .refine(acentoLegible, 'Ese color no contrasta con el texto blanco; elija uno más oscuro')
+      .nullable(),
   })
   .partial();
 export type RestauranteConfigInput = z.infer<typeof restauranteConfigSchema>;
@@ -346,6 +352,7 @@ export type MenuPublico = {
     textoEn: string | null;
     precio: number;
     precioAntes: number | null;
+    color: string | null; // fondo del banner (null = el del diseño)
   } | null;
   categorias: {
     id: string;

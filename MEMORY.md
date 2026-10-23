@@ -28,6 +28,8 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
 | 4.6  | Registro de restaurante + dueño                                                                                                                       | ✅     |
 | 4.7  | Personalización: ubicación (Google Maps), logo, eslogan, banner; vista bonita para el cliente                                                         | ✅     |
 | 4.8  | Tests, seed y README de la Fase 4                                                                                                                     | ✅     |
+| 4.9  | Promoción del día en Panel → Menú (sale de Ajustes) + color de fondo del banner                                                                       | ✅     |
+| 4.10 | Menús del día (combos fijos o con opciones), por día de la semana o a mano; sección para el cliente                                                   | ⬜     |
 
 - 4.1: causas de "no suena la llamada": (a) el audio del navegador queda bloqueado al recargar
   hasta tocar "Activar sonido" → ahora el primer toque/tecla en cualquier parte lo activa
@@ -91,6 +93,10 @@ El usuario autorizó commit + push al cerrar cada sub-fase (igual que la Fase 3)
   README: recorrido de la Fase 4, endpoints nuevos y qué cubren los tests. Una corrida de `pnpm test`
   dio 10 fallos en la API que no se repitieron en tres corridas seguidas (posible interferencia con
   `tsx watch` reiniciando mientras corrían): vigilar.
+- 4.9: migración `20261023140000_color_promo` (Restaurante.colorPromo, con el mismo control de
+  contraste que colorAcento). `MenuPublico.promocion.color`; `PromoBanner` acepta `color`. La
+  promoción salió de Ajustes: `panel/menu/PromocionDia.tsx` arriba de Panel → Menú (resumen, editar,
+  quitar, vista previa con el banner real).
 
 ## Plan de la Fase 3 (sub-fases) — aprobado 2026-10-22; el usuario autorizó commit + push al cerrar cada sub-fase
 

@@ -59,6 +59,28 @@ aquí antes de programarlo. Fuente de verdad del alcance de la Fase 4.
 - La barra lateral del panel se esconde si el cursor no está encima (se despliega al acercarlo).
 - En el celular, el menú de opciones es desplegable y se ve bonito.
 
+## Pedidos (2026-10-23, después de probar la Fase 4) — definidos
+
+### 11. Color de fondo del banner de promoción
+
+- El fondo del banner de la promoción del día (hoy, el chifrijo) se puede personalizar eligiendo
+  el color.
+
+### 12. Menú del día en la sección Menú
+
+- La configuración del plato en promoción sale de Ajustes y pasa a Panel → Menú, con un botón
+  "Agregar menú del día".
+- El cliente también puede consultar ese menú del día.
+
+### Respuestas del usuario
+
+- **Menú del día: las dos formas.** (A) la promoción del día (un plato con precio especial en el
+  banner) y (B) menús del día (combos con precio fijo). Se programan por día de la semana y
+  también a mano para un día puntual. El combo puede ser fijo (sus partes se describen) o con
+  opciones para que el cliente elija (p. ej. la carne o el fresco). El cliente ve los dos.
+- **Comandas:** se quedan digitales (pantalla de cocina y bar). Sin impresión.
+- **Pedidos en línea:** para recoger y a domicilio (Fase 5, con su propia especificación).
+
 ## Decisiones del usuario (2026-10-23)
 
 - **Platos listos:** avisar al mesero a los **5 minutos** sin entregar.

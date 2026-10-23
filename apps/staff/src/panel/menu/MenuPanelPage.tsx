@@ -18,6 +18,7 @@ import {
   TituloPagina,
 } from '../comunes';
 import { ListaOrdenable } from './Ordenable';
+import { PromocionDia } from './PromocionDia';
 
 export type Categoria = {
   id: string;
@@ -258,6 +259,8 @@ export function MenuPanelPage() {
           {errorAccion}
         </p>
       )}
+
+      <PromocionDia iconos={new Map(categorias.data?.map((c) => [c.id, c.icono]))} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(340px,380px)_1fr]">
         {/* Categorías */}
