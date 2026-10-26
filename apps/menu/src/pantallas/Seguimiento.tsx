@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Check, Phone, Utensils } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { CuentaDetalle, EtapaEnLinea } from '@menu-qr/shared';
 import { Cargando, formatoPrecio, nombreEn, Pastilla } from '@menu-qr/ui';
@@ -20,6 +21,11 @@ export function Seguimiento() {
   const { token = '' } = useParams();
   const t = useTextos();
   const { idioma } = useIdioma();
+  const [ahora, setAhora] = useState(Date.now()); // para la cuenta regresiva del SINPE
+  useEffect(() => {
+    const reloj = setInterval(() => setAhora(Date.now()), 15_000);
+    return () => clearInterval(reloj);
+  }, []);
   const q = useQuery({
     queryKey: ['seguimiento', token],
     queryFn: () => api.verSeguimiento(token),
@@ -39,9 +45,15 @@ export function Seguimiento() {
   const precio = formatoPrecio(r.moneda);
   const pasos = PASOS.filter((p) => p !== 'EN_CAMINO' || c.tipo === 'DOMICILIO');
   const actual = pasos.indexOf(d.etapa);
+  const esperaPago = d.pagoElegido === 'SINPE' && !d.pagoVerificado;
+  const quedan = d.pagarAntesDe ? Math.ceil((Date.parse(d.pagarAntesDe) - ahora) / 60_000) : 0;
   const texto: Record<EtapaEnLinea, string> = {
     RECIBIDO: t.etapaRecibido,
-    ACEPTADO: preparando(c) ? t.etapaPreparando : t.etapaAceptado(d.tiempoEstimadoMin),
+    ACEPTADO: esperaPago
+      ? t.etapaEsperandoPago
+      : preparando(c)
+        ? t.etapaPreparando
+        : t.etapaAceptado(d.tiempoEstimadoMin),
     LISTO: c.tipo === 'DOMICILIO' ? t.etapaListoDomicilio : t.etapaListoRecoger,
     EN_CAMINO: t.etapaEnCamino,
     ENTREGADO: t.etapaEntregado,
@@ -98,10 +110,17 @@ export function Seguimiento() {
 
         {d.pagoElegido === 'SINPE' && d.etapa !== 'RECHAZADO' && (
           <p className="rounded-md bg-amber-soft p-3 text-sm text-amber-ink">
-            {d.pagoVerificado
-              ? `✓ ${t.pagoVerificado}`
-              : r.sinpeNumero &&
-                t.sinpeInstrucciones(precio(c.total || 0), r.sinpeNumero, r.sinpeNombre ?? '')}
+            {d.pagoVerificado ? (
+              `✓ ${t.pagoVerificado}`
+            ) : quedan > 0 || !d.pagarAntesDe ? (
+              <>
+                {r.sinpeNumero &&
+                  t.sinpeInstrucciones(precio(c.total || 0), r.sinpeNumero, r.sinpeNombre ?? '')}
+                {d.pagarAntesDe && <strong className="block">{t.sinpeQuedan(quedan)}</strong>}
+              </>
+            ) : (
+              <strong>{t.sinpeVencido}</strong>
+            )}
           </p>
         )}
 

@@ -93,14 +93,17 @@ mesero; y una cuenta cerrada hoy (mesa 6) que aparece en el reporte **Hoy** del 
 ### Pedidos en línea (Fase 5)
 
 1. Dueño → **Ajustes → Pedidos en línea**: activar, para recoger y/o a domicilio, tiempo estimado,
-   pedido mínimo, costo de envío, zona de entrega y número de SINPE Móvil. Ahí está el enlace para
+   pedido mínimo, costo de envío, zona de entrega, número de SINPE Móvil y **minutos para pagar el
+   SINPE** (default 15). Ahí está el enlace para
    compartir (`http://localhost:5180/r/soda-la-esquina`) y su QR para descargar.
 2. Cliente (en el celular o la computadora): abre el enlace, elige platos (los mismos del menú,
    con promoción y menús del día), toca **Ver pedido**, elige para recoger o a domicilio, escribe sus
    datos y la forma de pago (efectivo o SINPE: ve el número y el monto) y **Hacer pedido**. Queda en
    una página de seguimiento que se actualiza sola.
 3. Personal (dueño, caja o mesero) → **En línea**: el pedido llega con sonido a "Nuevos". **Aceptar**
-   (con el tiempo estimado) lo manda a cocina; **Rechazar** pide un motivo que ve el cliente.
+   (con el tiempo estimado) lo manda a cocina; **Rechazar** pide un motivo que ve el cliente. Con
+   SINPE, aceptado queda "esperando el SINPE" (con la cuenta regresiva para el cliente y el personal)
+   y pasa a cocina solo al tocar **Pago verificado**; si no pagan, **Cancelar** con motivo.
 4. Cocina lo ve como "Para llevar #N · nombre" o "Domicilio #N · nombre" y lo prepara como siempre.
 5. En "En curso": **Pago verificado** (SINPE), **Listo para entregar**, **Salió a entregar**
    (domicilio) y **Entregado y cobrado** (con el método). El cliente ve cada paso.

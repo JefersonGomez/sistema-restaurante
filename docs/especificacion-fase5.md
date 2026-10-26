@@ -56,3 +56,10 @@ factura electrónica, impresión térmica directa.
 3. **5.3 Personal:** pantalla "En línea", avisos, etiquetas en cocina/caja/mesero, Ajustes y QR del
    enlace.
 4. **5.4 Cierre:** reportes por canal, seed con pedidos en línea de ejemplo, README y tests.
+5. **5.5 Tiempo para pagar el SINPE** (pedido del usuario, 2026-10-25): un pedido con SINPE **no
+   entra a cocina hasta que el restaurante verifique el pago**. Si se acepta antes, queda "Esperando
+   SINPE" y pasa a cocina solo al tocar "Pago verificado". El dueño configura en Ajustes → Pedidos en
+   línea los **minutos para pagar** (default 15, contados desde que se hizo el pedido). El cliente ve
+   la cuenta regresiva en su seguimiento; el personal la ve en la tarjeta y, si vence sin pago,
+   puede **cancelar** el pedido con motivo (no se cancela solo: quien decide es el restaurante). No
+   se puede marcar "Listo" ni "Entregado" un pedido SINPE sin el pago verificado.

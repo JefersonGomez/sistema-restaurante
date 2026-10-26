@@ -83,6 +83,8 @@ export async function crear(slug: string, input: PedidoEnLineaInput) {
         costoEnvio: input.tipo === 'DOMICILIO' ? r.costoEnvio : 0,
         pagoElegido: input.pago.metodo,
         comprobanteSinpe: input.pago.comprobante || null,
+        pagarAntesDe:
+          input.pago.metodo === 'SINPE' ? new Date(Date.now() + r.minutosPagoSinpe * 60_000) : null,
         etapa: 'RECIBIDO',
         tokenSeguimiento: token,
       },
@@ -144,6 +146,12 @@ async function cuentaEnLinea(restauranteId: string, id: string) {
 }
 const etapaInvalida = (m: string) => new HttpError(409, 'TRANSICION_INVALIDA', m);
 
+// Con SINPE el pedido no entra a cocina hasta que el restaurante verifica el pago.
+const esperaSinpe = (c: { pagoElegido: string | null; pagoVerificado: boolean }) =>
+  c.pagoElegido === 'SINPE' && !c.pagoVerificado;
+const sinPago = () =>
+  new HttpError(409, 'PAGO_SIN_VERIFICAR', 'Primero hay que verificar el pago por SINPE');
+
 const detalle = async (id: string) =>
   aCuenta(await prisma.cuenta.findUniqueOrThrow({ where: { id }, include: incluirCuenta }));
 
@@ -165,7 +173,8 @@ export async function listar(restauranteId: string) {
   return filas.map(aCuenta);
 }
 
-// Aceptar: el pedido pasa a cocina y el cliente ve el tiempo estimado.
+// Aceptar: el pedido pasa a cocina (con SINPE, cuando se verifique el pago) y el cliente ve el
+// tiempo estimado.
 export async function aceptar(
   restauranteId: string,
   usuarioId: string,
@@ -175,13 +184,14 @@ export async function aceptar(
   const c = await cuentaEnLinea(restauranteId, id);
   if (c.etapa !== 'RECIBIDO') throw etapaInvalida('Este pedido ya se respondió');
   const pedido = c.pedidos.find((p) => p.estado === 'PENDIENTE');
-  if (pedido) await confirmarPedido(restauranteId, usuarioId, pedido.id);
+  if (pedido && !esperaSinpe(c)) await confirmarPedido(restauranteId, usuarioId, pedido.id);
   await prisma.cuenta.update({ where: { id }, data: { etapa: 'ACEPTADO', tiempoEstimadoMin } });
   avisar(restauranteId, 'enlinea:actualizado', { cuentaId: id });
   return detalle(id);
 }
 
-// Rechazar con motivo: el cliente lo ve en su seguimiento; la cuenta se cierra en cero.
+// Rechazar con motivo (sin aceptar, o aceptado que nunca pagó el SINPE): el cliente lo ve en su
+// seguimiento; la cuenta se cierra en cero.
 export async function rechazar(
   restauranteId: string,
   usuarioId: string,
@@ -189,7 +199,8 @@ export async function rechazar(
   motivo: string,
 ) {
   const c = await cuentaEnLinea(restauranteId, id);
-  if (c.etapa !== 'RECIBIDO') throw etapaInvalida('Solo se rechaza un pedido sin aceptar');
+  if (c.etapa !== 'RECIBIDO' && !(c.etapa === 'ACEPTADO' && esperaSinpe(c)))
+    throw etapaInvalida('Solo se rechaza un pedido sin aceptar o que espera el pago');
   for (const p of c.pedidos.filter((x) => x.estado === 'PENDIENTE'))
     await cancelarPedido(restauranteId, p.id, motivo);
   await prisma.cuenta.update({
@@ -218,6 +229,7 @@ export async function cambiarEtapa(
   etapa: 'LISTO' | 'EN_CAMINO',
 ) {
   const c = await cuentaEnLinea(restauranteId, id);
+  if (esperaSinpe(c)) throw sinPago();
   if (etapa === 'EN_CAMINO' && c.tipo !== 'DOMICILIO')
     throw etapaInvalida('Solo los pedidos a domicilio salen a entregar');
   const { count } = await prisma.cuenta.updateMany({
@@ -229,9 +241,16 @@ export async function cambiarEtapa(
   return detalle(id);
 }
 
-export async function verificarPago(restauranteId: string, id: string) {
-  await cuentaEnLinea(restauranteId, id);
-  await prisma.cuenta.update({ where: { id }, data: { pagoVerificado: true } });
+// Pago verificado: si el pedido ya estaba aceptado, recién ahora pasa a cocina.
+export async function verificarPago(restauranteId: string, usuarioId: string, id: string) {
+  const c = await cuentaEnLinea(restauranteId, id);
+  const { count } = await prisma.cuenta.updateMany({
+    where: { id, pagoVerificado: false },
+    data: { pagoVerificado: true },
+  });
+  const pedido = c.pedidos.find((p) => p.estado === 'PENDIENTE');
+  if (count && c.etapa === 'ACEPTADO' && pedido)
+    await confirmarPedido(restauranteId, usuarioId, pedido.id);
   avisar(restauranteId, 'enlinea:actualizado', { cuentaId: id });
   return detalle(id);
 }
@@ -246,6 +265,7 @@ export async function entregar(
   const c = await cuentaEnLinea(restauranteId, id);
   if (!['ACEPTADO', 'LISTO', 'EN_CAMINO'].includes(c.etapa ?? ''))
     throw etapaInvalida('Primero hay que aceptar el pedido');
+  if (esperaSinpe(c)) throw sinPago();
   await prisma.$transaction(async (tx) => {
     await bloquearCuenta(tx, id);
     await recalcularCuenta(tx, id);

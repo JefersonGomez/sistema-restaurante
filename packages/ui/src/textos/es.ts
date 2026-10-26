@@ -45,6 +45,12 @@ export const es = {
   sinpeInstrucciones: (monto: string, numero: string, nombre: string) =>
     `Envíe ${monto} al ${numero}${nombre ? ` (${nombre})` : ''} y anote el número de comprobante.`,
   comprobante: 'Número de comprobante (opcional)',
+  sinpePlazo: (min: number) =>
+    `Tiene ${min} minutos para pagar. Empezamos a preparar su pedido cuando confirmemos el pago.`,
+  sinpeQuedan: (min: number) =>
+    `Le quedan ${min} min para pagar. Empezamos a prepararlo cuando confirmemos el pago.`,
+  sinpeVencido: 'Se venció el tiempo para pagar. Si ya hizo el SINPE, llame al restaurante.',
+  etapaEsperandoPago: 'Aceptado: esperando su pago por SINPE',
   notaPedido: 'Nota para el restaurante (opcional)',
   envio: 'Envío',
   hacerPedido: (total: string) => `Hacer pedido · ${total}`,

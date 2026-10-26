@@ -35,7 +35,7 @@ export const etapa = async (req: ConId, res: Response) => {
   res.json(await service.cambiarEtapa(restauranteDe(req), req.params.id, req.body.etapa));
 };
 export const pagoVerificado = async (req: ConId, res: Response) => {
-  res.json(await service.verificarPago(restauranteDe(req), req.params.id));
+  res.json(await service.verificarPago(restauranteDe(req), req.usuario!.id, req.params.id));
 };
 export const entregar = async (req: ConId, res: Response) => {
   res.json(

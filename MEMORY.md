@@ -27,6 +27,7 @@ autorizó commit + push al cerrar cada sub-fase.
 | 5.2  | Cliente: /r/:slug, checkout y seguimiento                                                              | ✅     |
 | 5.3  | Personal: pantalla "En línea", avisos, etiquetas, Ajustes, QR del enlace                               | ✅     |
 | 5.4  | Reportes por canal, seed, README, tests                                                                | ✅     |
+| 5.5  | SINPE: tiempo para pagar; no entra a cocina sin el pago verificado (pedido del usuario 2026-10-25)     | ✅     |
 
 - 5.1: migración `20261023160000_pedidos_en_linea`: Cuenta.mesaId opcional (relación con onDelete
   Restrict; el índice parcial cuenta_unica_abierta sigue igual), Cuenta.tipo (MESA/RECOGER/DOMICILIO),
@@ -66,6 +67,13 @@ autorizó commit + push al cerrar cada sub-fase.
   pedidos en línea si nunca se configuraron) y el historial de 30 días trae ~15 % de pedidos en línea
   (sin mesa, sin servicio, envío a domicilio, ENTREGADO). README: recorrido de la Fase 5, endpoints,
   tests y fuera de alcance.
+- 5.5: migración `20261025100000_pago_sinpe` (Restaurante.minutosPagoSinpe default 15; Cuenta.pagarAntesDe,
+  se fija al crear el pedido SINPE: cambiar los minutos no toca pedidos ya hechos). API: aceptar no
+  confirma el pedido (no va a cocina) si es SINPE sin verificar; `pago-verificado` (updateMany idempotente)
+  lo confirma si ya estaba aceptado; LISTO/EN_CAMINO/entregar → 409 PAGO_SIN_VERIFICAR; rechazar se
+  permite también ACEPTADO esperando pago (botón "Cancelar" con motivo sugerido). No se cancela solo
+  al vencer: decide el restaurante (puede que el cliente sí pagó). Staff: cuenta regresiva en la tarjeta
+  (rojo al vencer); cliente: cuenta regresiva en checkout y seguimiento. Tests: 2 nuevos en enlinea.
 
 ## Plan de la Fase 4 (aprobado 2026-10-23) — spec: docs/especificacion-fase4.md
 

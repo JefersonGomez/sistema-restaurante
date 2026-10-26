@@ -94,6 +94,7 @@ export const aCuenta = (c: CuentaDB): CuentaDetalle => ({
           pagoElegido: c.pagoElegido,
           comprobanteSinpe: c.comprobanteSinpe,
           pagoVerificado: c.pagoVerificado,
+          pagarAntesDe: c.pagarAntesDe?.toISOString() ?? null,
           etapa: c.etapa ?? 'RECIBIDO',
           tiempoEstimadoMin: c.tiempoEstimadoMin,
           motivoRechazo: c.motivoRechazo,

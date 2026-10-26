@@ -104,6 +104,7 @@ model Restaurante {
   sinpeNumero              String?
   sinpeNombre              String?
   tiempoEstimadoMin        Int              @default(25)
+  minutosPagoSinpe         Int              @default(15) // tiempo del cliente para hacer el SINPE
   createdAt                DateTime         @default(now())
   updatedAt                DateTime         @updatedAt
 
@@ -323,6 +324,7 @@ model Cuenta {
   pagoElegido       MetodoPago? // lo que dijo el cliente (efectivo o SINPE)
   comprobanteSinpe  String?
   pagoVerificado    Boolean       @default(false)
+  pagarAntesDe      DateTime? // SINPE: límite para pagar; no entra a cocina sin el pago verificado
   etapa             EtapaEnLinea?
   tiempoEstimadoMin Int?
   motivoRechazo     String?

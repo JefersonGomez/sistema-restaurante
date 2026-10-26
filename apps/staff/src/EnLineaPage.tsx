@@ -36,12 +36,14 @@ function Tarjeta({
   tiempoDefecto,
   onAccion,
   ocupado,
+  ahora,
 }: {
   c: CuentaDetalle;
   precio: (n: number) => string;
   tiempoDefecto: number;
   onAccion: (ruta: string, body?: object) => void;
   ocupado: boolean;
+  ahora: number;
 }) {
   const d = c.enLinea!;
   const [tiempo, setTiempo] = useState(tiempoDefecto);
@@ -53,6 +55,10 @@ function Tarjeta({
   const domicilio = c.tipo === 'DOMICILIO';
   const nuevo = d.etapa === 'RECIBIDO';
   const terminado = d.etapa === 'ENTREGADO' || d.etapa === 'RECHAZADO';
+  // SINPE sin verificar: no pasa a cocina; minutos que le quedan al cliente para pagar.
+  const esperaPago = d.pagoElegido === 'SINPE' && !d.pagoVerificado && !terminado;
+  const quedan = d.pagarAntesDe ? Math.ceil((Date.parse(d.pagarAntesDe) - ahora) / 60_000) : null;
+  const vencido = esperaPago && quedan !== null && quedan <= 0;
 
   return (
     <article
@@ -126,9 +132,15 @@ function Tarjeta({
         )}
         {d.pagoElegido === 'SINPE' && (
           <span
-            className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold ${d.pagoVerificado ? 'bg-ok-soft text-ok' : 'bg-amber-soft text-amber-ink'}`}
+            className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold ${d.pagoVerificado ? 'bg-ok-soft text-ok' : vencido ? 'bg-danger-soft text-danger' : 'bg-amber-soft text-amber-ink'}`}
           >
-            {d.pagoVerificado ? 'verificado' : 'sin verificar'}
+            {d.pagoVerificado
+              ? 'verificado'
+              : vencido
+                ? 'tiempo para pagar vencido'
+                : esperaPago && quedan !== null
+                  ? `sin verificar · quedan ${quedan} min`
+                  : 'sin verificar'}
           </span>
         )}
         {d.costoEnvio > 0 && <span className="text-muted"> · envío {precio(d.costoEnvio)}</span>}
@@ -178,7 +190,9 @@ function Tarjeta({
         {!nuevo && !terminado && (
           <>
             <span className="mr-auto text-sm text-muted">
-              {ETAPA[d.etapa]} · cocina {p.listos}/{p.total} listos
+              {esperaPago
+                ? 'Aceptado · esperando el SINPE (no ha pasado a cocina)'
+                : `${ETAPA[d.etapa]} · cocina ${p.listos}/${p.total} listos`}
             </span>
             {d.pagoElegido === 'SINPE' && !d.pagoVerificado && (
               <button
@@ -190,7 +204,23 @@ function Tarjeta({
                 Pago verificado
               </button>
             )}
-            {d.etapa === 'ACEPTADO' && (
+            {esperaPago && (
+              <button
+                type="button"
+                disabled={ocupado}
+                onClick={() => {
+                  const motivo = pedirMotivo(
+                    '¿Cancelar el pedido? Escriba el motivo (lo verá el cliente)',
+                    'No recibimos el pago por SINPE',
+                  );
+                  if (motivo) onAccion(`${base}/rechazar`, { motivo });
+                }}
+                className={`${boton} ${vencido ? 'bg-danger text-on-accent' : 'bg-surface text-fg hover:bg-surface-2'}`}
+              >
+                <X className="size-4" aria-hidden /> Cancelar
+              </button>
+            )}
+            {d.etapa === 'ACEPTADO' && !esperaPago && (
               <button
                 type="button"
                 disabled={ocupado}
@@ -210,31 +240,33 @@ function Tarjeta({
                 <Bike className="size-4" aria-hidden /> Salió a entregar
               </button>
             )}
-            <span className="flex items-center gap-1">
-              <select
-                value={metodo}
-                onChange={(e) => setMetodo(e.target.value)}
-                aria-label="Método de pago"
-                className="min-h-11 rounded-md border border-line bg-surface px-2 text-sm"
-              >
-                {METODOS.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.texto}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                disabled={ocupado}
-                onClick={() =>
-                  confirm(`¿Entregado y cobrado (${precio(c.total)})?`) &&
-                  onAccion(`${base}/entregar`, { metodoPago: metodo })
-                }
-                className={`${boton} bg-ok text-on-accent`}
-              >
-                Entregado y cobrado
-              </button>
-            </span>
+            {!esperaPago && (
+              <span className="flex items-center gap-1">
+                <select
+                  value={metodo}
+                  onChange={(e) => setMetodo(e.target.value)}
+                  aria-label="Método de pago"
+                  className="min-h-11 rounded-md border border-line bg-surface px-2 text-sm"
+                >
+                  {METODOS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.texto}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={ocupado}
+                  onClick={() =>
+                    confirm(`¿Entregado y cobrado (${precio(c.total)})?`) &&
+                    onAccion(`${base}/entregar`, { metodoPago: metodo })
+                  }
+                  className={`${boton} bg-ok text-on-accent`}
+                >
+                  Entregado y cobrado
+                </button>
+              </span>
+            )}
           </>
         )}
         {terminado && (
@@ -257,6 +289,11 @@ export function EnLineaPage() {
   const [menu, setMenu] = useState<MenuPublico>();
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [ahora, setAhora] = useState(Date.now());
+  useEffect(() => {
+    const reloj = setInterval(() => setAhora(Date.now()), 15_000);
+    return () => clearInterval(reloj);
+  }, []);
   const slug = usuario?.restaurante?.slug ?? '';
 
   useEffect(() => {
@@ -327,6 +364,7 @@ export function EnLineaPage() {
           tiempoDefecto={tiempoDefecto}
           onAccion={accion}
           ocupado={ocupado}
+          ahora={ahora}
         />
       ))}
     </section>

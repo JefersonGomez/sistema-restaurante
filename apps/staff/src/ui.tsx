@@ -244,7 +244,7 @@ export function Campana() {
 }
 
 // Pide un texto (motivo de cancelación). null si se canceló el diálogo.
-export function pedirMotivo(pregunta: string) {
-  const m = prompt(pregunta)?.trim();
+export function pedirMotivo(pregunta: string, sugerido?: string) {
+  const m = prompt(pregunta, sugerido)?.trim();
   return m ? m.slice(0, 200) : null;
 }

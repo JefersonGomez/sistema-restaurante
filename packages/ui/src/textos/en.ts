@@ -44,6 +44,12 @@ export const en: Textos = {
   sinpeInstrucciones: (monto, numero, nombre) =>
     `Send ${monto} to ${numero}${nombre ? ` (${nombre})` : ''} and write down the receipt number.`,
   comprobante: 'Receipt number (optional)',
+  sinpePlazo: (min) =>
+    `You have ${min} minutes to pay. We start preparing your order once we confirm the payment.`,
+  sinpeQuedan: (min) =>
+    `${min} min left to pay. We start preparing it once we confirm the payment.`,
+  sinpeVencido: 'The time to pay has run out. If you already sent the SINPE, call the restaurant.',
+  etapaEsperandoPago: 'Accepted: waiting for your SINPE payment',
   notaPedido: 'Note for the restaurant (optional)',
   envio: 'Delivery fee',
   hacerPedido: (total) => `Place order · ${total}`,

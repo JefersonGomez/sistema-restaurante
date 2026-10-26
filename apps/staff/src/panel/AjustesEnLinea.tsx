@@ -16,6 +16,7 @@ export type ConfigEnLinea = {
   sinpeNumero: string | null;
   sinpeNombre: string | null;
   tiempoEstimadoMin: number;
+  minutosPagoSinpe: number;
   enlaceEnLinea: string;
 };
 
@@ -32,6 +33,7 @@ export function AjustesEnLinea({ r }: { r: ConfigEnLinea }) {
     sinpeNumero: r.sinpeNumero ?? '',
     sinpeNombre: r.sinpeNombre ?? '',
     tiempoEstimadoMin: String(r.tiempoEstimadoMin),
+    minutosPagoSinpe: String(r.minutosPagoSinpe),
   });
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [aviso, setAviso] = useState('');
@@ -65,6 +67,7 @@ export function AjustesEnLinea({ r }: { r: ConfigEnLinea }) {
       sinpeNumero: f.sinpeNumero.trim() || null,
       sinpeNombre: f.sinpeNombre.trim() || null,
       tiempoEstimadoMin: Number(f.tiempoEstimadoMin),
+      minutosPagoSinpe: Number(f.minutosPagoSinpe),
     });
     if (!datos.success) return setErrores(erroresDe(datos.error));
     guardar.mutate(datos.data);
@@ -134,7 +137,7 @@ export function AjustesEnLinea({ r }: { r: ConfigEnLinea }) {
               error={errores.zonaEntrega}
             />
           )}
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
             <Campo
               etiqueta="SINPE Móvil: número (opcional)"
               type="tel"
@@ -149,6 +152,16 @@ export function AjustesEnLinea({ r }: { r: ConfigEnLinea }) {
               value={f.sinpeNombre}
               onChange={(e) => poner('sinpeNombre', e.target.value)}
               error={errores.sinpeNombre}
+            />
+            <Campo
+              etiqueta="Minutos para pagar el SINPE"
+              type="number"
+              min={5}
+              max={120}
+              value={f.minutosPagoSinpe}
+              onChange={(e) => poner('minutosPagoSinpe', e.target.value)}
+              error={errores.minutosPagoSinpe}
+              ayuda="El pedido no pasa a cocina hasta que verifique el pago"
             />
           </div>
 

@@ -140,6 +140,57 @@ describe('pedidos en línea', () => {
     expect(fin.body.total).toBe(sinEnvio.total + 100000);
   });
 
+  it('SINPE: tiene tiempo para pagar y no entra a cocina hasta verificar el pago', async () => {
+    await prisma.restaurante.update({
+      where: { id: restauranteId },
+      data: { minutosPagoSinpe: 10 },
+    });
+    const antes = Date.now();
+    const r = await pedir({ pago: { metodo: 'SINPE' } });
+    const { cuenta } = await seguir(r.body.token);
+    const limite = Date.parse(cuenta.enLinea!.pagarAntesDe!) - antes;
+    expect(limite).toBeGreaterThan(9 * 60_000);
+    expect(limite).toBeLessThanOrEqual(10 * 60_000 + 5_000);
+
+    const cocina = await tokenDe('cocina@resto-a.test');
+    const bar = () =>
+      request(app)
+        .get(`/operacion/estaciones/${m.estaciones.bar}/items`)
+        .set('Authorization', `Bearer ${cocina}`);
+    await comoCaja().post(`/enlinea/${cuenta.id}/aceptar`).send({ tiempoEstimadoMin: 20 });
+    expect((await bar()).body).toEqual([]); // aceptado, pero esperando el SINPE
+    const listo = await comoCaja().post(`/enlinea/${cuenta.id}/etapa`).send({ etapa: 'LISTO' });
+    expect(listo.body.error.code).toBe('PAGO_SIN_VERIFICAR');
+    const entregar = await comoCaja()
+      .post(`/enlinea/${cuenta.id}/entregar`)
+      .send({ metodoPago: 'SINPE' });
+    expect(entregar.status).toBe(409);
+
+    await comoCaja().post(`/enlinea/${cuenta.id}/pago-verificado`);
+    await comoCaja().post(`/enlinea/${cuenta.id}/pago-verificado`); // doble toque: no duplica
+    expect((await bar()).body).toHaveLength(1);
+    // Ya en cocina con el pago hecho: no se rechaza.
+    expect(
+      (await comoCaja().post(`/enlinea/${cuenta.id}/rechazar`).send({ motivo: 'x' })).status,
+    ).toBe(409);
+    // Efectivo no tiene límite.
+    expect((await seguir((await pedir()).body.token)).cuenta.enLinea?.pagarAntesDe).toBeNull();
+  });
+
+  it('SINPE aceptado que nunca se pagó: el restaurante lo cancela con motivo', async () => {
+    const r = await pedir({ pago: { metodo: 'SINPE' } });
+    const { cuenta } = await seguir(r.body.token);
+    await comoCaja().post(`/enlinea/${cuenta.id}/aceptar`).send({ tiempoEstimadoMin: 20 });
+    const no = await comoCaja()
+      .post(`/enlinea/${cuenta.id}/rechazar`)
+      .send({ motivo: 'No recibimos el SINPE' });
+    expect(no.body.enLinea).toMatchObject({
+      etapa: 'RECHAZADO',
+      motivoRechazo: 'No recibimos el SINPE',
+    });
+    expect(no.body.estado).toBe('CERRADA');
+  });
+
   it('rechazar con motivo: el cliente lo ve y ya no se puede aceptar', async () => {
     const r = await pedir();
     const { cuenta } = await seguir(r.body.token);

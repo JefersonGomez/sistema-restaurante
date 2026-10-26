@@ -116,6 +116,7 @@ export const restauranteConfigSchema = z
     sinpeNumero: telefonoSchema.nullable(),
     sinpeNombre: z.string().trim().max(80).nullable(),
     tiempoEstimadoMin: z.number().int().min(5).max(240),
+    minutosPagoSinpe: z.number().int().min(5).max(120),
   })
   .partial();
 export type RestauranteConfigInput = z.infer<typeof restauranteConfigSchema>;
@@ -372,6 +373,7 @@ export type MenuPublico = {
       sinpeNumero: string | null;
       sinpeNombre: string | null;
       tiempoEstimadoMin: number;
+      minutosPagoSinpe: number;
     };
   };
   promocion: {
@@ -556,6 +558,7 @@ export type DatosEnLinea = {
   pagoElegido: MetodoPago | null;
   comprobanteSinpe: string | null;
   pagoVerificado: boolean;
+  pagarAntesDe: string | null; // SINPE: hasta cuándo puede pagar el cliente
   etapa: EtapaEnLinea;
   tiempoEstimadoMin: number | null;
   motivoRechazo: string | null;

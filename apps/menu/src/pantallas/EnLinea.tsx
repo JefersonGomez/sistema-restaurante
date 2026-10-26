@@ -398,7 +398,8 @@ function PedidoEnLinea({ menu, slug }: { menu: MenuPublico; slug: string }) {
                     precio(totales.total),
                     r.enLinea.sinpeNumero,
                     r.enLinea.sinpeNombre ?? '',
-                  )}
+                  )}{' '}
+                  {t.sinpePlazo(r.enLinea.minutosPagoSinpe)}
                 </p>
                 {campo('comprobante', t.comprobante, { inputMode: 'numeric', maxLength: 40 })}
               </>
