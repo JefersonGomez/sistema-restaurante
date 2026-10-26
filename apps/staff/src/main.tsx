@@ -85,7 +85,6 @@ function App() {
             </Solo>
           }
         />
-        <Route path="/dueno" element={<Navigate to="/panel" replace />} />
         <Route
           path="/panel"
           element={

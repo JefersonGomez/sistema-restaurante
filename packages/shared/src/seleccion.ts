@@ -17,9 +17,6 @@ export const grupoCompleto = (g: GrupoSeleccion, elegidos: string[]) => {
   return n >= minimoEfectivo(g) && n <= g.maximo;
 };
 
-export const seleccionValida = (grupos: GrupoSeleccion[], elegidos: string[]) =>
-  grupos.every((g) => grupoCompleto(g, elegidos));
-
 // Precio estimado de una unidad (el real lo calcula el servidor).
 export const precioConModificadores = (
   precio: number,

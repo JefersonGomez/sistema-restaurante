@@ -13,6 +13,7 @@
   próxima fase. Lo que quedó fuera de alcance está en el README.
 - **Fase 4 completa** (4.1–4.8, 2026-10-23). Pendiente: prueba completa del usuario.
 - **Fase 5 completa** (5.1–5.4, 2026-10-23): pedidos en línea. Pendiente: prueba del usuario.
+- **Limpieza** (2026-10-25): revisado código muerto y dependencias; se quitaron `seleccionValida` y `GrupoEditorInput` (shared, sin uso) y la redirección vieja `/dueno` del staff. El resto de dependencias se usan (`@prisma/client` lo pide el cliente generado). `/admin` (SUPERADMIN) sigue como "Próximamente".
 - Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
 
 ## Plan de la Fase 5 (aprobado 2026-10-23) — spec: docs/especificacion-fase5.md

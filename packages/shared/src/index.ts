@@ -292,7 +292,6 @@ export const grupoEditorSchema = z
       });
   });
 export const guardarGruposSchema = z.object({ grupos: z.array(grupoEditorSchema).max(15) });
-export type GrupoEditorInput = z.infer<typeof grupoEditorSchema>;
 export type GuardarGruposInput = z.infer<typeof guardarGruposSchema>;
 
 // --- Mesas ---
