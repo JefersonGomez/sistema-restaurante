@@ -5,16 +5,19 @@
 
 ## Estado actual
 
-- **Fecha última actualización:** 2026-10-23
+- **Fecha última actualización:** 2026-10-29
 - **Fase 1 completa y subida** (commit `a202fd9`).
 - **Fase 2 completa y subida** (commit `a0317b7`).
 - **Frontend del comensal completo y subido** (commit `5869078`, 2026-10-21).
 - **Fase 3 completa** (3.1–3.10, 2026-10-23). Pendiente: revisión del usuario y la spec de la
   próxima fase. Lo que quedó fuera de alcance está en el README.
-- **Fase 4 completa** (4.1–4.8, 2026-10-23). Pendiente: prueba completa del usuario.
-- **Fase 5 completa** (5.1–5.4, 2026-10-23): pedidos en línea. Pendiente: prueba del usuario.
+- **Fase 4 completa** (4.1–4.10, 2026-10-23). Pendiente: prueba completa del usuario.
+- **Fase 5 completa** (5.1–5.5, 2026-10-25; commit `3856406`): pedidos en línea + tiempo para pagar el
+  SINPE. Pendiente: prueba del usuario.
 - **Limpieza** (2026-10-25): revisado código muerto y dependencias; se quitaron `seleccionValida` y `GrupoEditorInput` (shared, sin uso) y la redirección vieja `/dueno` del staff. El resto de dependencias se usan (`@prisma/client` lo pide el cliente generado). `/admin` (SUPERADMIN) sigue como "Próximamente".
-- Raíz del monorepo: `F:\sistema-restaurante` (equivale a `menu-qr/` de la spec).
+- **Backlog de mejoras:** `docs/mejoras-pendientes.md` (ideas del usuario, 2026-10-26; nada programado
+  aún, revisado 2026-10-29). Cada bloque se convierte en spec de fase y se aprueba antes de empezar.
+- Raíz del monorepo: `C:\Users\gomes\OneDrive\Documentos\sistema-restaurante` (equivale a `menu-qr/` de la spec).
 
 ## Plan de la Fase 5 (aprobado 2026-10-23) — spec: docs/especificacion-fase5.md
 
@@ -200,8 +203,8 @@ Spec: `docs/especificacion-fase3.md`. **Un commit por sub-fase**, validado por e
   `fotoUrl` (960) y `fotoMiniUrl` (320, migración `20261022130000_foto_mini`). Se borra solo lo que
   está bajo `restaurantes/{restauranteId}/`. /uploads con `Cross-Origin-Resource-Policy: cross-origin`
   (helmet pone same-origin y el menú está en otro origen). Tests usan UPLOADS_DIR temporal.
-  sharp prebuilt NO decodifica HEIC/HEVC → 415 "Súbala en JPG o PNG". Pendiente 3.5: al duplicar un
-  plato NO copiar las URLs de foto (borrar una borraría la del otro).
+  sharp prebuilt NO decodifica HEIC/HEVC → 415 "Súbala en JPG o PNG". Resuelto (revisado 2026-10-29): al duplicar un
+  plato NO se copian las URLs de foto (borrar una borraría la del otro).
 - 3.3: migración `20261022140000_horarios_promocion` (pasa el horario único a 7 turnos y
   Plato.destacado → Restaurante.platoDestacadoId, y borra los campos viejos). `estaAbierto(turnos, ahora,
 zona, cerradoManual)` con Intl (sin librerías). Cerrado → 423 (antes 409) solo para CLIENTE; el MESERO
