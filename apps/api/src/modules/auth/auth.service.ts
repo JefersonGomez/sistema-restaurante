@@ -9,6 +9,7 @@ import {
   type UsuarioToken,
 } from '../../lib/tokens';
 import { HttpError } from '../../middlewares/errorHandler';
+import { finPrueba } from '../restaurantes/restaurantes.service';
 
 // Se compara contra este hash cuando el email no existe, para no revelar qué emails existen.
 const HASH_RELLENO = bcrypt.hashSync('relleno', 10);
@@ -20,7 +21,7 @@ const usuarioPublico = {
   rol: true,
   restauranteId: true,
   debeCambiarPassword: true,
-  restaurante: { select: { id: true, nombre: true, slug: true } },
+  restaurante: { select: { id: true, nombre: true, slug: true, plan: true } },
 } as const;
 
 const conRestaurante = { restaurante: { select: { activo: true } } } as const;
@@ -137,6 +138,7 @@ export async function registrar({ restaurante, dueno }: RegistroInput) {
     data: {
       nombre: restaurante.nombre,
       slug: await slugLibre(restaurante.nombre),
+      planVenceEn: finPrueba(), // plan Completo con el mes de prueba
       telefono: restaurante.telefono,
       direccion: restaurante.direccion || null,
       usuarios: {

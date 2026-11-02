@@ -2,7 +2,8 @@ import { LogOut, Menu as MenuIcono, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
-import { BotonSonido, Campana, IconoSeccion } from '../ui';
+import { BotonSonido, Campana, IconoSeccion, verSeccion } from '../ui';
+import { AvisoPlan } from './AvisoPlan';
 
 type Enlace = { a: string; texto: string; fin?: boolean };
 
@@ -35,16 +36,19 @@ const claseEnlace = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 function Lista({ enlaces, onIr }: { enlaces: Enlace[]; onIr?: () => void }) {
+  const { usuario } = useAuth();
   return (
     <ul className="space-y-1">
-      {enlaces.map(({ a, texto: nombre, fin }) => (
-        <li key={a}>
-          <NavLink to={a} end={fin} className={claseEnlace} onClick={onIr} title={nombre}>
-            <IconoSeccion ruta={a} />
-            <span className={texto}>{nombre}</span>
-          </NavLink>
-        </li>
-      ))}
+      {enlaces
+        .filter((e) => verSeccion(usuario?.restaurante?.plan, e.a))
+        .map(({ a, texto: nombre, fin }) => (
+          <li key={a}>
+            <NavLink to={a} end={fin} className={claseEnlace} onClick={onIr} title={nombre}>
+              <IconoSeccion ruta={a} />
+              <span className={texto}>{nombre}</span>
+            </NavLink>
+          </li>
+        ))}
     </ul>
   );
 }
@@ -130,6 +134,7 @@ export function PanelLayout() {
             <BotonSonido />
             <Campana />
           </div>
+          <AvisoPlan />
           <div key={pathname} className="anim-entrar">
             <Outlet />
           </div>

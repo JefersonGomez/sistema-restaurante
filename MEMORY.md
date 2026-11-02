@@ -17,10 +17,48 @@
 - **Limpieza** (2026-10-25): revisado código muerto y dependencias; se quitaron `seleccionValida` y `GrupoEditorInput` (shared, sin uso) y la redirección vieja `/dueno` del staff. El resto de dependencias se usan (`@prisma/client` lo pide el cliente generado). `/admin` (SUPERADMIN) sigue como "Próximamente".
 - **Fase 6 completa** (diseño, commit `44fa8f5`, 2026-11-01). Pendiente: prueba del usuario.
 - **Fase 7 completa** (domicilio: ubicación y repartidores, commit `e1fb043`, 2026-11-01). Pendiente: prueba del usuario.
-- **Fase 8 completa** (clientes: lista, cuenta, sellos, WhatsApp, 2026-11-01): 8.1–8.3 hechos, 194 tests verdes. Sin commit: falta validación del usuario.
+- **Fase 8 completa** (clientes: lista, cuenta, sellos, WhatsApp; commit `d0bf7c1`, 2026-11-01). Pendiente: prueba del usuario.
+- **Fase 9 completa** (superadmin, planes, recuperar contraseña, 2026-11-01): 9.1–9.4 hechos, 205 tests verdes. Sin commit: falta validación del usuario. Siguiente: despliegue en el VPS del usuario (faltan datos del VPS y el dominio) y la landing de planes (diseño del usuario).
 - **Backlog de mejoras:** `docs/mejoras-pendientes.md` (ideas del usuario, 2026-10-26; nada programado
   aún, revisado 2026-10-29). Cada bloque se convierte en spec de fase y se aprueba antes de empezar.
 - Raíz del monorepo: `C:\Users\gomes\OneDrive\Documentos\sistema-restaurante` (equivale a `menu-qr/` de la spec).
+
+## Plan de la Fase 9 (aprobado 2026-11-01) — spec: docs/especificacion-fase9.md
+
+Decisiones: superadmin = el usuario (script `scripts/superadmin.ts`, credenciales por variables de
+entorno, nunca en el repo); registro abierto con mes gratis; sin "entrar como"; planes Básico
+₡9 900 y Completo ₡19 900 (anual = 10 meses); cobro a mano; correos con Resend por fetch; base de
+datos en Docker en el VPS con respaldos fuera (respuesta al usuario: no hace falta Supabase).
+
+| Paso | Qué                                                                           | Estado |
+| ---- | ----------------------------------------------------------------------------- | ------ |
+| 9.1  | Planes y suscripción (API): enum Plan, vencimiento, pagos, funciones por plan | ✅     |
+| 9.2  | Pantallas: /admin, aviso del plan al dueño, secciones según plan              | ✅     |
+| 9.3  | Recuperar contraseña por correo (Resend) para personal y clientes             | ✅     |
+| 9.4  | Seed, README, .env.example, verificación                                      | ✅     |
+
+- 9.1: migración `20261102050000_suscripciones` escrita a mano (Prisma no la genera en modo no
+  interactivo porque plan String→enum borra la columna): enum Plan (BASICO/COMPLETO), los existentes
+  quedan COMPLETO con 30 días de prueba; Restaurante.planVenceEn; PagoSuscripcion (MetodoCobro);
+  RecuperacionPassword. `packages/shared/src/planes.ts`: PLANES, montoSugerido, estadoSuscripcion
+  (SUSPENDIDO/PRUEBA = sin pagos/AL_DIA/POR_VENCER ≤7 días/VENCIDO), nuevoVencimiento (desde el
+  mayor entre hoy y el vencimiento), incluyeEnLinea. Módulo `admin` (/admin: resumen, restaurantes,
+  detalle, pagos con SELECT … FOR UPDATE, restablecer-dueno); el viejo adminRouter salió de
+  restaurantes. Middleware `planCompleto` en /enlinea, /repartos y /clientes; el menú público y
+  crear pedido en línea respetan el plan. Registro y crear restaurante fijan `finPrueba()`.
+  GET /restaurante/suscripcion; `usuario.restaurante.plan` en la sesión. Vencido NO suspende solo.
+- 9.2: `AdminPage.tsx` (resumen, búsqueda, filtro, detalle con registrar pago, pagos, suspender,
+  contraseña temporal del dueño). `panel/AvisoPlan.tsx` arriba del panel del dueño (prueba, por
+  vencer, vencido; botón a SOPORTE_WHATSAPP si existe). `verSeccion` en ui.tsx esconde En línea y
+  Clientes con plan Básico; Ajustes muestra un aviso en vez de los ajustes en línea.
+- 9.3: `lib/correo.ts` (Resend por fetch; sin clave → consola; en tests → `correosEnviados`),
+  `modules/auth/recuperacion.service.ts` (token opaco hasheado, 1 h, un uso con updateMany; cambia
+  la contraseña y cierra sesiones). Rutas /auth/olvide, /auth/restablecer y
+  /public/:slug/clientes/olvide, /restablecer (limiteOlvide 5/15 min, limiteRestablecer 10 fallidos).
+  Staff: /olvide y /restablecer (`RecuperarPage.tsx`), enlace en el login. Menú: "¿Olvidó su
+  contraseña?" en Entrar y /r/:slug/restablecer.
+- 9.4: seed: la soda demo con un pago anual del Completo. Variables nuevas: STAFF_PUBLIC_URL,
+  RESEND_API_KEY, CORREO_REMITENTE, SOPORTE_WHATSAPP (se agregó STAFF_PUBLIC_URL al .env local).
 
 ## Plan de la Fase 8 (aprobado 2026-11-01) — spec: docs/especificacion-fase8.md
 

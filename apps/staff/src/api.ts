@@ -62,6 +62,22 @@ export async function registro(datos: unknown) {
   return r.usuario;
 }
 
+// Olvidé mi contraseña: pedir el enlace y crear la nueva con el token del correo.
+export async function pedirEnlace(email: string) {
+  const res = await post('/auth/olvide', { email });
+  if (!res.ok) {
+    const r = await res.json().catch(() => null);
+    throw new ErrorApi(res.status, r?.error?.code, r?.error?.message ?? 'Error');
+  }
+}
+export async function restablecerPassword(token: string, password: string) {
+  const res = await post('/auth/restablecer', { token, password });
+  if (!res.ok) {
+    const r = await res.json().catch(() => null);
+    throw new ErrorApi(res.status, r?.error?.code, r?.error?.message ?? 'Error');
+  }
+}
+
 export async function logout() {
   await post('/auth/logout').catch(() => {});
   fijarToken(null);

@@ -10,13 +10,14 @@ import {
 } from '@menu-qr/shared';
 import { autenticar } from '../../middlewares/auth';
 import { requireRole } from '../../middlewares/roles';
+import { planCompleto } from '../../middlewares/plan';
 import { tenant } from '../../middlewares/tenant';
 import { validate } from '../../middlewares/validate';
 import * as c from './enlinea.controller';
 
 // /enlinea — pedidos para recoger y a domicilio (dueño, caja y mesero)
 export const enLineaRouter = Router();
-enLineaRouter.use(autenticar, requireRole('DUENO', 'CAJA', 'MESERO'), tenant);
+enLineaRouter.use(autenticar, requireRole('DUENO', 'CAJA', 'MESERO'), tenant, planCompleto);
 const conId = validate({ params: idParamSchema });
 enLineaRouter.get('/', c.listar);
 enLineaRouter.post(
@@ -58,7 +59,7 @@ enLineaRouter.post(
 
 // /repartos — el repartidor ve y mueve solo sus entregas
 export const repartosRouter = Router();
-repartosRouter.use(autenticar, requireRole('REPARTIDOR'), tenant);
+repartosRouter.use(autenticar, requireRole('REPARTIDOR'), tenant, planCompleto);
 repartosRouter.get('/', c.misRepartos);
 repartosRouter.post('/:id/salir', conId, c.salir);
 repartosRouter.post(

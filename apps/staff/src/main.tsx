@@ -26,9 +26,10 @@ import { ReportesPage } from './panel/reportes/ReportesPage';
 import { PersonalizarPage } from './panel/PersonalizarPage';
 import { TabletPage } from './TabletPage';
 import { RegistroPage } from './RegistroPage';
+import { AdminPage } from './AdminPage';
+import { OlvidePage, RestablecerPage } from './RecuperarPage';
 import { RepartosPage } from './RepartosPage';
 import { tokenTablet } from './api';
-import { Encabezado } from './ui';
 import './index.css';
 
 // Pantalla de inicio por rol.
@@ -48,15 +49,6 @@ function Solo({ roles, children }: { roles: Rol[]; children: ReactNode }) {
   return <div className="anim-entrar">{children}</div>;
 }
 
-function Proximamente({ titulo }: { titulo: string }) {
-  return (
-    <div className="min-h-dvh">
-      <Encabezado titulo={titulo} />
-      <main className="min-h-dvh bg-bg p-6 text-muted">Próximamente.</main>
-    </div>
-  );
-}
-
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 15_000 } } });
 
 function App() {
@@ -70,6 +62,8 @@ function App() {
       <AvisosGlobales />
       <Routes>
         <Route path="/login" element={usuario ? <Navigate to={inicio} replace /> : <LoginPage />} />
+        <Route path="/olvide" element={<OlvidePage />} />
+        <Route path="/restablecer" element={<RestablecerPage />} />
         <Route
           path="/tablet"
           element={usuario ? <Navigate to={inicio} replace /> : <TabletPage />}
@@ -84,7 +78,7 @@ function App() {
           path="/admin"
           element={
             <Solo roles={['SUPERADMIN']}>
-              <Proximamente titulo="Administración de restaurantes" />
+              <AdminPage />
             </Solo>
           }
         />

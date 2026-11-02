@@ -27,7 +27,7 @@ import { avisar } from '../estado/avisos';
 import { useCarrito } from '../estado/carrito';
 import { usePerfilCliente } from '../estado/cuentaCliente';
 import { useIdioma, useTextos } from '../estado/idioma';
-import { CuentaCliente } from './CuentaCliente';
+import { CuentaCliente, RestablecerCliente } from './CuentaCliente';
 
 type Restaurante = MenuPublico['restaurante'];
 const TELEFONO = /^[0-9 +()-]{8,20}$/;
@@ -80,6 +80,7 @@ export function RutaEnLinea() {
         <Route index element={<MenuEnLinea menu={menu} slug={slug} />} />
         <Route path="pedido" element={<PedidoEnLinea menu={menu} slug={slug} />} />
         <Route path="cuenta" element={<CuentaCliente menu={menu} slug={slug} />} />
+        <Route path="restablecer" element={<RestablecerCliente slug={slug} />} />
       </Routes>
       <Toast />
     </>

@@ -27,6 +27,107 @@ function Campo({
   );
 }
 
+// "¿Olvidó su contraseña?": manda el enlace al correo (la respuesta es la misma exista o no).
+function Olvide({ slug, email }: { slug: string; email: string }) {
+  const t = useTextos();
+  const [abierto, setAbierto] = useState(false);
+  const [correo, setCorreo] = useState(email);
+  const [enviado, setEnviado] = useState(false);
+  if (!abierto)
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setCorreo(email);
+          setAbierto(true);
+        }}
+        className="text-center text-sm text-muted underline"
+      >
+        {t.clienteOlvido}
+      </button>
+    );
+  if (enviado)
+    return <p className="rounded-md bg-ok-soft p-3 text-sm text-ok">{t.clienteEnlaceEnviado}</p>;
+  return (
+    <div className="flex flex-col gap-2 rounded-md bg-surface p-3">
+      <Campo
+        etiqueta={t.clienteCorreo}
+        type="email"
+        autoComplete="email"
+        value={correo}
+        onChange={(e) => setCorreo(e.target.value)}
+      />
+      <button
+        type="button"
+        disabled={!correo.includes('@')}
+        onClick={async () => {
+          await api.olvideCliente(slug, correo.trim()).catch(() => {});
+          setEnviado(true);
+        }}
+        className="flex h-11 items-center justify-center rounded-md bg-app font-semibold disabled:opacity-50"
+      >
+        {t.clienteEnviarEnlace}
+      </button>
+    </div>
+  );
+}
+
+// /r/:slug/restablecer?token=…: contraseña nueva con el enlace del correo.
+export function RestablecerCliente({ slug }: { slug: string }) {
+  const t = useTextos();
+  const navegar = useNavigate();
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [listo, setListo] = useState(false);
+  const token = new URLSearchParams(location.search).get('token') ?? '';
+
+  const enviar = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.restablecerCliente(slug, token, password);
+      setListo(true);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+  return (
+    <Main>
+      <BarraTitulo titulo={t.clienteContrasenaNueva} onVolver={() => navegar(`/r/${slug}`)} />
+      <div className="mx-auto w-full max-w-md">
+        {listo ? (
+          <div className="flex flex-col gap-4">
+            <p className="rounded-md bg-ok-soft p-3 text-sm text-ok">{t.clienteContrasenaLista}</p>
+            <Link to={`/r/${slug}/cuenta`} className={botonPrincipal}>
+              {t.clienteEntrar}
+            </Link>
+          </div>
+        ) : (
+          <form onSubmit={enviar} className="flex flex-col gap-4">
+            <Campo
+              etiqueta={t.clienteContrasenaNueva}
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+              placeholder={t.clienteContrasenaMin}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            {error && (
+              <p role="alert" className="text-sm text-danger">
+                {error}
+              </p>
+            )}
+            <button type="submit" disabled={!token} className={botonPrincipal}>
+              {t.clienteGuardarContrasena}
+            </button>
+          </form>
+        )}
+      </div>
+    </Main>
+  );
+}
+
 // Entrar o crear cuenta.
 function Acceso({ slug, onSesion }: { slug: string; onSesion: (token: string) => void }) {
   const t = useTextos();
@@ -117,7 +218,7 @@ function Acceso({ slug, onSesion }: { slug: string; onSesion: (token: string) =>
       <button type="submit" disabled={enviando} className={botonPrincipal}>
         {modo === 'entrar' ? t.clienteEntrar : t.clienteCrear}
       </button>
-      {modo === 'entrar' && <p className="text-center text-xs text-muted">{t.clienteOlvido}</p>}
+      {modo === 'entrar' && <Olvide slug={slug} email={f.email} />}
     </form>
   );
 }

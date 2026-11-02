@@ -73,8 +73,8 @@ describe('superadmin', () => {
     const id = crear.body.id;
     const patch = await como(superadmin)
       .patch(`/admin/restaurantes/${id}`)
-      .send({ activo: false, plan: 'pro' });
-    expect(patch.body).toMatchObject({ activo: false, plan: 'pro' });
+      .send({ activo: false, plan: 'BASICO' });
+    expect(patch.body).toMatchObject({ plan: 'BASICO', estado: 'SUSPENDIDO' });
 
     // El dueño de un restaurante desactivado ya no puede entrar.
     const login = await request(app)
@@ -90,7 +90,7 @@ describe('dueño', () => {
       .patch('/restaurante')
       .send({ colorAcento: '#123456', porcentajeIva: 13, slug: 'otro', plan: 'gratis' });
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ colorAcento: '#123456', slug: 'resto-a', plan: 'basico' });
+    expect(res.body).toMatchObject({ colorAcento: '#123456', slug: 'resto-a', plan: 'COMPLETO' });
     expect((await como(dueno).patch('/restaurante').send({ colorAcento: 'rojo' })).status).toBe(
       400,
     );

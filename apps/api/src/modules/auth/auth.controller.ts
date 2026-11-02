@@ -1,6 +1,7 @@
 import type { CookieOptions, Request, Response } from 'express';
 import { env } from '../../lib/env';
 import * as service from './auth.service';
+import * as recuperacion from './recuperacion.service';
 
 const COOKIE = 'refreshToken';
 const opcionesCookie: CookieOptions = {
@@ -42,3 +43,13 @@ export async function cambiarPassword(req: Request, res: Response) {
 export async function me(req: Request, res: Response) {
   res.json({ usuario: await service.yo(req.usuario!.id) });
 }
+
+// Siempre 204, exista o no el correo.
+export const olvide = async (req: Request, res: Response) => {
+  await recuperacion.olvidePersonal(req.body.email);
+  res.status(204).end();
+};
+export const restablecer = async (req: Request, res: Response) => {
+  await recuperacion.restablecerPersonal(req.body.token, req.body.password);
+  res.status(204).end();
+};

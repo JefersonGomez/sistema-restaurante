@@ -55,7 +55,12 @@ export const en: Textos = {
   clienteContrasena: 'Password',
   clienteContrasenaMin: 'At least 8 characters',
   clienteSinCuenta: 'Continue without an account',
-  clienteOlvido: 'Forgot your password? You can order without an account meanwhile.',
+  clienteOlvido: 'Forgot your password?',
+  clienteEnviarEnlace: 'Send link',
+  clienteEnlaceEnviado:
+    'If that email has an account, a link will arrive in a few minutes (valid for 1 hour). Check your spam folder too.',
+  clienteGuardarContrasena: 'Save password',
+  clienteContrasenaLista: 'Done: sign in with your new password.',
   clienteHola: (n) => `Hi, ${n}`,
   clienteGuardar: 'Save details',
   clienteGuardado: 'Details saved',

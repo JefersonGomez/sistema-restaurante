@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { esEnlaceDeMaps } from './mapa';
 import { acentoLegible } from './color';
 import { HORA_REGEX, zonaHorariaValida } from './horario';
+import type { EstadoSuscripcion } from './planes';
 
 // Mensajes de validación en español (API y formularios del panel).
 z.config(z.locales.es());
@@ -10,6 +11,8 @@ export const rolSchema = z.enum(['SUPERADMIN', 'DUENO', 'MESERO', 'COCINA', 'CAJ
 export type Rol = z.infer<typeof rolSchema>;
 
 export const monedaSchema = z.enum(['CRC', 'USD']);
+export const planSchema = z.enum(['BASICO', 'COMPLETO']);
+export type Plan = z.infer<typeof planSchema>;
 export type Moneda = z.infer<typeof monedaSchema>;
 
 export const idiomaSchema = z.enum(['es', 'en']);
@@ -136,7 +139,7 @@ export const crearRestauranteSchema = z.object({
       .max(60)
       .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Solo minúsculas, números y guiones'),
     moneda: monedaSchema.optional(),
-    plan: texto(40).optional(),
+    plan: planSchema.optional(),
   }),
   dueno: z.object({ nombre: texto(), email, password }),
 });
@@ -154,7 +157,7 @@ export const registroSchema = z.object({
 export type RegistroInput = z.infer<typeof registroSchema>;
 
 export const adminRestaurantePatchSchema = z
-  .object({ activo: z.boolean(), plan: texto(40) })
+  .object({ activo: z.boolean(), plan: planSchema })
   .partial();
 export type AdminRestaurantePatchInput = z.infer<typeof adminRestaurantePatchSchema>;
 
@@ -757,3 +760,61 @@ export type ClienteFila = {
   registrado: boolean;
   sellos: number | null; // null si la fidelidad está apagada
 };
+export * from './planes';
+
+// --- Superadmin y suscripciones (Fase 9) ---
+
+export const metodoCobroSchema = z.enum(['SINPE', 'TRANSFERENCIA', 'EFECTIVO', 'OTRO']);
+export const registrarPagoSchema = z.object({
+  plan: planSchema,
+  meses: z.number().int().min(1).max(24),
+  monto: centimos,
+  metodo: metodoCobroSchema,
+  referencia: z.string().trim().max(80).optional(),
+});
+export type RegistrarPagoInput = z.infer<typeof registrarPagoSchema>;
+export const buscarRestaurantesSchema = z.object({
+  buscar: z.string().trim().max(80).optional(),
+  estado: z.enum(['SUSPENDIDO', 'PRUEBA', 'AL_DIA', 'POR_VENCER', 'VENCIDO']).optional(),
+});
+
+export type AdminResumen = {
+  restaurantes: number;
+  porEstado: Record<EstadoSuscripcion, number>;
+  ingresosMes: number; // pagos registrados este mes (céntimos)
+  mensualRecurrente: number; // precio mensual de los que están al día o por vencer
+};
+export type AdminRestauranteFila = {
+  id: string;
+  nombre: string;
+  slug: string;
+  telefono: string | null;
+  dueno: { nombre: string; email: string } | null;
+  plan: Plan;
+  planVenceEn: string | null;
+  estado: EstadoSuscripcion;
+  pedidos30d: number;
+  createdAt: string;
+};
+export type PagoSuscripcionDetalle = {
+  id: string;
+  plan: Plan;
+  meses: number;
+  monto: number;
+  metodo: z.infer<typeof metodoCobroSchema>;
+  referencia: string | null;
+  desde: string;
+  hasta: string;
+  createdAt: string;
+};
+export type AdminRestauranteDetalle = AdminRestauranteFila & {
+  direccion: string | null;
+  usuarios: number;
+  mesas: number;
+  platos: number;
+  pagos: PagoSuscripcionDetalle[];
+};
+
+// "Olvidé mi contraseña" (personal y clientes).
+export const olvideSchema = z.object({ email });
+export const restablecerSchema = z.object({ token: z.string().min(20).max(100), password });

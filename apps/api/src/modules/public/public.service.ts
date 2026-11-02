@@ -1,4 +1,10 @@
-import { estaAbierto, menuDelDiaHoy, turnosDeHoy, type MenuPublico } from '@menu-qr/shared';
+import {
+  incluyeEnLinea,
+  estaAbierto,
+  menuDelDiaHoy,
+  turnosDeHoy,
+  type MenuPublico,
+} from '@menu-qr/shared';
 import { prisma } from '../../lib/prisma';
 import { noExiste } from '../../middlewares/errorHandler';
 
@@ -41,6 +47,7 @@ export async function menu(slug: string): Promise<MenuPublico> {
       sinpeNombre: true,
       tiempoEstimadoMin: true,
       minutosPagoSinpe: true,
+      plan: true,
       fidelidadActiva: true,
       sellosMeta: true,
       premioFidelidad: true,
@@ -67,6 +74,7 @@ export async function menu(slug: string): Promise<MenuPublico> {
     sinpeNombre,
     tiempoEstimadoMin,
     minutosPagoSinpe,
+    plan,
     fidelidadActiva,
     sellosMeta,
     premioFidelidad,
@@ -78,7 +86,7 @@ export async function menu(slug: string): Promise<MenuPublico> {
     abierto: estaAbierto(horarios, ahora, r.zonaHoraria, r.cerradoManual),
     horarioHoy: turnosDeHoy(horarios, ahora, r.zonaHoraria),
     enLinea: {
-      activo: enLineaActivo,
+      activo: enLineaActivo && incluyeEnLinea(plan), // el plan Básico no tiene pedidos en línea
       recoger: enLineaRecoger,
       domicilio: enLineaDomicilio,
       costoEnvio,

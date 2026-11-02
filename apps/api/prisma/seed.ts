@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import type { Prisma } from '../src/generated/prisma/client';
-import { calcularTotales } from '@menu-qr/shared';
+import { calcularTotales, montoSugerido, nuevoVencimiento } from '@menu-qr/shared';
 import { prisma } from '../src/lib/prisma';
 import { env } from '../src/lib/env';
 import { generarTokenQr } from '../src/lib/tokens';
@@ -81,6 +81,29 @@ async function main() {
       },
     });
     console.log(`Usuario demo agregado: ${u.email}`);
+  }
+  // Fase 9: la soda demo queda al día con un pago anual del plan Completo.
+  if (!(await prisma.pagoSuscripcion.count({ where: { restauranteId: restaurante.id } }))) {
+    const hasta = nuevoVencimiento(null, 12);
+    await prisma.$transaction([
+      prisma.pagoSuscripcion.create({
+        data: {
+          restauranteId: restaurante.id,
+          plan: 'COMPLETO',
+          meses: 12,
+          monto: montoSugerido('COMPLETO', 12),
+          metodo: 'SINPE',
+          referencia: 'demo',
+          desde: new Date(),
+          hasta,
+        },
+      }),
+      prisma.restaurante.update({
+        where: { id: restaurante.id },
+        data: { plan: 'COMPLETO', planVenceEn: hasta },
+      }),
+    ]);
+    console.log('Suscripción demo: plan Completo pagado por 12 meses.');
   }
   // Fase 8: tarjeta de sellos (si nunca se configuró) y un cliente con cuenta en el menú en línea.
   if (!restaurante.premioFidelidad) {

@@ -1,6 +1,7 @@
 import type { Request, RequestHandler, Response } from 'express';
 import { HttpError } from '../../middlewares/errorHandler';
 import { restauranteDe } from '../../middlewares/tenant';
+import * as recuperacion from '../auth/recuperacion.service';
 import * as service from './clientes.service';
 
 type ConSlug = Request<{ slug: string }>;
@@ -42,4 +43,14 @@ export const listar = async (req: Request, res: Response) => {
 };
 export const canjear = async (req: Request, res: Response) => {
   res.json(await service.canjear(restauranteDe(req), req.usuario!.id, req.body.telefono));
+};
+
+// Olvidé mi contraseña (siempre 204) y la contraseña nueva con el enlace del correo.
+export const olvide = async (req: ConSlug, res: Response) => {
+  await recuperacion.olvideCliente(req.params.slug, req.body.email);
+  res.status(204).end();
+};
+export const restablecer = async (req: ConSlug, res: Response) => {
+  await recuperacion.restablecerCliente(req.params.slug, req.body.token, req.body.password);
+  res.status(204).end();
 };

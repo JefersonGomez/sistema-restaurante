@@ -149,6 +149,13 @@ export const cambiarContrasena = (slug: string, cliente: string, actual: string,
     cliente,
     body: JSON.stringify({ actual, nueva }),
   });
+export const olvideCliente = (slug: string, email: string) =>
+  llamar(rutaCliente(slug, '/olvide'), { method: 'POST', body: JSON.stringify({ email }) });
+export const restablecerCliente = (slug: string, token: string, password: string) =>
+  llamar(rutaCliente(slug, '/restablecer'), {
+    method: 'POST',
+    body: JSON.stringify({ token, password }),
+  });
 export const salirCliente = (slug: string, cliente: string) =>
   llamar(rutaCliente(slug, '/salir'), { method: 'POST', cliente }).catch(() => {});
 

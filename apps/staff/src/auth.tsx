@@ -8,7 +8,7 @@ export type Usuario = {
   email: string;
   rol: Rol;
   debeCambiarPassword: boolean;
-  restaurante: { id: string; nombre: string; slug: string } | null;
+  restaurante: { id: string; nombre: string; slug: string; plan: 'BASICO' | 'COMPLETO' } | null;
 };
 
 type Sesion = {

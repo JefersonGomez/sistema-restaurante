@@ -11,7 +11,8 @@ import { mesasRouter } from './modules/mesas/mesas.routes';
 import { operacionRouter } from './modules/operacion/operacion.routes';
 import { health } from './modules/public/public.controller';
 import { publicRouter } from './modules/public/public.routes';
-import { adminRouter, restauranteRouter } from './modules/restaurantes/restaurantes.routes';
+import { restauranteRouter } from './modules/restaurantes/restaurantes.routes';
+import { adminRouter } from './modules/admin/admin.routes';
 import { usuariosRouter } from './modules/restaurantes/usuarios.routes';
 import { reportesRouter } from './modules/reportes/reportes.routes';
 import { dispositivosRouter } from './modules/dispositivos/dispositivos.routes';
@@ -40,7 +41,7 @@ if (env.STORAGE_DRIVER === 'local')
 app.get('/health', health);
 app.use('/auth', authRouter);
 app.use('/public', publicRouter);
-app.use('/admin/restaurantes', adminRouter);
+app.use('/admin', adminRouter);
 app.use('/restaurante', restauranteRouter);
 app.use('/usuarios', usuariosRouter);
 app.use('/estaciones', estacionesRouter);

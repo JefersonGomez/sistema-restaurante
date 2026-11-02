@@ -85,7 +85,9 @@ model Restaurante {
   porcentajeServicio       Int              @default(10)
   preciosIncluyenImpuestos Boolean          @default(true)
   activo                   Boolean          @default(true)
-  plan                     String           @default("basico")
+  // Suscripción (Fase 9): el registro empieza en COMPLETO con 30 días de prueba.
+  plan                     Plan             @default(COMPLETO)
+  planVenceEn              DateTime?
   modoConfirmacion         ModoConfirmacion @default(PRIMER_PEDIDO)
   zonaHoraria              String           @default("America/Costa_Rica")
   cerradoManual            Boolean          @default(false) // "Cerrar temporalmente"
@@ -129,6 +131,7 @@ model Restaurante {
   llamadas       Llamada[]
   clientes       ClienteRegistrado[]
   canjes         CanjeSello[]
+  pagosPlan      PagoSuscripcion[]
 }
 
 model Usuario {
@@ -148,13 +151,14 @@ model Usuario {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  restaurante        Restaurante?   @relation(fields: [restauranteId], references: [id])
-  estacion           Estacion?      @relation(fields: [estacionId], references: [id], onDelete: SetNull)
+  restaurante        Restaurante?           @relation(fields: [restauranteId], references: [id])
+  estacion           Estacion?              @relation(fields: [estacionId], references: [id], onDelete: SetNull)
   refreshTokens      RefreshToken[]
-  pedidosConfirmados Pedido[]       @relation("PedidoConfirmadoPor")
-  pedidosCreados     Pedido[]       @relation("PedidoCreadoPor")
-  cuentasCerradas    Cuenta[]       @relation("CuentaCerradaPor")
-  repartos           Cuenta[]       @relation("CuentaRepartidor")
+  pedidosConfirmados Pedido[]               @relation("PedidoConfirmadoPor")
+  pedidosCreados     Pedido[]               @relation("PedidoCreadoPor")
+  cuentasCerradas    Cuenta[]               @relation("CuentaCerradaPor")
+  repartos           Cuenta[]               @relation("CuentaRepartidor")
+  recuperaciones     RecuperacionPassword[]
 
   @@index([restauranteId])
 }
@@ -595,9 +599,10 @@ model ClienteRegistrado {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  restaurante Restaurante               @relation(fields: [restauranteId], references: [id])
-  sesiones    SesionClienteRegistrado[]
-  cuentas     Cuenta[]
+  restaurante    Restaurante               @relation(fields: [restauranteId], references: [id])
+  sesiones       SesionClienteRegistrado[]
+  cuentas        Cuenta[]
+  recuperaciones RecuperacionPassword[]
 
   @@unique([restauranteId, email])
   @@index([restauranteId, telefonoNormal])
@@ -632,4 +637,54 @@ model CanjeSello {
   restaurante Restaurante @relation(fields: [restauranteId], references: [id])
 
   @@index([restauranteId, telefonoNormal])
+}
+
+// --- Suscripción y cuentas (Fase 9) ---
+
+enum Plan {
+  BASICO
+  COMPLETO
+}
+
+enum MetodoCobro {
+  SINPE
+  TRANSFERENCIA
+  EFECTIVO
+  OTRO
+}
+
+// Pago de la mensualidad que registra el superadmin; corre planVenceEn del restaurante.
+model PagoSuscripcion {
+  id              String      @id @default(uuid()) @db.Uuid
+  restauranteId   String      @db.Uuid
+  plan            Plan
+  meses           Int
+  monto           Int // céntimos
+  metodo          MetodoCobro
+  referencia      String?
+  desde           DateTime
+  hasta           DateTime
+  registradoPorId String?     @db.Uuid
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+
+  @@index([restauranteId])
+  @@index([createdAt])
+}
+
+// Enlace de "olvidé mi contraseña" (personal o cliente): un solo uso, vence en 1 hora.
+model RecuperacionPassword {
+  id        String    @id @default(uuid()) @db.Uuid
+  usuarioId String?   @db.Uuid
+  clienteId String?   @db.Uuid
+  tokenHash String    @unique
+  expiraEn  DateTime
+  usadoEn   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  usuario Usuario?           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cliente ClienteRegistrado? @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 }

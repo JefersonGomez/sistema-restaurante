@@ -23,6 +23,7 @@ import {
 type Turno = { diaSemana: number; abre: string; cierra: string };
 type Restaurante = {
   nombre: string;
+  plan: 'BASICO' | 'COMPLETO';
   logoUrl: string | null;
   colorAcento: string | null;
   moneda: Moneda;
@@ -365,7 +366,17 @@ export function AjustesPage() {
           </Tarjeta>
           <Horarios inicial={r.horarios} />
           <Formulario r={r} />
-          <AjustesEnLinea r={r} />
+          {r.plan === 'BASICO' ? (
+            <Tarjeta>
+              <h2 className="font-semibold">Pedidos en línea</h2>
+              <p className="mt-1 text-sm text-muted">
+                Los pedidos en línea, el domicilio con repartidores, los clientes y la tarjeta de
+                sellos vienen con el plan Completo. Escríbanos para cambiar de plan.
+              </p>
+            </Tarjeta>
+          ) : (
+            <AjustesEnLinea r={r} />
+          )}
         </div>
       )}
     </>

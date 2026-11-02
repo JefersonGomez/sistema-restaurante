@@ -1,11 +1,13 @@
 import QRCode from 'qrcode';
 import { env } from '../../lib/env';
 import bcrypt from 'bcryptjs';
-import type {
-  AdminRestaurantePatchInput,
-  CrearRestauranteInput,
-  HorariosInput,
-  RestauranteConfigInput,
+import {
+  DIAS_PRUEBA,
+  estadoSuscripcion,
+  type AdminRestaurantePatchInput,
+  type CrearRestauranteInput,
+  type HorariosInput,
+  type RestauranteConfigInput,
 } from '@menu-qr/shared';
 import { prisma } from '../../lib/prisma';
 import { noExiste } from '../../middlewares/errorHandler';
@@ -13,11 +15,15 @@ import { borrarImagenes } from '../uploads/uploads.service';
 
 // --- Superadmin ---
 
+// Todo restaurante nuevo empieza con el mes de prueba.
+export const finPrueba = () => new Date(Date.now() + DIAS_PRUEBA * 86_400_000);
+
 export async function crear({ restaurante, dueno }: CrearRestauranteInput) {
   const passwordHash = await bcrypt.hash(dueno.password, 10);
   return prisma.restaurante.create({
     data: {
       ...restaurante,
+      planVenceEn: finPrueba(),
       usuarios: {
         create: { nombre: dueno.nombre, email: dueno.email, passwordHash, rol: 'DUENO' },
       },
@@ -25,12 +31,6 @@ export async function crear({ restaurante, dueno }: CrearRestauranteInput) {
     include: { usuarios: { select: { id: true, nombre: true, email: true, rol: true } } },
   });
 }
-
-export const listar = () =>
-  prisma.restaurante.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { usuarios: true, mesas: true, platos: true } } },
-  });
 
 export async function actualizarAdmin(id: string, data: AdminRestaurantePatchInput) {
   if (!(await prisma.restaurante.findUnique({ where: { id } }))) throw noExiste('Restaurante');
@@ -87,4 +87,23 @@ export async function qrEnLinea(restauranteId: string) {
   const { slug } = await obtenerPropio(restauranteId);
   const url = `${env.MENU_PUBLIC_URL}/r/${slug}`;
   return { url, png: await QRCode.toBuffer(url, { type: 'png', margin: 2, width: 768 }) };
+}
+
+// Plan del restaurante para el aviso del panel del dueño (prueba, por vencer, vencido).
+export async function suscripcion(restauranteId: string) {
+  const r = await prisma.restaurante.findUniqueOrThrow({
+    where: { id: restauranteId },
+    select: {
+      activo: true,
+      plan: true,
+      planVenceEn: true,
+      _count: { select: { pagosPlan: true } },
+    },
+  });
+  return {
+    plan: r.plan,
+    venceEn: r.planVenceEn?.toISOString() ?? null,
+    estado: estadoSuscripcion({ ...r, pagos: r._count.pagosPlan }),
+    soporteWhatsApp: env.SOPORTE_WHATSAPP ?? null,
+  };
 }

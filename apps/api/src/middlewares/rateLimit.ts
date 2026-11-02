@@ -44,3 +44,6 @@ export const limiteEnLinea = crear(10, 10);
 // nuevas por IP cada hora (contadores propios, separados del login del personal).
 export const limiteLoginCliente = crear(10, 15, { soloFallidos: true });
 export const limiteRegistroCliente = crear(10, 60);
+// Olvidé mi contraseña: 5 pedidos de enlace por IP cada 15 min; 10 enlaces malos por IP cada 15 min.
+export const limiteOlvide = crear(5, 15);
+export const limiteRestablecer = crear(10, 15, { soloFallidos: true });

@@ -1,5 +1,6 @@
 import {
   estaAbierto,
+  incluyeEnLinea,
   normalizarTelefono,
   type EfectivoRepartidor,
   type EtapaEnLinea,
@@ -34,7 +35,7 @@ export async function crear(slug: string, input: PedidoEnLineaInput, tokenClient
     include: { horarios: { select: { diaSemana: true, abre: true, cierra: true } } },
   });
   if (!r || !r.activo) throw noExiste('Restaurante');
-  if (!r.enLineaActivo)
+  if (!r.enLineaActivo || !incluyeEnLinea(r.plan))
     throw new HttpError(409, 'EN_LINEA_INACTIVO', 'Este restaurante no recibe pedidos en línea');
   if (input.tipo === 'RECOGER' ? !r.enLineaRecoger : !r.enLineaDomicilio)
     throw new HttpError(

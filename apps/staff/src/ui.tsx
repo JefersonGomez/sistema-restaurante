@@ -115,6 +115,11 @@ export function IconoSeccion({ ruta, chico }: { ruta: string; chico?: boolean })
   );
 }
 
+// Secciones del plan Completo: con el plan Básico no se muestran.
+export const SOLO_COMPLETO = new Set(['/en-linea', '/panel/clientes']);
+export const verSeccion = (plan: string | undefined, ruta: string) =>
+  plan !== 'BASICO' || !SOLO_COMPLETO.has(ruta);
+
 // Pestañas del encabezado según el rol (el mesero y la caja también atienden los pedidos en línea).
 const PANTALLAS: Partial<Record<string, { ruta: string; texto: string }[]>> = {
   DUENO: [
@@ -159,18 +164,20 @@ export function Encabezado({ titulo, children }: { titulo: string; children?: Re
       </div>
       {usuario && PANTALLAS[usuario.rol] && (
         <nav className="flex gap-1 overflow-x-auto border-t border-line px-2 text-sm">
-          {PANTALLAS[usuario.rol]!.map((p) => (
-            <NavLink
-              key={p.ruta}
-              to={p.ruta}
-              className={({ isActive }) =>
-                `flex min-h-11 shrink-0 items-center gap-2 px-3 ${isActive ? 'border-b-2 border-purple font-semibold text-fg' : 'text-muted'}`
-              }
-            >
-              <IconoSeccion ruta={p.ruta} chico />
-              {p.texto}
-            </NavLink>
-          ))}
+          {PANTALLAS[usuario.rol]!.filter((p) => verSeccion(usuario.restaurante?.plan, p.ruta)).map(
+            (p) => (
+              <NavLink
+                key={p.ruta}
+                to={p.ruta}
+                className={({ isActive }) =>
+                  `flex min-h-11 shrink-0 items-center gap-2 px-3 ${isActive ? 'border-b-2 border-purple font-semibold text-fg' : 'text-muted'}`
+                }
+              >
+                <IconoSeccion ruta={p.ruta} chico />
+                {p.texto}
+              </NavLink>
+            ),
+          )}
         </nav>
       )}
     </header>

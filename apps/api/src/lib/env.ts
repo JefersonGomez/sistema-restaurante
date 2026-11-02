@@ -27,6 +27,11 @@ const schema = z.object({
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET: z.string().optional(),
   R2_PUBLIC_URL: z.url().optional(),
+  // Fase 9: WhatsApp de soporte (aviso del plan al dueño) y correos con Resend.
+  SOPORTE_WHATSAPP: z.string().optional(),
+  STAFF_PUBLIC_URL: z.url().default('http://localhost:5181'),
+  RESEND_API_KEY: z.string().optional(),
+  CORREO_REMITENTE: z.string().default('Menú QR <no-responder@localhost>'),
 });
 
 const parsed = schema.parse(process.env);

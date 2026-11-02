@@ -140,6 +140,25 @@ mesero; y una cuenta cerrada hoy (mesa 6) que aparece en el reporte **Hoy** del 
 
 Recuperar la contraseña por correo todavía no existe (falta elegir el proveedor de correos).
 
+### Superadmin, planes y contraseñas (Fase 9)
+
+1. Cree su superadmin real (las credenciales no se guardan en el repo):
+   `SUPERADMIN_EMAIL=... SUPERADMIN_PASSWORD=... corepack pnpm --filter api superadmin`. El seed
+   trae además `admin@menuqr.test` para pruebas.
+2. Entre en `http://localhost:5181`: **Administración de la plataforma** muestra el resumen
+   (restaurantes, ingreso mensual, cobrado este mes, los que requieren atención), la lista con
+   búsqueda y filtro por estado, y el detalle de cada restaurante: **Registrar pago** (plan, meses,
+   monto sugerido, método, referencia), historial de pagos, **Suspender/Reactivar** y **Contraseña
+   del dueño** (temporal, se muestra una vez).
+3. Planes: **Básico** ₡9 900/mes y **Completo** ₡19 900/mes (anual = 10 meses). Todo registro nuevo
+   empieza en Completo con 30 días de prueba. Con Básico desaparecen "En línea" y "Clientes" del
+   panel, la API responde 403 `PLAN_NO_INCLUYE` y el menú en línea no abre. El dueño ve un aviso
+   arriba de su panel cuando está en prueba, por vencer (7 días) o vencido. Vencido **no** se
+   suspende solo: lo decide el superadmin.
+4. **¿Olvidó su contraseña?** en el login del personal y en "Entrar" del menú en línea: llega un
+   enlace por correo (1 hora, un solo uso). Sin `RESEND_API_KEY` el correo con el enlace aparece en
+   la consola de la API.
+
 ### Promoción y menús del día
 
 En Panel → **Menú**, arriba de todo:
@@ -215,22 +234,26 @@ docs/       Especificaciones
 
 Todas viven en el `.env` de la raíz (ver `.env.example`). Los frontends solo leen las `VITE_*`.
 
-| Variable                                                                                  | Ejemplo                                                  | Descripción                                                   |
-| ----------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------- |
-| `DATABASE_URL`                                                                            | `postgresql://menuqr:menuqr@localhost:5433/menu_qr`      | BD de desarrollo                                              |
-| `DATABASE_URL_TEST`                                                                       | `postgresql://menuqr:menuqr@localhost:5433/menu_qr_test` | BD de tests (se vacía en cada test)                           |
-| `PORT`                                                                                    | `4000`                                                   | Puerto de la API                                              |
-| `NODE_ENV`                                                                                | `development`                                            | `production` oculta el detalle de errores                     |
-| `JWT_ACCESS_SECRET`                                                                       | _(cadena aleatoria de 32+ caracteres)_                   | Firma del access token                                        |
-| `JWT_ACCESS_TTL`                                                                          | `15m`                                                    | Vida del access token                                         |
-| `JWT_REFRESH_TTL_DIAS`                                                                    | `7`                                                      | Vida del refresh token (días)                                 |
-| `CORS_ORIGINS`                                                                            | `http://localhost:5180,http://localhost:5181`            | Orígenes permitidos (separados por coma)                      |
-| `MENU_PUBLIC_URL`                                                                         | `http://localhost:5180`                                  | Base de la URL que codifica el QR                             |
-| `VITE_API_URL`                                                                            | `http://localhost:4000`                                  | URL de la API para los frontends                              |
-| `STORAGE_DRIVER`                                                                          | `local`                                                  | `local` (disco, servido en `/uploads`) o `r2` (Cloudflare R2) |
-| `UPLOADS_DIR`                                                                             | `apps/api/uploads`                                       | Carpeta de imágenes con `local`                               |
-| `API_PUBLIC_URL`                                                                          | `http://localhost:4000`                                  | Base de las URLs de imágenes locales                          |
-| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL` | —                                                        | Obligatorias con `STORAGE_DRIVER=r2`                          |
+| Variable                                                                                  | Ejemplo                                                  | Descripción                                                            |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `DATABASE_URL`                                                                            | `postgresql://menuqr:menuqr@localhost:5433/menu_qr`      | BD de desarrollo                                                       |
+| `DATABASE_URL_TEST`                                                                       | `postgresql://menuqr:menuqr@localhost:5433/menu_qr_test` | BD de tests (se vacía en cada test)                                    |
+| `PORT`                                                                                    | `4000`                                                   | Puerto de la API                                                       |
+| `NODE_ENV`                                                                                | `development`                                            | `production` oculta el detalle de errores                              |
+| `JWT_ACCESS_SECRET`                                                                       | _(cadena aleatoria de 32+ caracteres)_                   | Firma del access token                                                 |
+| `JWT_ACCESS_TTL`                                                                          | `15m`                                                    | Vida del access token                                                  |
+| `JWT_REFRESH_TTL_DIAS`                                                                    | `7`                                                      | Vida del refresh token (días)                                          |
+| `CORS_ORIGINS`                                                                            | `http://localhost:5180,http://localhost:5181`            | Orígenes permitidos (separados por coma)                               |
+| `MENU_PUBLIC_URL`                                                                         | `http://localhost:5180`                                  | Base de la URL que codifica el QR                                      |
+| `VITE_API_URL`                                                                            | `http://localhost:4000`                                  | URL de la API para los frontends                                       |
+| `STORAGE_DRIVER`                                                                          | `local`                                                  | `local` (disco, servido en `/uploads`) o `r2` (Cloudflare R2)          |
+| `UPLOADS_DIR`                                                                             | `apps/api/uploads`                                       | Carpeta de imágenes con `local`                                        |
+| `API_PUBLIC_URL`                                                                          | `http://localhost:4000`                                  | Base de las URLs de imágenes locales                                   |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL` | —                                                        | Obligatorias con `STORAGE_DRIVER=r2`                                   |
+| `STAFF_PUBLIC_URL`                                                                        | `http://localhost:5181`                                  | Base de los enlaces de "olvidé mi contraseña" del personal             |
+| `RESEND_API_KEY`                                                                          | `re_...`                                                 | Envía correos con Resend; sin ella se escriben en la consola de la API |
+| `CORREO_REMITENTE`                                                                        | `Menú QR <no-responder@tu-dominio.com>`                  | Remitente (dominio verificado en Resend)                               |
+| `SOPORTE_WHATSAPP`                                                                        | `50688888888`                                            | WhatsApp de soporte en el aviso del plan del dueño (opcional)          |
 
 Generar un secreto: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`.
 
@@ -322,37 +345,40 @@ Errores siempre con la forma `{ error: { code, message, details? } }`.
 
 ### Endpoints
 
-| Rol                          | Rutas                                                                                                                                                                                                                                                                         |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SUPERADMIN                   | `POST/GET /admin/restaurantes`, `PATCH /admin/restaurantes/:id` (activo, plan)                                                                                                                                                                                                |
-| DUENO                        | `GET/PATCH /restaurante` (incluye `modoConfirmacion`), `GET /reportes/hoy`                                                                                                                                                                                                    |
-| DUENO                        | CRUD `/usuarios` (con `estacionId`), `/estaciones`, `/categorias` (+ `PATCH /orden`), `/mesas`                                                                                                                                                                                |
-| DUENO                        | CRUD `/platos`, `/platos/:platoId/grupos-modificadores[/:grupoId/modificadores]`                                                                                                                                                                                              |
-| DUENO                        | `POST /mesas/:id/regenerar-token`, `GET /mesas/:id/qr?formato=png\|svg`, `POST /uploads/firma` (501)                                                                                                                                                                          |
-| DUENO, MESERO, COCINA        | `GET /platos`, `GET /platos/:id`, `PATCH /platos/:id/agotado`                                                                                                                                                                                                                 |
-| DUENO, MESERO, CAJA          | `GET /operacion/mesas`, `GET /operacion/cuentas/:id`, `GET /operacion/llamadas?atendida=`                                                                                                                                                                                     |
-| DUENO, MESERO                | `GET /operacion/pedidos?estado=`, `PATCH /operacion/pedidos/:id/confirmar\|cancelar`                                                                                                                                                                                          |
-| DUENO, MESERO                | `POST /operacion/mesas/:id/pedidos`, `GET /operacion/items?estado=LISTO`                                                                                                                                                                                                      |
-| DUENO, MESERO                | `PATCH /operacion/items/:id/cancelar`, `PATCH /operacion/llamadas/:id/atender`                                                                                                                                                                                                |
-| DUENO, COCINA                | `GET /operacion/estaciones`, `GET /operacion/estaciones/:id/items`                                                                                                                                                                                                            |
-| DUENO, COCINA, MESERO        | `PATCH /operacion/items/:id/estado` (cocina: preparar/listo de su estación; mesero: entregado)                                                                                                                                                                                |
-| DUENO, CAJA                  | `POST /operacion/cuentas/:id/cerrar` `{ metodoPago }`                                                                                                                                                                                                                         |
-| Comensal (sesión)            | `GET /public/cuenta`, `POST /public/cuenta/pedidos`, `POST /public/cuenta/llamar`, `POST /public/cuenta/solicitar`                                                                                                                                                            |
-| Público (rate limited)       | `GET /public/:slug/menu`, `GET /public/mesa/:token`, `GET /health`                                                                                                                                                                                                            |
-| DUENO, CAJA                  | `POST /operacion/cuentas/:id/pagos` (cuenta separada), `DELETE /operacion/cuentas/:id/pagos/:pagoId`                                                                                                                                                                          |
-| DUENO, COCINA, MESERO        | `POST /operacion/items/:id/deshacer` `{ estado }` (toque equivocado, unos segundos)                                                                                                                                                                                           |
-| DUENO                        | `GET /reportes?desde&hasta`, `/dispositivos` (código, lista, revocar), `PUT /usuarios/:id/pin`, `POST /uploads/imagen?destino=plato`, `logo` o `banner`                                                                                                                       |
-| Comensal (sesión)            | `POST /public/cuenta/personas`, `POST /public/cuenta/ingresos/:id` `{ aceptar }`, `POST /public/cuenta/desbloquear-ingreso`, `POST /public/cuenta/vistas/:platoId`                                                                                                            |
-| Público (rate limited)       | `POST /auth/registro`, `POST /public/mesa/:token/ingreso`, `POST /public/mesa/:token/ingreso/:id` `{ clave }`, `POST /dispositivos/vincular`                                                                                                                                  |
-| DUENO, CAJA, MESERO          | `GET /enlinea`, `POST /enlinea/:id/aceptar` `{ tiempoEstimadoMin }`, `/rechazar` `{ motivo }`, `/etapa` `{ etapa: LISTO\|EN_CAMINO }`, `/pago-verificado`, `/entregar` `{ metodoPago }`                                                                                       |
-| DUENO, CAJA, MESERO          | `GET /enlinea/repartidores`, `POST /enlinea/:id/repartidor` `{ repartidorId }` (a domicilio, aceptado o listo)                                                                                                                                                                |
-| DUENO, CAJA                  | `GET /enlinea/efectivo` (efectivo por repartidor sin cuadrar), `POST /enlinea/efectivo/recibir` `{ repartidorId }`                                                                                                                                                            |
-| Público (cuenta del cliente) | `POST /public/:slug/clientes/registro`, `/entrar` (10 fallidos por IP cada 15 min); con encabezado `X-Cliente`: `GET`/`PUT /public/:slug/clientes/yo`, `POST /yo/password`, `POST /salir`. `POST /public/:slug/pedidos-en-linea` con `X-Cliente` asocia el pedido a la cuenta |
-| DUENO                        | `GET /clientes?buscar=` (un cliente por teléfono)                                                                                                                                                                                                                             |
-| DUENO, CAJA, MESERO          | `POST /clientes/canjear` `{ telefono }` (premio de la tarjeta de sellos)                                                                                                                                                                                                      |
-| REPARTIDOR                   | `GET /repartos` (sus entregas), `POST /repartos/:id/salir`, `POST /repartos/:id/entregar` `{ metodoPago }`                                                                                                                                                                    |
-| DUENO                        | `GET /restaurante/qr-enlinea.png` (QR del enlace /r/:slug; `GET /restaurante` trae `enlaceEnLinea`)                                                                                                                                                                           |
-| Público (rate limited)       | `POST /public/:slug/pedidos-en-linea` (10 por IP cada 10 min, máx. 2 pendientes por teléfono), `GET /public/seguimiento/:token`                                                                                                                                               |
+| Rol                          | Rutas                                                                                                                                                                                                                                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| SUPERADMIN                   | `POST/GET /admin/restaurantes`, `PATCH /admin/restaurantes/:id` (activo, plan)                                                                                                                                                                                                             |
+| DUENO                        | `GET/PATCH /restaurante` (incluye `modoConfirmacion`), `GET /reportes/hoy`                                                                                                                                                                                                                 |
+| DUENO                        | CRUD `/usuarios` (con `estacionId`), `/estaciones`, `/categorias` (+ `PATCH /orden`), `/mesas`                                                                                                                                                                                             |
+| DUENO                        | CRUD `/platos`, `/platos/:platoId/grupos-modificadores[/:grupoId/modificadores]`                                                                                                                                                                                                           |
+| DUENO                        | `POST /mesas/:id/regenerar-token`, `GET /mesas/:id/qr?formato=png\|svg`, `POST /uploads/firma` (501)                                                                                                                                                                                       |
+| DUENO, MESERO, COCINA        | `GET /platos`, `GET /platos/:id`, `PATCH /platos/:id/agotado`                                                                                                                                                                                                                              |
+| DUENO, MESERO, CAJA          | `GET /operacion/mesas`, `GET /operacion/cuentas/:id`, `GET /operacion/llamadas?atendida=`                                                                                                                                                                                                  |
+| DUENO, MESERO                | `GET /operacion/pedidos?estado=`, `PATCH /operacion/pedidos/:id/confirmar\|cancelar`                                                                                                                                                                                                       |
+| DUENO, MESERO                | `POST /operacion/mesas/:id/pedidos`, `GET /operacion/items?estado=LISTO`                                                                                                                                                                                                                   |
+| DUENO, MESERO                | `PATCH /operacion/items/:id/cancelar`, `PATCH /operacion/llamadas/:id/atender`                                                                                                                                                                                                             |
+| DUENO, COCINA                | `GET /operacion/estaciones`, `GET /operacion/estaciones/:id/items`                                                                                                                                                                                                                         |
+| DUENO, COCINA, MESERO        | `PATCH /operacion/items/:id/estado` (cocina: preparar/listo de su estación; mesero: entregado)                                                                                                                                                                                             |
+| DUENO, CAJA                  | `POST /operacion/cuentas/:id/cerrar` `{ metodoPago }`                                                                                                                                                                                                                                      |
+| Comensal (sesión)            | `GET /public/cuenta`, `POST /public/cuenta/pedidos`, `POST /public/cuenta/llamar`, `POST /public/cuenta/solicitar`                                                                                                                                                                         |
+| Público (rate limited)       | `GET /public/:slug/menu`, `GET /public/mesa/:token`, `GET /health`                                                                                                                                                                                                                         |
+| DUENO, CAJA                  | `POST /operacion/cuentas/:id/pagos` (cuenta separada), `DELETE /operacion/cuentas/:id/pagos/:pagoId`                                                                                                                                                                                       |
+| DUENO, COCINA, MESERO        | `POST /operacion/items/:id/deshacer` `{ estado }` (toque equivocado, unos segundos)                                                                                                                                                                                                        |
+| DUENO                        | `GET /reportes?desde&hasta`, `/dispositivos` (código, lista, revocar), `PUT /usuarios/:id/pin`, `POST /uploads/imagen?destino=plato`, `logo` o `banner`                                                                                                                                    |
+| Comensal (sesión)            | `POST /public/cuenta/personas`, `POST /public/cuenta/ingresos/:id` `{ aceptar }`, `POST /public/cuenta/desbloquear-ingreso`, `POST /public/cuenta/vistas/:platoId`                                                                                                                         |
+| Público (rate limited)       | `POST /auth/registro`, `POST /public/mesa/:token/ingreso`, `POST /public/mesa/:token/ingreso/:id` `{ clave }`, `POST /dispositivos/vincular`                                                                                                                                               |
+| DUENO, CAJA, MESERO          | `GET /enlinea`, `POST /enlinea/:id/aceptar` `{ tiempoEstimadoMin }`, `/rechazar` `{ motivo }`, `/etapa` `{ etapa: LISTO\|EN_CAMINO }`, `/pago-verificado`, `/entregar` `{ metodoPago }`                                                                                                    |
+| DUENO, CAJA, MESERO          | `GET /enlinea/repartidores`, `POST /enlinea/:id/repartidor` `{ repartidorId }` (a domicilio, aceptado o listo)                                                                                                                                                                             |
+| DUENO, CAJA                  | `GET /enlinea/efectivo` (efectivo por repartidor sin cuadrar), `POST /enlinea/efectivo/recibir` `{ repartidorId }`                                                                                                                                                                         |
+| Público (cuenta del cliente) | `POST /public/:slug/clientes/registro`, `/entrar` (10 fallidos por IP cada 15 min); con encabezado `X-Cliente`: `GET`/`PUT /public/:slug/clientes/yo`, `POST /yo/password`, `POST /salir`. `POST /public/:slug/pedidos-en-linea` con `X-Cliente` asocia el pedido a la cuenta              |
+| SUPERADMIN                   | `GET /admin/resumen`, `GET /admin/restaurantes?buscar=&estado=`, `POST /admin/restaurantes`, `GET`/`PATCH /admin/restaurantes/:id` `{ activo, plan }`, `POST /admin/restaurantes/:id/pagos` `{ plan, meses, monto, metodo, referencia }`, `POST /admin/restaurantes/:id/restablecer-dueno` |
+| Público (contraseñas)        | `POST /auth/olvide` `{ email }` (siempre 204; 5 por IP cada 15 min), `POST /auth/restablecer` `{ token, password }`; clientes: `POST /public/:slug/clientes/olvide` y `/restablecer`                                                                                                       |
+| DUENO                        | `GET /restaurante/suscripcion` (plan, vencimiento, estado)                                                                                                                                                                                                                                 |
+| DUENO                        | `GET /clientes?buscar=` (un cliente por teléfono)                                                                                                                                                                                                                                          |
+| DUENO, CAJA, MESERO          | `POST /clientes/canjear` `{ telefono }` (premio de la tarjeta de sellos)                                                                                                                                                                                                                   |
+| REPARTIDOR                   | `GET /repartos` (sus entregas), `POST /repartos/:id/salir`, `POST /repartos/:id/entregar` `{ metodoPago }`                                                                                                                                                                                 |
+| DUENO                        | `GET /restaurante/qr-enlinea.png` (QR del enlace /r/:slug; `GET /restaurante` trae `enlaceEnLinea`)                                                                                                                                                                                        |
+| Público (rate limited)       | `POST /public/:slug/pedidos-en-linea` (10 por IP cada 10 min, máx. 2 pendientes por teléfono), `GET /public/seguimiento/:token`                                                                                                                                                            |
 
 El `restauranteId` de las rutas privadas sale siempre del JWT; si se manda en body o query se ignora.
 Rate limit: 1 200 solicitudes/min por IP en `/public` (todos los celulares de un restaurante comparten
@@ -504,20 +530,21 @@ y máxima) de creación y de llegada a cocina. Termina con ✅ si no se perdió 
 
 ## Scripts
 
-| Script                      | Qué hace                        |
-| --------------------------- | ------------------------------- |
-| `pnpm dev`                  | API, menu y staff en paralelo   |
-| `pnpm build`                | Build de los frontends          |
-| `pnpm db:up`                | `docker compose up -d postgres` |
-| `pnpm db:migrate`           | `prisma migrate dev`            |
-| `pnpm db:seed`              | Datos de prueba                 |
-| `pnpm test`                 | Tests (API, `shared` y `menu`)  |
-| `pnpm typecheck`            | `tsc` en todos los paquetes     |
-| `pnpm lint` / `pnpm format` | ESLint / Prettier               |
+| Script                         | Qué hace                                                                                                                      |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                     | API, menu y staff en paralelo                                                                                                 |
+| `pnpm build`                   | Build de los frontends                                                                                                        |
+| `pnpm db:up`                   | `docker compose up -d postgres`                                                                                               |
+| `pnpm db:migrate`              | `prisma migrate dev`                                                                                                          |
+| `pnpm db:seed`                 | Datos de prueba                                                                                                               |
+| `pnpm test`                    | Tests (API, `shared` y `menu`)                                                                                                |
+| `pnpm typecheck`               | `tsc` en todos los paquetes                                                                                                   |
+| `pnpm lint` / `pnpm format`    | ESLint / Prettier                                                                                                             |
+| `pnpm --filter api superadmin` | Crea o actualiza el superadmin real con `SUPERADMIN_EMAIL` y `SUPERADMIN_PASSWORD` (variables de entorno; nunca en el código) |
 
-## Fuera de alcance (Fases 5–8)
+## Fuera de alcance (Fases 5–9)
 
-Recuperar la contraseña del cliente por correo (pendiente del proveedor), puntos por monto,
+"Entrar como" un restaurante, cobro automático de la mensualidad con tarjeta, puntos por monto,
 fidelidad en pedidos de mesa, pagos con tarjeta en línea o pasarelas, verificación automática de SINPE, rastreo en vivo del
 repartidor (GPS), envío calculado por distancia, SMS/WhatsApp automáticos, factura electrónica (los
 comprobantes dicen "NO ES FACTURA ELECTRÓNICA"), impresión directa a impresoras térmicas, panel del

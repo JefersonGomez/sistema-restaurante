@@ -3,6 +3,22 @@
 Lista de ideas del usuario (2026-10-26) y lo que quedó pendiente. Nada de esto está programado
 todavía: antes de empezar cada bloque se convierte en una spec de fase y el usuario lo aprueba.
 
+## Decisiones del usuario (2026-11-01) para superadmin y despliegue — superadmin en la Fase 9
+
+- **Sí se cobra mensualidad**; el monto está por definir (se le dieron sugerencias de planes).
+- **El superadmin es el usuario** (su correo personal). Se crea con `pnpm --filter api superadmin`
+  y variables de entorno: la contraseña nunca va en el código ni en git.
+- **Correos: Resend** (recuperar contraseñas de clientes y personal, y avisos). Se llama a su API
+  con `fetch`, sin librería nueva. Necesita un dominio verificado en Resend.
+- **Despliegue en el VPS del usuario.** Falta: datos del VPS (sistema, RAM, si tiene Docker) y el
+  dominio (todavía sin nombre; se le dieron sugerencias).
+- **Registro abierto** (con mes gratis); **sin "entrar como"** un restaurante.
+- **Planes aprobados:** Básico ₡9 900/mes (menú QR, mesa, cocina, caja, reportes) y Completo
+  ₡19 900/mes (más en línea, domicilio, repartidores, clientes y sellos); primer mes gratis; anual
+  con 2 meses gratis.
+- Base de datos: el usuario preguntó si hace falta un proveedor (tipo Supabase). Respuesta: no;
+  Postgres corre en Docker en el mismo VPS, con respaldos automáticos fuera del VPS.
+
 ## Pendiente de fases anteriores
 
 - Prueba completa del usuario de las Fases 4 y 5 (incluida la 5.5: tiempo para pagar el SINPE).

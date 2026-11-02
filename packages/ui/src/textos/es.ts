@@ -57,7 +57,12 @@ export const es = {
   clienteContrasena: 'Contraseña',
   clienteContrasenaMin: 'Mínimo 8 caracteres',
   clienteSinCuenta: 'Seguir sin cuenta',
-  clienteOlvido: 'Si olvidó su contraseña, puede pedir sin cuenta mientras tanto.',
+  clienteOlvido: '¿Olvidó su contraseña?',
+  clienteEnviarEnlace: 'Enviar enlace',
+  clienteEnlaceEnviado:
+    'Si ese correo tiene cuenta, le llegará un enlace en unos minutos (vence en 1 hora). Revise también el correo no deseado.',
+  clienteGuardarContrasena: 'Guardar contraseña',
+  clienteContrasenaLista: 'Listo: entre con su contraseña nueva.',
   clienteHola: (n: string) => `Hola, ${n}`,
   clienteGuardar: 'Guardar datos',
   clienteGuardado: 'Datos guardados',

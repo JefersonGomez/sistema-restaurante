@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Cargando } from '@menu-qr/ui';
 import { useAuth } from './auth';
 import { Boton, Campo } from './panel/comunes';
@@ -10,6 +10,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [params] = useSearchParams();
 
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
@@ -58,6 +59,11 @@ export function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+        {params.has('restablecida') && !error && (
+          <p role="status" className="rounded-md bg-ok-soft p-3 text-sm text-ok">
+            Contraseña cambiada. Entre con la nueva.
+          </p>
+        )}
         {error && (
           <p
             id="error-login"
@@ -70,6 +76,9 @@ export function LoginPage() {
         <Boton type="submit" disabled={enviando} className="h-14 w-full text-[15.5px]">
           {enviando ? 'Ingresando…' : 'Ingresar'}
         </Boton>
+        <Link to="/olvide" className="block text-center text-sm text-muted underline">
+          ¿Olvidó su contraseña?
+        </Link>
         <p className="text-center text-sm text-muted">
           ¿Tiene un restaurante o una soda?{' '}
           <Link to="/registro" className="font-semibold text-purple underline">
