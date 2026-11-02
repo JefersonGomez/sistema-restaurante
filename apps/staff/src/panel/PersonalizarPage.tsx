@@ -297,7 +297,7 @@ function Formulario({ r }: { r: Restaurante }) {
       <aside className="lg:sticky lg:top-6" aria-label="Vista previa del menú">
         <p className="mb-2 text-sm font-semibold text-muted">Así lo ve el cliente</p>
         <div
-          style={{ '--purple': acento } as CSSProperties}
+          style={{ '--purple': acento, '--on-accent': '#ffffff' } as CSSProperties}
           className="max-h-[75dvh] overflow-y-auto rounded-[28px] border-8 border-fg/90 bg-app shadow-app"
         >
           <div className="pointer-events-none flex flex-col gap-[22px] px-5 pt-[22px] pb-6">

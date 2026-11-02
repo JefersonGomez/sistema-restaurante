@@ -1,47 +1,26 @@
-import {
-  BarChart3,
-  ChefHat,
-  ConciergeBell,
-  Globe,
-  House,
-  LogOut,
-  Menu as MenuIcono,
-  Palette,
-  QrCode,
-  ReceiptText,
-  Settings,
-  TabletSmartphone,
-  Users,
-  UtensilsCrossed,
-  X,
-} from 'lucide-react';
-import { useEffect, useState, type ComponentType } from 'react';
+import { LogOut, Menu as MenuIcono, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
-import { BotonSonido, Campana } from '../ui';
+import { BotonSonido, Campana, IconoSeccion } from '../ui';
 
-type Enlace = {
-  a: string;
-  texto: string;
-  Icono: ComponentType<{ className?: string }>;
-  fin?: boolean;
-};
+type Enlace = { a: string; texto: string; fin?: boolean };
 
 const ADMINISTRAR: Enlace[] = [
-  { a: '/panel', texto: 'Inicio', Icono: House, fin: true },
-  { a: '/panel/menu', texto: 'Menú', Icono: UtensilsCrossed },
-  { a: '/panel/personalizar', texto: 'Personalizar', Icono: Palette },
-  { a: '/panel/mesas', texto: 'Mesas y QR', Icono: QrCode },
-  { a: '/panel/personal', texto: 'Personal', Icono: Users },
-  { a: '/panel/dispositivos', texto: 'Dispositivos', Icono: TabletSmartphone },
-  { a: '/panel/reportes', texto: 'Reportes', Icono: BarChart3 },
-  { a: '/panel/ajustes', texto: 'Ajustes', Icono: Settings },
+  { a: '/panel', texto: 'Inicio', fin: true },
+  { a: '/panel/menu', texto: 'Menú' },
+  { a: '/panel/personalizar', texto: 'Personalizar' },
+  { a: '/panel/mesas', texto: 'Mesas y QR' },
+  { a: '/panel/personal', texto: 'Personal' },
+  { a: '/panel/dispositivos', texto: 'Dispositivos' },
+  { a: '/panel/reportes', texto: 'Reportes' },
+  { a: '/panel/ajustes', texto: 'Ajustes' },
 ];
 const OPERAR: Enlace[] = [
-  { a: '/cocina', texto: 'Cocina y bar', Icono: ChefHat },
-  { a: '/mesero', texto: 'Mesero', Icono: ConciergeBell },
-  { a: '/caja', texto: 'Caja', Icono: ReceiptText },
-  { a: '/en-linea', texto: 'Pedidos en línea', Icono: Globe },
+  { a: '/cocina', texto: 'Cocina y bar' },
+  { a: '/mesero', texto: 'Mesero' },
+  { a: '/caja', texto: 'Caja' },
+  { a: '/en-linea', texto: 'Pedidos en línea' },
 ];
 
 // En escritorio la barra está reducida a íconos y los textos aparecen al desplegarla
@@ -50,17 +29,17 @@ const texto =
   'whitespace-nowrap transition-opacity duration-200 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100';
 
 const claseEnlace = ({ isActive }: { isActive: boolean }) =>
-  `flex min-h-11 items-center gap-3 rounded-md px-3 text-sm ${
-    isActive ? 'bg-purple-soft font-semibold text-purple' : 'text-fg hover:bg-surface'
+  `flex min-h-11 items-center gap-3 rounded-md px-2 text-sm ${
+    isActive ? 'bg-surface font-semibold text-fg ring-1 ring-line' : 'text-fg hover:bg-surface'
   }`;
 
 function Lista({ enlaces, onIr }: { enlaces: Enlace[]; onIr?: () => void }) {
   return (
     <ul className="space-y-1">
-      {enlaces.map(({ a, texto: nombre, Icono, fin }) => (
+      {enlaces.map(({ a, texto: nombre, fin }) => (
         <li key={a}>
           <NavLink to={a} end={fin} className={claseEnlace} onClick={onIr} title={nombre}>
-            <Icono className="size-5 shrink-0" aria-hidden />
+            <IconoSeccion ruta={a} />
             <span className={texto}>{nombre}</span>
           </NavLink>
         </li>
@@ -98,9 +77,11 @@ function Navegacion({ onIr }: { onIr?: () => void }) {
         type="button"
         onClick={logout}
         title="Salir"
-        className="mt-auto flex min-h-11 items-center gap-3 rounded-md px-3 text-sm text-muted hover:bg-surface"
+        className="mt-auto flex min-h-11 items-center gap-3 rounded-md px-2 text-sm text-muted hover:bg-surface"
       >
-        <LogOut className="size-5 shrink-0" aria-hidden />
+        <span className="grid size-8 shrink-0 place-items-center">
+          <LogOut className="size-5" aria-hidden />
+        </span>
         <span className={texto}>Salir</span>
       </button>
     </div>

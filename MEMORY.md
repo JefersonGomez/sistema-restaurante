@@ -15,9 +15,42 @@
 - **Fase 5 completa** (5.1–5.5, 2026-10-25; commit `3856406`): pedidos en línea + tiempo para pagar el
   SINPE. Pendiente: prueba del usuario.
 - **Limpieza** (2026-10-25): revisado código muerto y dependencias; se quitaron `seleccionValida` y `GrupoEditorInput` (shared, sin uso) y la redirección vieja `/dueno` del staff. El resto de dependencias se usan (`@prisma/client` lo pide el cliente generado). `/admin` (SUPERADMIN) sigue como "Próximamente".
+- **Fase 6 en curso** (diseño, 2026-10-29): 6.1–6.5 hechos (2026-11-01: 184 tests verdes). Falta la prueba del usuario y el commit.
 - **Backlog de mejoras:** `docs/mejoras-pendientes.md` (ideas del usuario, 2026-10-26; nada programado
   aún, revisado 2026-10-29). Cada bloque se convierte en spec de fase y se aprueba antes de empezar.
 - Raíz del monorepo: `C:\Users\gomes\OneDrive\Documentos\sistema-restaurante` (equivale a `menu-qr/` de la spec).
+
+## Plan de la Fase 6 (pedido 2026-10-29) — spec: docs/especificacion-fase6.md
+
+Bloque "Diseño" (1–5) de `docs/mejoras-pendientes.md`. Paleta, tipografía y editor: el usuario
+elige/aprueba viendo opciones antes de programar.
+
+| Paso | Qué                                                                          | Estado |
+| ---- | ---------------------------------------------------------------------------- | ------ |
+| 6.1  | Colores con significado en barra lateral y pestañas + animación de categoría | ✅     |
+| 6.2  | Paleta neutra (opción elegida por el usuario)                                | ✅     |
+| 6.3  | Tipografía + `tabular-nums` en montos                                        | ✅     |
+| 6.4  | Editor del menú (según boceto aprobado)                                      | ✅     |
+| 6.5  | Revisión final: build, lint, tests, README                                   | ✅     |
+
+- 6.1: tokens `--info` / `--info-soft` (azul, claro y oscuro) → `bg-info-soft text-info`.
+  `SECCIONES` + `IconoSeccion` en `apps/staff/src/ui.tsx` (ruta → ícono + tono); los usan la barra
+  lateral (`PanelLayout`, ícono en caja de 32 px, activo = fondo surface + borde) y las pestañas del
+  `Encabezado` (ícono de 24 px). Categorías del menú: `.anim-rebote` (tokens.css) en el emoji al
+  activarse; "reducir movimiento" la apaga con la regla global.
+- 6.2: paleta D (gris cálido + grafito) en tokens.css; en oscuro el acento es claro y `--on-accent`
+  oscuro. `apps/menu/src/index.css` vuelve a poner el morado y `--on-accent` blanco (el color del
+  restaurante se valida para texto blanco); la vista previa de Personalizar también fija on-accent
+  blanco. Los PDF de QR y las imágenes del seed (API) siguen con el morado: son del menú.
+- 6.3: Plus Jakarta Sans (Google Fonts en los dos index.html) y `tabular-nums` global en `body`.
+- 6.4: `MenuPanelPage`: ya no hay dos columnas ni categoría seleccionada; cada categoría es un bloque
+  (asa, ícono, cantidad de platos, contraer, visible, editar, borrar) con sus platos ordenables
+  adentro (un `ListaOrdenable` dentro de otro) y «+ Agregar plato a …». Guía de 3 pasos mientras no
+  hay platos. `?categoria=` (al volver del formulario) hace scroll a su bloque.
+- 6.5 (2026-11-01): Docker arriba, `pnpm test` 184/184 (api 143, shared 25, menu 16). Sin internet: anotado en el backlog (puntos 13–18), "luego vemos".
+- 2026-10-29: en esta ruta no había `node_modules` ni `.env` (el repo vino de `F:`): se copió
+  `.env.example` → `.env` y se instaló con `corepack pnpm install` (pnpm no está en el PATH; usar
+  `corepack pnpm …`).
 
 ## Plan de la Fase 5 (aprobado 2026-10-23) — spec: docs/especificacion-fase5.md
 
@@ -449,6 +482,10 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
 ## Problemas / notas
 
 - En la máquina no hay Python ni `gh` CLI; usar Node/Bash para scripts.
+- Docker Desktop está en `%LOCALAPPDATA%\Programs\DockerDesktop` (no en Program Files) y puede estar
+  apagado: abrirlo antes de `pnpm db:up`. Los scripts anidados (`pnpm db:seed`, `pnpm dev`) llaman a
+  `pnpm`, que no está en el PATH: crear atajos con `corepack enable --install-directory <dir> pnpm` y
+  poner ese dir en el PATH (en Git Bash con formato `/c/...`).
 - Puertos 3000 y 5173 ocupados por otras apps locales → API 4000, menu 5180, staff 5181.
 - El puerto 5432 lo ocupa el contenedor `inventario-api-postgres-1` (otro proyecto). No tocarlo.
 - `prisma migrate reset` está bloqueado para agentes sin consentimiento explícito del usuario

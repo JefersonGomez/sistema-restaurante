@@ -14,7 +14,7 @@ todavía: antes de empezar cada bloque se convierte en una spec de fase y el usu
 - **Despliegue a producción** (hosting, BD, fotos en la nube, dominio con HTTPS). Varias mejoras de
   abajo (ubicación, rastreo) **necesitan HTTPS** para funcionar en el celular.
 
-## Diseño (bajo riesgo, rápido)
+## Diseño (bajo riesgo, rápido) — en la Fase 6 (`docs/especificacion-fase6.md`)
 
 1. **Paleta de colores neutra/universal** para el sistema (base de grises + un color de acento),
    con 2–3 opciones para elegir viéndolas aplicadas. El color propio de cada restaurante en su menú
@@ -57,6 +57,24 @@ todavía: antes de empezar cada bloque se convierte en una spec de fase y el usu
     alcance). Requiere un servicio de envío de correos (librería/proveedor a aprobar). Por WhatsApp:
     botón "Enviar por WhatsApp" con el resumen (enlace `wa.me`, gratis, lo envía la persona); el
     envío automático por WhatsApp Business tiene costo y aprobación de Meta → fuera de alcance.
+
+## Sin internet (pregunta del usuario, 2026-11-01; "luego vemos")
+
+Hoy todo depende de que el celular del cliente y los equipos del restaurante lleguen al servidor.
+
+13. **QR del Wi-Fi en la tarjeta de la mesa** (recomendado primero): el dueño anota nombre y clave
+    del Wi-Fi en Ajustes y el PDF de QR lleva un segundo código que conecta el celular con un toque.
+    Para clientes sin datos móviles.
+14. **Mesero toma el pedido** si el cliente no tiene conexión: ya existe ("Tomar pedido"); solo
+    capacitación.
+15. **Menú en PDF para imprimir** desde el panel, como respaldo.
+16. **Router con respaldo 4G** en el restaurante (sin código): recomendación para los dueños.
+17. **Aguantar cortes cortos** en los equipos del personal (guardar acciones y enviarlas al volver):
+    fase futura; riesgo de conflictos.
+18. **Servidor local en el restaurante** con sincronización: muy costoso (instalación por local,
+    HTTPS en red local); solo para zonas con internet muy malo.
+
+El SINPE Móvil necesita internet de todas formas.
 
 ## Orden sugerido
 

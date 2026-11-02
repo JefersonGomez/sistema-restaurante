@@ -1,12 +1,23 @@
 import {
+  BarChart3,
   Bell,
   BellRing,
   ChefHat,
   ClipboardList,
+  ConciergeBell,
+  Globe,
+  House,
   LogOut,
+  Palette,
+  QrCode,
   ReceiptText,
+  Settings,
+  TabletSmartphone,
+  Users,
   Utensils,
+  UtensilsCrossed,
   Volume2,
+  type LucideIcon,
 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { activarSonido, sonidoActivo } from './alertas';
@@ -45,6 +56,43 @@ export function Conexion({ conectado }: { conectado: boolean }) {
     >
       <span className={`h-2 w-2 rounded-full ${conectado ? 'bg-ok' : 'bg-danger'}`} />
       <span className="max-sm:sr-only">{conectado ? 'Conectado' : 'Reconectando…'}</span>
+    </span>
+  );
+}
+
+// Color con significado de cada sección (spec Fase 6): el mismo en la barra lateral y en las pestañas.
+// Morado = marca, ámbar = menú, verde = servicio, rojo = cocina, azul = información, gris = ajustes.
+const TONOS = {
+  marca: 'bg-purple-soft text-purple',
+  ambar: 'bg-amber-soft text-amber-ink',
+  verde: 'bg-ok-soft text-ok',
+  rojo: 'bg-danger-soft text-danger',
+  azul: 'bg-info-soft text-info',
+  gris: 'bg-surface-2 text-muted',
+};
+export const SECCIONES: Record<string, { Icono: LucideIcon; tono: keyof typeof TONOS }> = {
+  '/panel': { Icono: House, tono: 'marca' },
+  '/panel/menu': { Icono: UtensilsCrossed, tono: 'ambar' },
+  '/panel/personalizar': { Icono: Palette, tono: 'marca' },
+  '/panel/mesas': { Icono: QrCode, tono: 'verde' },
+  '/panel/personal': { Icono: Users, tono: 'azul' },
+  '/panel/dispositivos': { Icono: TabletSmartphone, tono: 'azul' },
+  '/panel/reportes': { Icono: BarChart3, tono: 'azul' },
+  '/panel/ajustes': { Icono: Settings, tono: 'gris' },
+  '/cocina': { Icono: ChefHat, tono: 'rojo' },
+  '/mesero': { Icono: ConciergeBell, tono: 'verde' },
+  '/caja': { Icono: ReceiptText, tono: 'verde' },
+  '/en-linea': { Icono: Globe, tono: 'azul' },
+};
+
+export function IconoSeccion({ ruta, chico }: { ruta: string; chico?: boolean }) {
+  const { Icono, tono } = SECCIONES[ruta]!;
+  return (
+    <span
+      aria-hidden
+      className={`grid shrink-0 place-items-center ${chico ? 'size-6 rounded-md' : 'size-8 rounded-lg'} ${TONOS[tono]}`}
+    >
+      <Icono className={chico ? 'size-3.5' : 'size-[18px]'} />
     </span>
   );
 }
@@ -98,9 +146,10 @@ export function Encabezado({ titulo, children }: { titulo: string; children?: Re
               key={p.ruta}
               to={p.ruta}
               className={({ isActive }) =>
-                `flex min-h-11 shrink-0 items-center px-3 ${isActive ? 'border-b-2 border-purple font-semibold text-purple' : 'text-muted'}`
+                `flex min-h-11 shrink-0 items-center gap-2 px-3 ${isActive ? 'border-b-2 border-purple font-semibold text-fg' : 'text-muted'}`
               }
             >
+              <IconoSeccion ruta={p.ruta} chico />
               {p.texto}
             </NavLink>
           ))}

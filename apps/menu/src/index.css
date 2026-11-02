@@ -2,3 +2,21 @@
 @import '../../../packages/ui/src/tokens.css';
 /* Tailwind tiene que escanear también los componentes compartidos. */
 @source '../../../packages/ui/src';
+
+/* El sistema usa acento grafito; el menú del cliente conserva el morado por defecto (lo reemplaza el
+   color propio del restaurante, que se valida con contraste para texto blanco). */
+:root {
+  --purple: #5b2db5;
+  --purple-soft: #eee8fb;
+  --on-accent: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --purple: #8e6aec;
+    --purple-soft: #2b2345;
+  }
+}
+:root[data-theme='dark'] {
+  --purple: #8e6aec;
+  --purple-soft: #2b2345;
+}

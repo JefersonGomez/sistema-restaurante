@@ -394,8 +394,9 @@ mismos datos de la pantalla.
 
 Diseño basado en [`prototipo_front/prototipo-menu.html`](prototipo_front/prototipo-menu.html) y
 [`docs/especificacion-frontend-menu.md`](docs/especificacion-frontend-menu.md). Los colores son
-variables CSS (`apps/menu/src/index.css`) con modo claro y oscuro según `prefers-color-scheme`,
-expuestos a Tailwind 4 con `@theme`. Fuente Poppins. Responsivo: ocupa toda la pantalla; en el celular navegación abajo y
+variables CSS (`packages/ui/src/tokens.css`; el menú del cliente conserva su morado en `apps/menu/src/index.css`)
+con modo claro y oscuro según `prefers-color-scheme`, expuestos a Tailwind 4 con `@theme`. Paleta de grises
+cálidos con acento grafito y fuente Plus Jakarta Sans (Fase 6). Responsivo: ocupa toda la pantalla; en el celular navegación abajo y
 platos en una columna, en tablet/PC navegación arriba, platos en 2–3 columnas, carrito y cuenta con
 los totales a la derecha y el detalle del plato como ventana centrada. Respeta las áreas seguras. PWA básica (`manifest.webmanifest`, sin service worker).
 

@@ -2,83 +2,91 @@
    Basados en el prototipo aprobado (prototipo_front/prototipo-menu.html). */
 
 :root {
-  --bg: #e7e6f0;
+  --bg: #efeeec;
   --app: #ffffff;
-  --surface: #f6f5fb;
-  --surface-2: #eeecf7;
-  --fg: #1d1b2a;
-  --muted: #6f6c80;
-  --line: #e4e2ee;
+  --surface: #f7f6f4;
+  --surface-2: #eeedea;
+  --fg: #1f1e1c;
+  --muted: #6c6964;
+  --line: #e4e2de;
   --amber: #f7a91c;
   --amber-soft: #fff2d6;
   --amber-ink: #8f5300;
   --on-amber: #2a1a00;
-  --purple: #5b2db5;
-  --purple-soft: #eee8fb;
+  --purple: #23252a;
+  --purple-soft: #ebeae7;
   --on-accent: #ffffff;
   --danger: #dd3a2e;
   --ok: #1c8a57;
   --ok-soft: #e2f4eb;
+  --info: #2563c9;
+  --info-soft: #e3ecfb;
   --banner: #17131f;
   --banner-fg: #ffffff;
   --banner-chip: rgba(0, 0, 0, 0.4);
   --banner-price: #ffc24d;
   --sombra-arte: 0 8px 14px rgba(0, 0, 0, 0.35);
   --peligro-suave: color-mix(in srgb, var(--danger) 12%, transparent);
-  --scrim: rgba(10, 8, 20, 0.5);
-  --shadow: 0 18px 50px rgba(40, 30, 80, 0.14);
+  --scrim: rgba(12, 11, 10, 0.5);
+  --shadow: 0 18px 50px rgba(30, 28, 25, 0.14);
   --shadow-amber: 0 8px 18px rgba(247, 169, 28, 0.35);
-  --sombra-tarjeta: 0 1px 2px rgba(29, 27, 42, 0.06);
+  --sombra-tarjeta: 0 1px 2px rgba(31, 30, 28, 0.06);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0e0d14;
-    --app: #16141e;
-    --surface: #1f1c2a;
-    --surface-2: #272336;
-    --fg: #f2f0f8;
-    --muted: #a39fb5;
-    --line: #2e2a3c;
+    --bg: #11100f;
+    --app: #191817;
+    --surface: #21201e;
+    --surface-2: #2a2926;
+    --fg: #f1efec;
+    --muted: #a8a49e;
+    --line: #302e2b;
     --amber: #ffb632;
     --amber-soft: #3a2b0e;
     --amber-ink: #ffd27a;
-    --purple: #8e6aec;
-    --purple-soft: #2b2345;
+    --purple: #ecebe8;
+    --purple-soft: #2c2b28;
+    --on-accent: #191817;
     --danger: #ff6f64;
     --ok: #4cc48e;
     --ok-soft: #14302a;
-    --banner: #0a0910;
+    --info: #7aa6ff;
+    --info-soft: #1a2846;
+    --banner: #0b0a09;
     --shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
   }
 }
 
 :root[data-theme='dark'] {
-  --bg: #0e0d14;
-  --app: #16141e;
-  --surface: #1f1c2a;
-  --surface-2: #272336;
-  --fg: #f2f0f8;
-  --muted: #a39fb5;
-  --line: #2e2a3c;
+  --bg: #11100f;
+  --app: #191817;
+  --surface: #21201e;
+  --surface-2: #2a2926;
+  --fg: #f1efec;
+  --muted: #a8a49e;
+  --line: #302e2b;
   --amber: #ffb632;
   --amber-soft: #3a2b0e;
   --amber-ink: #ffd27a;
-  --purple: #8e6aec;
-  --purple-soft: #2b2345;
+  --purple: #ecebe8;
+  --purple-soft: #2c2b28;
+  --on-accent: #191817;
   --danger: #ff6f64;
   --ok: #4cc48e;
   --ok-soft: #14302a;
-  --banner: #0a0910;
+  --info: #7aa6ff;
+  --info-soft: #1a2846;
+  --banner: #0b0a09;
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
   color-scheme: dark;
 }
 
 /* Tailwind 4: los tokens como utilidades (bg-app, text-muted, rounded-md…). */
 @theme inline {
-  --font-sans: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --color-bg: var(--bg);
   --color-app: var(--app);
   --color-surface: var(--surface);
@@ -96,6 +104,8 @@
   --color-danger: var(--danger);
   --color-ok: var(--ok);
   --color-ok-soft: var(--ok-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
   --color-banner: var(--banner);
   --color-banner-fg: var(--banner-fg);
   --color-scrim: var(--scrim);
@@ -119,6 +129,8 @@ body {
   color: var(--fg);
   font-family: var(--font-sans);
   font-size: 15px;
+  /* Cifras de ancho fijo: los montos quedan alineados en columnas. */
+  font-variant-numeric: tabular-nums;
   -webkit-tap-highlight-color: transparent;
 }
 #root {
@@ -173,6 +185,19 @@ body {
 }
 .anim-cajon {
   animation: cajon 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* Ícono de categoría al elegirla en el menú del cliente. */
+@keyframes rebote {
+  30% {
+    transform: scale(1.22) rotate(-8deg);
+  }
+  60% {
+    transform: scale(0.94) rotate(5deg);
+  }
+}
+.anim-rebote {
+  display: inline-block;
+  animation: rebote 0.45s ease-out;
 }
 
 /* Transiciones suaves por defecto en todo lo que se toca; al presionar, se hunde un poco. */

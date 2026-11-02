@@ -227,7 +227,8 @@ export function CategoryGrid({
                 on ? 'bg-amber shadow-amber' : 'bg-surface-2'
               }`}
             >
-              {c.icono ?? '🍽️'}
+              {/* Al activarse, el ícono rebota (la clase nueva reinicia la animación). */}
+              <span className={on ? 'anim-rebote' : undefined}>{c.icono ?? '🍽️'}</span>
             </span>
             <span className="text-center leading-tight">{nombreEn(c, idioma)}</span>
           </button>
