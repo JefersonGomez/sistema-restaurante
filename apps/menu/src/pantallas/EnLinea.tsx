@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Bike, ShoppingBag, ShoppingCart, Store } from 'lucide-react';
+import { Bike, ChevronRight, ShoppingBag, ShoppingCart, Store, UserRound } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import type { MenuPublico, PlatoPublico } from '@menu-qr/shared';
@@ -25,7 +25,9 @@ import { PuntoEntrega, type Punto } from '../componentes/mapa';
 import { BarraTitulo, ErrorScreen, Main, Toast } from '../componentes/estructura';
 import { avisar } from '../estado/avisos';
 import { useCarrito } from '../estado/carrito';
+import { usePerfilCliente } from '../estado/cuentaCliente';
 import { useIdioma, useTextos } from '../estado/idioma';
+import { CuentaCliente } from './CuentaCliente';
 
 type Restaurante = MenuPublico['restaurante'];
 const TELEFONO = /^[0-9 +()-]{8,20}$/;
@@ -77,9 +79,38 @@ export function RutaEnLinea() {
       <Routes>
         <Route index element={<MenuEnLinea menu={menu} slug={slug} />} />
         <Route path="pedido" element={<PedidoEnLinea menu={menu} slug={slug} />} />
+        <Route path="cuenta" element={<CuentaCliente menu={menu} slug={slug} />} />
       </Routes>
       <Toast />
     </>
+  );
+}
+
+// Acceso a la cuenta del cliente (y su tarjeta de sellos) arriba del menú.
+function EnlaceCuenta({ slug, menu }: { slug: string; menu: MenuPublico }) {
+  const t = useTextos();
+  const { perfil } = usePerfilCliente(slug);
+  const fid = menu.restaurante.enLinea.fidelidad;
+  return (
+    <Link
+      to={`/r/${slug}/cuenta`}
+      className="flex min-h-14 items-center gap-3 rounded-md bg-surface px-4 text-sm"
+    >
+      <UserRound className="size-5 shrink-0 text-purple" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">
+          {perfil ? t.clienteHola(perfil.nombre) : t.clienteEntrarOCrear}
+        </span>
+        {fid.activa && (
+          <span className="block text-xs text-muted">
+            {perfil?.fidelidad
+              ? t.sellos(Math.min(perfil.fidelidad.sellos, fid.meta), fid.meta)
+              : t.sellosComo(fid.meta, fid.premio ?? '')}
+          </span>
+        )}
+      </span>
+      <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+    </Link>
   );
 }
 
@@ -114,6 +145,7 @@ function MenuEnLinea({ menu, slug }: { menu: MenuPublico; slug: string }) {
   return (
     <Main>
       <Header restaurante={r} onCambiarIdioma={alternar} />
+      <EnlaceCuenta slug={slug} menu={menu} />
       <SearchBar valor={busqueda} onCambio={setBusqueda} />
       {!r.abierto && (
         <p role="status" className="rounded-md bg-danger-soft px-4 py-3 text-[13px] text-danger">
@@ -216,6 +248,21 @@ function PedidoEnLinea({ menu, slug }: { menu: MenuPublico; slug: string }) {
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
   const [clientRequestId] = useState(nuevoId); // un id por envío: los reintentos no duplican
+  // Con la cuenta abierta, los datos guardados llenan el formulario (una vez, al cargar).
+  const { token: tokenCliente, perfil } = usePerfilCliente(slug);
+  const [llenado, setLlenado] = useState(false);
+  useEffect(() => {
+    if (!perfil || llenado) return;
+    setLlenado(true);
+    setF((x) => ({
+      ...x,
+      nombre: perfil.nombre,
+      telefono: perfil.telefono,
+      direccion: perfil.direccion ?? x.direccion,
+      referencia: perfil.referencia ?? x.referencia,
+    }));
+    if (perfil.ubicacion) setPunto(perfil.ubicacion);
+  }, [perfil, llenado]);
 
   const poner = (k: keyof typeof f, v: string) => {
     setErrores(({ [k]: _, ...resto }) => resto);
@@ -251,27 +298,31 @@ function PedidoEnLinea({ menu, slug }: { menu: MenuPublico; slug: string }) {
     if (Object.keys(errs).length || faltaMinimo) return;
     setEnviando(true);
     try {
-      const { token } = await api.pedirEnLinea(slug, {
-        clientRequestId,
-        tipo,
-        cliente: {
-          nombre: f.nombre.trim(),
-          telefono: f.telefono.trim(),
-          ...(tipo === 'DOMICILIO' && {
-            direccion: f.direccion.trim(),
-            referencia: f.referencia.trim() || undefined,
-            ubicacion: punto ?? undefined,
-          }),
+      const { token } = await api.pedirEnLinea(
+        slug,
+        {
+          clientRequestId,
+          tipo,
+          cliente: {
+            nombre: f.nombre.trim(),
+            telefono: f.telefono.trim(),
+            ...(tipo === 'DOMICILIO' && {
+              direccion: f.direccion.trim(),
+              referencia: f.referencia.trim() || undefined,
+              ubicacion: punto ?? undefined,
+            }),
+          },
+          pago: { metodo: pago, comprobante: f.comprobante.trim() || undefined },
+          nota: f.nota.trim() || undefined,
+          items: lineas.map((l) => ({
+            platoId: l.platoId,
+            cantidad: l.cantidad,
+            modificadores: l.modificadores,
+            notas: l.nota || undefined,
+          })),
         },
-        pago: { metodo: pago, comprobante: f.comprobante.trim() || undefined },
-        nota: f.nota.trim() || undefined,
-        items: lineas.map((l) => ({
-          platoId: l.platoId,
-          cantidad: l.cantidad,
-          modificadores: l.modificadores,
-          notas: l.nota || undefined,
-        })),
-      });
+        tokenCliente,
+      );
       guardar('enlinea:cliente', {
         nombre: f.nombre.trim(),
         telefono: f.telefono.trim(),
@@ -360,6 +411,13 @@ function PedidoEnLinea({ menu, slug }: { menu: MenuPublico; slug: string }) {
 
           <section className="flex flex-col gap-3">
             <h2 className="font-semibold">{t.susDatos}</h2>
+            {perfil ? (
+              <p className="text-xs text-muted">{t.clientePidiendoCon(perfil.email)}</p>
+            ) : (
+              <Link to={`/r/${slug}/cuenta?pedido`} className="text-sm font-semibold text-purple">
+                {t.clienteEntrarOCrear}
+              </Link>
+            )}
             {campo('nombre', t.nombre, { autoComplete: 'name' })}
             {campo('telefono', t.telefono, {
               type: 'tel',

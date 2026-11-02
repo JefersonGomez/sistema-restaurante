@@ -32,6 +32,9 @@ export const telefonoSchema = z
   .trim()
   .regex(/^[0-9 +()-]{8,20}$/, 'Teléfono de 8 dígitos, ej. 8888 8888');
 
+// El cliente se reconoce por los últimos 8 dígitos: "8888-1234" = "+506 8888 1234".
+export const normalizarTelefono = (t: string) => t.replace(/\D/g, '').slice(-8);
+
 export const idParamSchema = z.object({ id: z.uuid() });
 
 // --- Auth ---
@@ -117,6 +120,10 @@ export const restauranteConfigSchema = z
     sinpeNombre: z.string().trim().max(80).nullable(),
     tiempoEstimadoMin: z.number().int().min(5).max(240),
     minutosPagoSinpe: z.number().int().min(5).max(120),
+    // Fidelidad (Fase 8): cada pedido en línea entregado es un sello.
+    fidelidadActiva: z.boolean(),
+    sellosMeta: z.number().int().min(2).max(50),
+    premioFidelidad: z.string().trim().max(80).nullable(),
   })
   .partial();
 export type RestauranteConfigInput = z.infer<typeof restauranteConfigSchema>;
@@ -374,6 +381,7 @@ export type MenuPublico = {
       sinpeNombre: string | null;
       tiempoEstimadoMin: number;
       minutosPagoSinpe: number;
+      fidelidad: { activa: boolean; meta: number; premio: string | null };
     };
   };
   promocion: {
@@ -571,6 +579,7 @@ export type DatosEnLinea = {
   ubicacion: { lat: number; lng: number } | null; // punto marcado por el cliente
   repartidor: { id: string; nombre: string } | null;
   efectivoCuadrado: boolean;
+  fidelidad?: Fidelidad | null; // solo en la lista de "En línea"
 };
 // Caja: efectivo cobrado por un repartidor que todavía no se entregó en caja.
 export type EfectivoRepartidor = {
@@ -632,6 +641,7 @@ export type SeguimientoEnLinea = {
     preciosIncluyenImpuestos: boolean;
   };
   cuenta: CuentaDetalle;
+  fidelidad: Fidelidad | null; // sellos del teléfono del pedido (si el restaurante la activó)
 };
 
 export type PedidoEstacion = {
@@ -689,3 +699,61 @@ export * from './totales';
 export * from './seleccion';
 export * from './horario';
 export * from './color';
+
+// --- Clientes (Fase 8) ---
+
+const ubicacion = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+});
+
+export const registroClienteSchema = z.object({
+  nombre: texto(80),
+  telefono: telefonoSchema,
+  email,
+  password,
+});
+export type RegistroClienteInput = z.infer<typeof registroClienteSchema>;
+export const loginClienteSchema = loginSchema;
+export const perfilClienteSchema = z.object({
+  nombre: texto(80),
+  telefono: telefonoSchema,
+  direccion: z.string().trim().max(200).nullable(),
+  referencia: z.string().trim().max(200).nullable(),
+  ubicacion: ubicacion.nullable(),
+});
+export type PerfilClienteInput = z.infer<typeof perfilClienteSchema>;
+export const cambiarPasswordClienteSchema = z.object({
+  actual: z.string().min(1).max(200),
+  nueva: password,
+});
+export const canjearSchema = z.object({ telefono: telefonoSchema });
+export const buscarClientesSchema = z.object({ buscar: z.string().trim().max(80).optional() });
+
+// Tarjeta de sellos de un teléfono.
+export type Fidelidad = { sellos: number; meta: number; premio: string };
+
+export type ClientePerfil = {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+  direccion: string | null;
+  referencia: string | null;
+  ubicacion: { lat: number; lng: number } | null;
+  fidelidad: Fidelidad | null;
+  pedidos: { numero: number; fecha: string; total: number; etapa: EtapaEnLinea; token: string }[];
+};
+export type SesionClienteRegistrado = { token: string; cliente: ClientePerfil };
+
+// Fila de Panel → Clientes (un cliente por teléfono).
+export type ClienteFila = {
+  telefono: string; // normalizado (8 dígitos)
+  nombre: string;
+  pedidos: number; // entregados
+  gastado: number; // céntimos
+  ultimoPedido: string;
+  frecuente: boolean;
+  registrado: boolean;
+  sellos: number | null; // null si la fidelidad está apagada
+};

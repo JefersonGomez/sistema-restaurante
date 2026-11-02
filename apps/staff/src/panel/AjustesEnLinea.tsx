@@ -17,6 +17,9 @@ export type ConfigEnLinea = {
   sinpeNombre: string | null;
   tiempoEstimadoMin: number;
   minutosPagoSinpe: number;
+  fidelidadActiva: boolean;
+  sellosMeta: number;
+  premioFidelidad: string | null;
   enlaceEnLinea: string;
 };
 
@@ -34,6 +37,9 @@ export function AjustesEnLinea({ r }: { r: ConfigEnLinea }) {
     sinpeNombre: r.sinpeNombre ?? '',
     tiempoEstimadoMin: String(r.tiempoEstimadoMin),
     minutosPagoSinpe: String(r.minutosPagoSinpe),
+    fidelidadActiva: r.fidelidadActiva,
+    sellosMeta: String(r.sellosMeta),
+    premioFidelidad: r.premioFidelidad ?? '',
   });
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [aviso, setAviso] = useState('');
@@ -55,6 +61,8 @@ export function AjustesEnLinea({ r }: { r: ConfigEnLinea }) {
     const minimo = aCentimos(f.pedidoMinimo);
     if (costo === null) return setErrores({ costoEnvio: 'Monto en colones, ej. 1000' });
     if (minimo === null) return setErrores({ pedidoMinimo: 'Monto en colones, ej. 5000' });
+    if (f.fidelidadActiva && !f.premioFidelidad.trim())
+      return setErrores({ premioFidelidad: 'Escriba el premio, ej. Un casado gratis' });
     if (f.enLineaActivo && !f.enLineaRecoger && !f.enLineaDomicilio)
       return setErrores({ general: 'Active "para recoger", "a domicilio" o las dos' });
     const datos = restauranteConfigSchema.safeParse({
@@ -68,11 +76,17 @@ export function AjustesEnLinea({ r }: { r: ConfigEnLinea }) {
       sinpeNombre: f.sinpeNombre.trim() || null,
       tiempoEstimadoMin: Number(f.tiempoEstimadoMin),
       minutosPagoSinpe: Number(f.minutosPagoSinpe),
+      fidelidadActiva: f.fidelidadActiva,
+      sellosMeta: Number(f.sellosMeta),
+      premioFidelidad: f.premioFidelidad.trim() || null,
     });
     if (!datos.success) return setErrores(erroresDe(datos.error));
     guardar.mutate(datos.data);
   };
-  const fila = (texto: string, k: 'enLineaActivo' | 'enLineaRecoger' | 'enLineaDomicilio') => (
+  const fila = (
+    texto: string,
+    k: 'enLineaActivo' | 'enLineaRecoger' | 'enLineaDomicilio' | 'fidelidadActiva',
+  ) => (
     <label className="flex min-h-11 items-center justify-between gap-3 text-sm">
       <span>{texto}</span>
       <Interruptor activo={f[k]} etiqueta={texto} onCambio={(v) => poner(k, v)} />
@@ -163,6 +177,34 @@ export function AjustesEnLinea({ r }: { r: ConfigEnLinea }) {
               error={errores.minutosPagoSinpe}
               ayuda="El pedido no pasa a cocina hasta que verifique el pago"
             />
+          </div>
+
+          <div className="space-y-2 rounded-md border border-line p-3">
+            {fila(
+              'Tarjeta de sellos: cada pedido en línea entregado suma un sello',
+              'fidelidadActiva',
+            )}
+            {f.fidelidadActiva && (
+              <div className="grid gap-3 sm:grid-cols-[160px_1fr]">
+                <Campo
+                  etiqueta="Sellos para el premio"
+                  type="number"
+                  min={2}
+                  max={50}
+                  value={f.sellosMeta}
+                  onChange={(e) => poner('sellosMeta', e.target.value)}
+                  error={errores.sellosMeta}
+                />
+                <Campo
+                  etiqueta="Premio"
+                  placeholder="Un casado gratis"
+                  value={f.premioFidelidad}
+                  onChange={(e) => poner('premioFidelidad', e.target.value)}
+                  error={errores.premioFidelidad}
+                  ayuda="Se entrega a mano: en «En línea» aparece «Canjear premio» cuando el cliente completa la tarjeta"
+                />
+              </div>
+            )}
           </div>
 
           <div className="rounded-md bg-surface p-3">

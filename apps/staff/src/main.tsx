@@ -19,6 +19,7 @@ import { PanelLayout } from './panel/PanelLayout';
 import { AjustesPage } from './panel/AjustesPage';
 import { MesasPage } from './panel/MesasPage';
 import { PersonalPage } from './panel/PersonalPage';
+import { ClientesPage } from './panel/ClientesPage';
 import { CambiarPasswordPage } from './CambiarPasswordPage';
 import { DispositivosPage } from './panel/DispositivosPage';
 import { ReportesPage } from './panel/reportes/ReportesPage';
@@ -100,6 +101,7 @@ function App() {
           <Route path="menu/plato/:id" element={<PlatoForm />} />
           <Route path="mesas" element={<MesasPage />} />
           <Route path="personal" element={<PersonalPage />} />
+          <Route path="clientes" element={<ClientesPage />} />
           <Route path="ajustes" element={<AjustesPage />} />
           <Route path="personalizar" element={<PersonalizarPage />} />
           <Route path="dispositivos" element={<DispositivosPage />} />

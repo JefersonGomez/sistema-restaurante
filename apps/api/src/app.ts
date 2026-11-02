@@ -15,6 +15,7 @@ import { adminRouter, restauranteRouter } from './modules/restaurantes/restauran
 import { usuariosRouter } from './modules/restaurantes/usuarios.routes';
 import { reportesRouter } from './modules/reportes/reportes.routes';
 import { dispositivosRouter } from './modules/dispositivos/dispositivos.routes';
+import { clientesRouter } from './modules/clientes/clientes.routes';
 import { enLineaRouter, repartosRouter } from './modules/enlinea/enlinea.routes';
 
 export const app = express();
@@ -52,6 +53,7 @@ app.use('/reportes', reportesRouter);
 app.use('/dispositivos', dispositivosRouter);
 app.use('/enlinea', enLineaRouter);
 app.use('/repartos', repartosRouter);
+app.use('/clientes', clientesRouter);
 
 app.use(noEncontrado);
 app.use(errorHandler);

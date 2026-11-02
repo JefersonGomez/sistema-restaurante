@@ -41,6 +41,9 @@ export async function menu(slug: string): Promise<MenuPublico> {
       sinpeNombre: true,
       tiempoEstimadoMin: true,
       minutosPagoSinpe: true,
+      fidelidadActiva: true,
+      sellosMeta: true,
+      premioFidelidad: true,
       horarios: { select: { diaSemana: true, abre: true, cierra: true } },
     },
   });
@@ -64,6 +67,9 @@ export async function menu(slug: string): Promise<MenuPublico> {
     sinpeNombre,
     tiempoEstimadoMin,
     minutosPagoSinpe,
+    fidelidadActiva,
+    sellosMeta,
+    premioFidelidad,
     ...datos
   } = r;
   const ahora = new Date();
@@ -82,6 +88,7 @@ export async function menu(slug: string): Promise<MenuPublico> {
       sinpeNombre,
       tiempoEstimadoMin,
       minutosPagoSinpe,
+      fidelidad: { activa: fidelidadActiva, meta: sellosMeta, premio: premioFidelidad },
     },
   };
 

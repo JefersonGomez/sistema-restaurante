@@ -12,6 +12,7 @@ import {
 } from '@menu-qr/shared';
 import { autenticarCliente } from '../../middlewares/cliente';
 import { limiteEnLinea, limitePublico, limiteSesion } from '../../middlewares/rateLimit';
+import { cuentaClienteRouter } from '../clientes/clientes.routes';
 import * as enLinea from '../enlinea/enlinea.controller';
 import { validate } from '../../middlewares/validate';
 import * as c from './public.controller';
@@ -28,6 +29,8 @@ publicRouter.post(
   validate({ params: slugParamSchema, body: pedidoEnLineaSchema }),
   enLinea.crear,
 );
+// Cuenta opcional del cliente del menú en línea (Fase 8).
+publicRouter.use('/:slug/clientes', validate({ params: slugParamSchema }), cuentaClienteRouter);
 publicRouter.get(
   '/seguimiento/:token',
   validate({ params: tokenParamSchema }),

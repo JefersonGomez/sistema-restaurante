@@ -11,6 +11,7 @@ const ADMINISTRAR: Enlace[] = [
   { a: '/panel/menu', texto: 'Menú' },
   { a: '/panel/personalizar', texto: 'Personalizar' },
   { a: '/panel/mesas', texto: 'Mesas y QR' },
+  { a: '/panel/clientes', texto: 'Clientes' },
   { a: '/panel/personal', texto: 'Personal' },
   { a: '/panel/dispositivos', texto: 'Dispositivos' },
   { a: '/panel/reportes', texto: 'Reportes' },

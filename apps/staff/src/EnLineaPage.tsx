@@ -1,4 +1,4 @@
-import { Bike, Check, MapPin, Navigation, Phone, Store, X } from 'lucide-react';
+import { Bike, Check, Gift, MapPin, Navigation, Phone, Store, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { CuentaDetalle, MenuPublico } from '@menu-qr/shared';
 import { api, obtenerMenu } from './api';
@@ -195,6 +195,29 @@ function Tarjeta({
         )}
         {d.costoEnvio > 0 && <span className="text-muted"> · envío {precio(d.costoEnvio)}</span>}
       </p>
+      {d.fidelidad && (
+        <p className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${d.fidelidad.sellos >= d.fidelidad.meta ? 'bg-ok-soft text-ok' : 'bg-surface-2 text-muted'}`}
+          >
+            <Gift className="size-3.5" aria-hidden />
+            {Math.min(d.fidelidad.sellos, d.fidelidad.meta)}/{d.fidelidad.meta} sellos
+          </span>
+          {d.fidelidad.sellos >= d.fidelidad.meta && (
+            <button
+              type="button"
+              disabled={ocupado}
+              onClick={() =>
+                confirm(`¿Canjear «${d.fidelidad!.premio}» para ${d.clienteNombre}?`) &&
+                onAccion('/clientes/canjear', { telefono: d.clienteTelefono })
+              }
+              className="min-h-9 rounded-md bg-ok-soft px-3 text-xs font-semibold text-ok disabled:opacity-50"
+            >
+              Canjear premio: {d.fidelidad.premio}
+            </button>
+          )}
+        </p>
+      )}
 
       {/* Acciones según la etapa. */}
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">

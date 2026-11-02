@@ -45,7 +45,7 @@ todavía: antes de empezar cada bloque se convierte en una spec de fase y el usu
    fase propia. Limitación de una app web: el repartidor debe tener la página abierta y la pantalla
    encendida (en iPhone el navegador deja de mandar la ubicación en segundo plano).
 
-## Clientes
+## Clientes — en la Fase 8 (`docs/especificacion-fase8.md`)
 
 9. **Lista de clientes** a partir de los pedidos en línea (por teléfono): cuántos pedidos, cuánto
    gasta, último pedido, clientes frecuentes. Funciona sin que el cliente se registre.

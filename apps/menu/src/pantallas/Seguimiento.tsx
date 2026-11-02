@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Check, Phone, Utensils } from 'lucide-react';
+import { Check, MessageCircle, Phone, Utensils } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { CuentaDetalle, EtapaEnLinea } from '@menu-qr/shared';
@@ -7,6 +7,7 @@ import { Cargando, formatoPrecio, nombreEn, Pastilla } from '@menu-qr/ui';
 import * as api from '../api';
 import { TotalsSummary } from '../componentes/cuenta';
 import { ErrorScreen, Main } from '../componentes/estructura';
+import { TarjetaSellos } from '../componentes/sellos';
 import { useIdioma, useTextos } from '../estado/idioma';
 
 // Pasos que ve el cliente (domicilio agrega "En camino").
@@ -60,6 +61,20 @@ export function Seguimiento() {
     RECHAZADO: t.etapaRechazado(d.motivoRechazo),
   };
   const items = c.pedidos.flatMap((p) => p.items);
+  // Comprobante por WhatsApp: la persona elige a quién enviarlo (no es factura electrónica).
+  const comprobante = [
+    `*${r.nombre}*`,
+    `${t.pedidoNumero(d.numero)} · ${c.tipo === 'DOMICILIO' ? t.aDomicilio : t.paraRecoger}`,
+    ...items
+      .filter((i) => !i.cancelado)
+      .map(
+        (i) => `${i.cantidad}× ${nombreEn(i, idioma)}: ${precio(i.precioUnitario * i.cantidad)}`,
+      ),
+    ...(d.costoEnvio ? [`${t.envio}: ${precio(d.costoEnvio)}`] : []),
+    `*${t.total}: ${precio(c.total)}*`,
+    'NO ES FACTURA ELECTRÓNICA',
+    window.location.href,
+  ].join('\n');
 
   return (
     <Main>
@@ -157,7 +172,19 @@ export function Seguimiento() {
           />
         )}
 
+        {q.data.fidelidad && d.etapa !== 'RECHAZADO' && <TarjetaSellos f={q.data.fidelidad} />}
+
         <div className="flex flex-col gap-2">
+          {d.etapa !== 'RECHAZADO' && (
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(comprobante)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-12 items-center justify-center gap-2 rounded-md bg-surface font-semibold"
+            >
+              <MessageCircle className="size-4" aria-hidden /> {t.enviarWhatsApp}
+            </a>
+          )}
           {r.telefono && (
             <a
               href={`tel:${r.telefono.replace(/[^0-9+]/g, '')}`}

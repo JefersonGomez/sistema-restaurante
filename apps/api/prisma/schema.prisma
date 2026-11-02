@@ -106,6 +106,10 @@ model Restaurante {
   sinpeNombre              String?
   tiempoEstimadoMin        Int              @default(25)
   minutosPagoSinpe         Int              @default(15) // tiempo del cliente para hacer el SINPE
+  // Fidelidad: tarjeta de sellos de los pedidos en línea (Fase 8)
+  fidelidadActiva          Boolean          @default(false)
+  sellosMeta               Int              @default(8)
+  premioFidelidad          String?
   createdAt                DateTime         @default(now())
   updatedAt                DateTime         @updatedAt
 
@@ -123,6 +127,8 @@ model Restaurante {
   cuentas        Cuenta[]
   pedidos        Pedido[]
   llamadas       Llamada[]
+  clientes       ClienteRegistrado[]
+  canjes         CanjeSello[]
 }
 
 model Usuario {
@@ -320,6 +326,8 @@ model Cuenta {
   numeroPedido      Int? // "Pedido #12" (correlativo por restaurante)
   clienteNombre     String?
   clienteTelefono   String?
+  telefonoNormal    String? // últimos 8 dígitos del teléfono: identifica al cliente (Fase 8)
+  clienteId         String?       @db.Uuid // cuenta del cliente, si pidió con sesión
   direccionEntrega  String?
   referenciaEntrega String?
   latEntrega        Float? // punto marcado por el cliente en el mapa (Fase 7)
@@ -344,6 +352,7 @@ model Cuenta {
   mesa        Mesa?              @relation(fields: [mesaId], references: [id], onDelete: Restrict)
   cerradaPor  Usuario?           @relation("CuentaCerradaPor", fields: [cerradaPorId], references: [id])
   repartidor  Usuario?           @relation("CuentaRepartidor", fields: [repartidorId], references: [id])
+  cliente     ClienteRegistrado? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
   pedidos     Pedido[]
   solicitudes SolicitudIngreso[]
   pagos       PagoCuenta[]
@@ -354,6 +363,7 @@ model Cuenta {
   @@index([restauranteId, estado, cerradaEn]) // reportes por rango de fechas
   @@index([restauranteId, tipo, etapa])
   @@index([restauranteId, repartidorId])
+  @@index([restauranteId, telefonoNormal])
 }
 
 enum TipoCuenta {
@@ -565,4 +575,61 @@ model PagoCuenta {
   items  PedidoItem[]
 
   @@index([cuentaId])
+}
+
+// --- Clientes (Fase 8) ---
+
+// Cuenta opcional del cliente de pedidos en línea; es de un solo restaurante.
+model ClienteRegistrado {
+  id             String   @id @default(uuid()) @db.Uuid
+  restauranteId  String   @db.Uuid
+  nombre         String
+  email          String
+  passwordHash   String
+  telefono       String
+  telefonoNormal String
+  direccion      String?
+  referencia     String?
+  lat            Float?
+  lng            Float?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  restaurante Restaurante               @relation(fields: [restauranteId], references: [id])
+  sesiones    SesionClienteRegistrado[]
+  cuentas     Cuenta[]
+
+  @@unique([restauranteId, email])
+  @@index([restauranteId, telefonoNormal])
+}
+
+// Sesión del cliente registrado: token opaco (en la BD solo su hash), 30 días.
+model SesionClienteRegistrado {
+  id        String   @id @default(uuid()) @db.Uuid
+  clienteId String   @db.Uuid
+  tokenHash String   @unique
+  expiraEn  DateTime
+  revocada  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cliente ClienteRegistrado @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@index([clienteId])
+}
+
+// Premio canjeado: descuenta `sellos` del teléfono (sellos = entregados − canjeados).
+model CanjeSello {
+  id             String   @id @default(uuid()) @db.Uuid
+  restauranteId  String   @db.Uuid
+  telefonoNormal String
+  sellos         Int
+  premio         String
+  usuarioId      String?  @db.Uuid // quién lo canjeó
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+
+  @@index([restauranteId, telefonoNormal])
 }

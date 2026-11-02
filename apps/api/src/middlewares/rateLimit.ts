@@ -40,3 +40,7 @@ export const limitePin = crear(20, 15, {
 export const limiteRegistro = crear(5, 60);
 // Pedidos en línea: 10 por IP cada 10 minutos.
 export const limiteEnLinea = crear(10, 10);
+// Cuentas de clientes del menú en línea: 10 entradas fallidas por IP cada 15 min y 10 cuentas
+// nuevas por IP cada hora (contadores propios, separados del login del personal).
+export const limiteLoginCliente = crear(10, 15, { soloFallidos: true });
+export const limiteRegistroCliente = crear(10, 60);

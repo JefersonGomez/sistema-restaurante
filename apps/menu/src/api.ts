@@ -1,11 +1,15 @@
 import type {
+  ClientePerfil,
   CrearPedidoInput,
   CuentaDetalle,
   MenuPublico,
   MesaPublica,
   PedidoDetalle,
   PedidoEnLineaInput,
+  PerfilClienteInput,
+  RegistroClienteInput,
   SeguimientoEnLinea,
+  SesionClienteRegistrado,
 } from '@menu-qr/shared';
 
 export const API = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
@@ -24,9 +28,9 @@ export class ErrorApi extends Error {
 
 async function llamar<T>(
   ruta: string,
-  opciones: RequestInit & { sesion?: string } = {},
+  opciones: RequestInit & { sesion?: string; cliente?: string | null } = {},
 ): Promise<T> {
-  const { sesion, ...init } = opciones;
+  const { sesion, cliente, ...init } = opciones;
   let res: Response;
   try {
     res = await fetch(`${API}${ruta}`, {
@@ -34,6 +38,7 @@ async function llamar<T>(
       headers: {
         ...(init.body ? { 'Content-Type': 'application/json' } : {}),
         ...(sesion ? { Authorization: `Bearer ${sesion}` } : {}),
+        ...(cliente ? { 'X-Cliente': cliente } : {}),
       },
     });
   } catch {
@@ -110,11 +115,42 @@ export const desbloquearIngreso = (sesion: string) =>
   llamar('/public/cuenta/desbloquear-ingreso', { method: 'POST', sesion });
 
 // --- Pedidos en línea (sin mesa) ---
-export const pedirEnLinea = (slug: string, pedido: PedidoEnLineaInput) =>
+// Con la sesión de la cuenta del cliente (si tiene), el pedido queda en su cuenta.
+export const pedirEnLinea = (slug: string, pedido: PedidoEnLineaInput, cliente?: string | null) =>
   llamar<{ token: string }>(`/public/${encodeURIComponent(slug)}/pedidos-en-linea`, {
     method: 'POST',
+    cliente,
     body: JSON.stringify(pedido),
   });
+
+// --- Cuenta del cliente (Fase 8): sesión en el encabezado X-Cliente ---
+const rutaCliente = (slug: string, r: string) => `/public/${encodeURIComponent(slug)}/clientes${r}`;
+export const registrarCliente = (slug: string, datos: RegistroClienteInput) =>
+  llamar<SesionClienteRegistrado>(rutaCliente(slug, '/registro'), {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+export const entrarCliente = (slug: string, email: string, password: string) =>
+  llamar<SesionClienteRegistrado>(rutaCliente(slug, '/entrar'), {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+export const perfilCliente = (slug: string, cliente: string) =>
+  llamar<ClientePerfil>(rutaCliente(slug, '/yo'), { cliente });
+export const guardarPerfil = (slug: string, cliente: string, datos: PerfilClienteInput) =>
+  llamar<ClientePerfil>(rutaCliente(slug, '/yo'), {
+    method: 'PUT',
+    cliente,
+    body: JSON.stringify(datos),
+  });
+export const cambiarContrasena = (slug: string, cliente: string, actual: string, nueva: string) =>
+  llamar(rutaCliente(slug, '/yo/password'), {
+    method: 'POST',
+    cliente,
+    body: JSON.stringify({ actual, nueva }),
+  });
+export const salirCliente = (slug: string, cliente: string) =>
+  llamar(rutaCliente(slug, '/salir'), { method: 'POST', cliente }).catch(() => {});
 
 export const verSeguimiento = (token: string) =>
   llamar<SeguimientoEnLinea>(`/public/seguimiento/${encodeURIComponent(token)}`);

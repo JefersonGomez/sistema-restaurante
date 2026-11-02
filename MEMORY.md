@@ -16,10 +16,46 @@
   SINPE. Pendiente: prueba del usuario.
 - **Limpieza** (2026-10-25): revisado código muerto y dependencias; se quitaron `seleccionValida` y `GrupoEditorInput` (shared, sin uso) y la redirección vieja `/dueno` del staff. El resto de dependencias se usan (`@prisma/client` lo pide el cliente generado). `/admin` (SUPERADMIN) sigue como "Próximamente".
 - **Fase 6 completa** (diseño, commit `44fa8f5`, 2026-11-01). Pendiente: prueba del usuario.
-- **Fase 7 completa** (domicilio: ubicación y repartidores, 2026-11-01): 7.1–7.3 hechos, 188 tests verdes. Sin commit: falta validación del usuario.
+- **Fase 7 completa** (domicilio: ubicación y repartidores, commit `e1fb043`, 2026-11-01). Pendiente: prueba del usuario.
+- **Fase 8 completa** (clientes: lista, cuenta, sellos, WhatsApp, 2026-11-01): 8.1–8.3 hechos, 194 tests verdes. Sin commit: falta validación del usuario.
 - **Backlog de mejoras:** `docs/mejoras-pendientes.md` (ideas del usuario, 2026-10-26; nada programado
   aún, revisado 2026-10-29). Cada bloque se convierte en spec de fase y se aprueba antes de empezar.
 - Raíz del monorepo: `C:\Users\gomes\OneDrive\Documentos\sistema-restaurante` (equivale a `menu-qr/` de la spec).
+
+## Plan de la Fase 8 (aprobado 2026-11-01) — spec: docs/especificacion-fase8.md
+
+Decisiones: cuenta con correo y contraseña (PIN descartado: si lo olvida, el restaurante tendría
+que cambiarlo); recuperar contraseña por correo pendiente del proveedor ("luego vemos"); tarjeta de
+sellos; comprobante solo por WhatsApp (wa.me); lista y sellos solo en pedidos en línea.
+
+| Paso | Qué                                                                                    | Estado |
+| ---- | -------------------------------------------------------------------------------------- | ------ |
+| 8.1  | Modelo y API: cliente registrado, sesiones, teléfono normalizado, sellos, canje, lista | ✅     |
+| 8.2  | Cliente: entrar / crear cuenta, Mi cuenta, checkout prellenado, sellos y WhatsApp      | ✅     |
+| 8.3  | Personal: Panel → Clientes, ajustes de sellos, sellos y canje en En línea, seed        | ✅     |
+
+- 8.1: migraciones `20261102034916_clientes` (ClienteRegistrado único por (restauranteId, email),
+  SesionClienteRegistrado con token opaco hasheado 30 días, CanjeSello, Restaurante.fidelidadActiva /
+  sellosMeta (8) / premioFidelidad, Cuenta.telefonoNormal y clienteId) y `20261102035500_telefono_normal`
+  (rellena telefonoNormal de los pedidos viejos). `normalizarTelefono` (shared): últimos 8 dígitos.
+  Sellos = cuentas en línea ENTREGADO del teléfono − Σ CanjeSello.sellos (sin contadores que
+  sincronizar; canjear usa pg_advisory_xact_lock por teléfono). Módulo `clientes`: público
+  `/public/:slug/clientes` (registro, entrar con limiteLoginCliente / limiteRegistroCliente propios,
+  yo GET/PUT, yo/password cierra las otras sesiones, salir); la sesión va en `X-Cliente` y solo vale
+  en el restaurante del slug. Privado `/clientes` (GET solo DUENO; canjear DUENO/CAJA/MESERO).
+  `crear` pedido en línea acepta X-Cliente (si no sirve, pide como invitado). Seguimiento trae
+  `fidelidad`; `/enlinea` trae `enLinea.fidelidad`; menú público `enLinea.fidelidad`.
+- 8.2: `estado/cuentaCliente.ts` (token por slug en localStorage `cliente:<slug>`; si da 401 se
+  olvida), `pantallas/CuentaCliente.tsx` (/r/:slug/cuenta; `?pedido` vuelve al checkout al entrar),
+  `componentes/sellos.tsx` (TarjetaSellos). Menú en línea: enlace "Entrar o crear cuenta" / "Hola, X ·
+  N de M sellos". Checkout se llena con el perfil una vez. Seguimiento: sellos + "Enviar por WhatsApp".
+- 8.3: `panel/ClientesPage.tsx` (Panel → Clientes, ícono Contact, tono marca), AjustesEnLinea con
+  tarjeta de sellos, EnLineaPage con "N/M sellos" y "Canjear premio". Seed: sellos activos (5 = un
+  fresco natural gratis) y cliente demo `cliente@correo.test` / `Cliente123!`.
+- Problemas: (a) escribir código con `node -e` desde Bash se come las barras invertidas (`/\D/` quedó
+  `/D/`, `'\n'` quedó un salto real): para código con escapes usar Edit/Write; test unitario de
+  `normalizarTelefono` agregado. (b) `prisma migrate dev --create-only` corrido dos veces creó una
+  migración vacía y la aplicó: se borró la carpeta y su fila de `_prisma_migrations` (solo dev).
 
 ## Plan de la Fase 7 (aprobado 2026-11-01) — spec: docs/especificacion-fase7.md
 

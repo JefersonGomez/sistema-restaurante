@@ -26,6 +26,15 @@ const USUARIOS_DEMO = [
   },
 ] as const;
 const PIN_COCINA = '1234';
+// Cliente con cuenta en el menú en línea (/r/soda-la-esquina → Entrar).
+const CLIENTE_DEMO = {
+  nombre: 'Laura Cliente',
+  email: 'cliente@correo.test',
+  password: 'Cliente123!',
+  telefono: '8800 1122',
+  telefonoNormal: '88001122',
+  direccion: 'Del Más x Menos 100 m este, casa amarilla',
+};
 
 const SLUG = 'soda-la-esquina';
 const colones = (monto: number) => monto * 100; // a céntimos
@@ -72,6 +81,26 @@ async function main() {
       },
     });
     console.log(`Usuario demo agregado: ${u.email}`);
+  }
+  // Fase 8: tarjeta de sellos (si nunca se configuró) y un cliente con cuenta en el menú en línea.
+  if (!restaurante.premioFidelidad) {
+    await prisma.restaurante.update({
+      where: { id: restaurante.id },
+      data: { fidelidadActiva: true, sellosMeta: 5, premioFidelidad: 'Un fresco natural gratis' },
+    });
+    console.log('Tarjeta de sellos activada (5 sellos: un fresco natural gratis).');
+  }
+  const clienteDemo = { ...CLIENTE_DEMO, restauranteId: restaurante.id };
+  if (
+    !(await prisma.clienteRegistrado.findUnique({
+      where: { restauranteId_email: { restauranteId: restaurante.id, email: clienteDemo.email } },
+    }))
+  ) {
+    const { password, ...datos } = clienteDemo;
+    await prisma.clienteRegistrado.create({
+      data: { ...datos, passwordHash: await bcrypt.hash(password, 10) },
+    });
+    console.log(`Cliente demo del menú en línea: ${clienteDemo.email}`);
   }
   const cuentas = await historial(restaurante);
   if (cuentas) console.log(`Historial: ${cuentas} cuentas cerradas en los últimos 30 días.`);

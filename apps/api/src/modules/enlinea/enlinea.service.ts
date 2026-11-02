@@ -1,5 +1,6 @@
 import {
   estaAbierto,
+  normalizarTelefono,
   type EfectivoRepartidor,
   type EtapaEnLinea,
   type PedidoEnLineaInput,
@@ -12,6 +13,7 @@ import { emitToRestaurant } from '../../realtime';
 import { cancelarPedido, cerrarEnTx, confirmarPedido } from '../operacion/operacion.service';
 import { aCuenta, incluirCuenta, lugarDe } from '../pedidos/detalle';
 import { bloquearCuenta, crearPedido, recalcularCuenta } from '../pedidos/pedidos.service';
+import { fidelidadDe, sellosDe, sesionDe } from '../clientes/clientes.service';
 
 // Cuántos pedidos sin aceptar puede tener a la vez un mismo teléfono (frena bromas y spam).
 const MAX_PENDIENTES_POR_TELEFONO = 2;
@@ -25,7 +27,8 @@ const avisar = (restauranteId: string, evento: string, payload: object) => {
 
 // --- Cliente ---
 
-export async function crear(slug: string, input: PedidoEnLineaInput) {
+// tokenCliente: sesión de la cuenta del cliente (encabezado X-Cliente); si no sirve, pide como invitado.
+export async function crear(slug: string, input: PedidoEnLineaInput, tokenCliente?: string) {
   const r = await prisma.restaurante.findUnique({
     where: { slug },
     include: { horarios: { select: { diaSemana: true, abre: true, cierra: true } } },
@@ -65,6 +68,7 @@ export async function crear(slug: string, input: PedidoEnLineaInput) {
       'Ya tiene pedidos esperando confirmación. Espere a que el restaurante los acepte.',
     );
 
+  const sesion = await sesionDe(slug, tokenCliente);
   const token = generarTokenQr();
   const cuenta = await prisma.$transaction(async (tx) => {
     // Número correlativo por restaurante ("Pedido #12"); el candado evita repetirlo.
@@ -80,6 +84,8 @@ export async function crear(slug: string, input: PedidoEnLineaInput) {
         numeroPedido: (_max.numeroPedido ?? 0) + 1,
         clienteNombre: input.cliente.nombre,
         clienteTelefono: input.cliente.telefono,
+        telefonoNormal: normalizarTelefono(input.cliente.telefono),
+        clienteId: sesion?.clienteId ?? null,
         direccionEntrega: input.tipo === 'DOMICILIO' ? input.cliente.direccion : null,
         referenciaEntrega: input.tipo === 'DOMICILIO' ? input.cliente.referencia || null : null,
         latEntrega: input.tipo === 'DOMICILIO' ? (input.cliente.ubicacion?.lat ?? null) : null,
@@ -129,13 +135,24 @@ export async function seguimiento(token: string): Promise<SeguimientoEnLinea> {
           sinpeNombre: true,
           porcentajeIva: true,
           preciosIncluyenImpuestos: true,
+          id: true,
+          fidelidadActiva: true,
+          sellosMeta: true,
+          premioFidelidad: true,
         },
       },
     },
   });
   if (!c) throw noExiste('Pedido');
-  const { restaurante, ...cuenta } = c;
-  return { restaurante, cuenta: aCuenta(cuenta) };
+  const {
+    restaurante: { id: _id, fidelidadActiva, sellosMeta, premioFidelidad, ...restaurante },
+    ...cuenta
+  } = c;
+  const fidelidad = await fidelidadDe(
+    { id: c.restauranteId, fidelidadActiva, sellosMeta, premioFidelidad },
+    c.telefonoNormal,
+  );
+  return { restaurante, cuenta: aCuenta(cuenta), fidelidad };
 }
 
 // --- Restaurante ---
@@ -174,7 +191,24 @@ export async function listar(restauranteId: string) {
     take: 100,
     include: incluirCuenta,
   });
-  return filas.map(aCuenta);
+  // Sellos de cada cliente, para mostrar la tarjeta y el botón de canjear.
+  const r = await prisma.restaurante.findUniqueOrThrow({ where: { id: restauranteId } });
+  const sellos = r.fidelidadActiva
+    ? await sellosDe(
+        restauranteId,
+        filas.map((f) => f.telefonoNormal ?? ''),
+      )
+    : new Map<string, number>();
+  return filas.map((f) => {
+    const c = aCuenta(f);
+    if (c.enLinea && r.fidelidadActiva && f.telefonoNormal)
+      c.enLinea.fidelidad = {
+        sellos: sellos.get(f.telefonoNormal) ?? 0,
+        meta: r.sellosMeta,
+        premio: r.premioFidelidad ?? 'Un premio',
+      };
+    return c;
+  });
 }
 
 // Aceptar: el pedido pasa a cocina (con SINPE, cuando se verifique el pago) y el cliente ve el

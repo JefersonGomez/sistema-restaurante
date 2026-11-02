@@ -6,7 +6,7 @@ type ConId = Request<{ id: string }>;
 
 // Cliente (público)
 export const crear = async (req: Request<{ slug: string }>, res: Response) => {
-  res.status(201).json(await service.crear(req.params.slug, req.body));
+  res.status(201).json(await service.crear(req.params.slug, req.body, req.get('x-cliente')));
 };
 export const seguimiento = async (req: Request<{ token: string }>, res: Response) => {
   res.json(await service.seguimiento(req.params.token));
