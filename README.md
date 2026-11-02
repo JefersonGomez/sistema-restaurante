@@ -110,6 +110,20 @@ mesero; y una cuenta cerrada hoy (mesa 6) que aparece en el reporte **Hoy** del 
 6. Los pedidos en línea no llevan el 10 % de servicio; a domicilio se suma el envío. En Reportes
    aparecen en **Por canal** (en mesa, para recoger, a domicilio); los rechazados no cuentan.
 
+### Domicilio con repartidor (Fase 7)
+
+1. Como dueño, en **Panel → Personal** cree un usuario con rol **Repartidor** (el seed ya trae a
+   `repartidor@sodalaesquina.test`).
+2. Abra `http://localhost:5180/r/soda-la-esquina`, agregue platos, elija **A domicilio** y, además
+   de la dirección, toque **Usar mi ubicación actual** o **Marcar en el mapa** y mueva el pin. La
+   ubicación del navegador solo funciona en `localhost` o con HTTPS.
+3. En **En línea** (caja, mesero o dueño) acepte el pedido: la tarjeta muestra "punto en el mapa" y
+   un selector **Elegir repartidor**. Al elegirlo, al repartidor le suena el aviso.
+4. En otra ventana entre como repartidor: **Mis entregas** muestra el pedido con **Llamar**,
+   **Google Maps** y **Waze**. Cuando cocina termina y alguien marca **Listo para entregar**,
+   aparece **Salí a entregar**; luego **Entregué** con el método de pago.
+5. En **Caja** aparece **Efectivo de repartidores** con lo que trae cada uno; **Recibido** lo cuadra.
+
 ### Promoción y menús del día
 
 En Panel → **Menú**, arriba de todo:
@@ -206,13 +220,14 @@ Generar un secreto: `node -e "console.log(require('crypto').randomBytes(48).toSt
 
 ## Credenciales de prueba (creadas por `pnpm db:seed`)
 
-| Rol        | Email                       | Contraseña   | Pantalla              |
-| ---------- | --------------------------- | ------------ | --------------------- |
-| SUPERADMIN | `admin@menuqr.test`         | `Admin123!`  | —                     |
-| DUENO      | `dueno@sodalaesquina.test`  | `Dueno123!`  | Hoy + todas las demás |
-| MESERO     | `mesero@sodalaesquina.test` | `Mesero123!` | Mesero (celular)      |
-| COCINA     | `cocina@sodalaesquina.test` | `Cocina123!` | Cocina/Bar (tablet)   |
-| CAJA       | `caja@sodalaesquina.test`   | `Caja123!`   | Caja (computadora)    |
+| Rol        | Email                           | Contraseña       | Pantalla               |
+| ---------- | ------------------------------- | ---------------- | ---------------------- |
+| SUPERADMIN | `admin@menuqr.test`             | `Admin123!`      | —                      |
+| DUENO      | `dueno@sodalaesquina.test`      | `Dueno123!`      | Hoy + todas las demás  |
+| MESERO     | `mesero@sodalaesquina.test`     | `Mesero123!`     | Mesero (celular)       |
+| COCINA     | `cocina@sodalaesquina.test`     | `Cocina123!`     | Cocina/Bar (tablet)    |
+| CAJA       | `caja@sodalaesquina.test`       | `Caja123!`       | Caja (computadora)     |
+| REPARTIDOR | `repartidor@sodalaesquina.test` | `Repartidor123!` | Mis entregas (celular) |
 
 Lucía (cocina) tiene además el **PIN `1234`** para entrar en una tablet vinculada (ver abajo).
 
@@ -310,6 +325,9 @@ Errores siempre con la forma `{ error: { code, message, details? } }`.
 | Comensal (sesión)      | `POST /public/cuenta/personas`, `POST /public/cuenta/ingresos/:id` `{ aceptar }`, `POST /public/cuenta/desbloquear-ingreso`, `POST /public/cuenta/vistas/:platoId`                      |
 | Público (rate limited) | `POST /auth/registro`, `POST /public/mesa/:token/ingreso`, `POST /public/mesa/:token/ingreso/:id` `{ clave }`, `POST /dispositivos/vincular`                                            |
 | DUENO, CAJA, MESERO    | `GET /enlinea`, `POST /enlinea/:id/aceptar` `{ tiempoEstimadoMin }`, `/rechazar` `{ motivo }`, `/etapa` `{ etapa: LISTO\|EN_CAMINO }`, `/pago-verificado`, `/entregar` `{ metodoPago }` |
+| DUENO, CAJA, MESERO    | `GET /enlinea/repartidores`, `POST /enlinea/:id/repartidor` `{ repartidorId }` (a domicilio, aceptado o listo)                                                                          |
+| DUENO, CAJA            | `GET /enlinea/efectivo` (efectivo por repartidor sin cuadrar), `POST /enlinea/efectivo/recibir` `{ repartidorId }`                                                                      |
+| REPARTIDOR             | `GET /repartos` (sus entregas), `POST /repartos/:id/salir`, `POST /repartos/:id/entregar` `{ metodoPago }`                                                                              |
 | DUENO                  | `GET /restaurante/qr-enlinea.png` (QR del enlace /r/:slug; `GET /restaurante` trae `enlaceEnLinea`)                                                                                     |
 | Público (rate limited) | `POST /public/:slug/pedidos-en-linea` (10 por IP cada 10 min, máx. 2 pendientes por teléfono), `GET /public/seguimiento/:token`                                                         |
 
@@ -322,13 +340,14 @@ la IP del Wi-Fi) y 60/min por sesión de comensal.
 Conectar al host de la API con `auth: { token: <accessToken> }` (personal) o
 `auth: { sesion: <token de sesión> }` (comensal). Salas:
 
-| Sala                          | Quién                                             |
-| ----------------------------- | ------------------------------------------------- |
-| `rest:{id}`                   | todo el personal                                  |
-| `rest:{id}:meseros` / `:caja` | meseros y dueño / caja y dueño                    |
-| `rest:{id}:estacion:{estId}`  | cocina (su estación, o todas si no tiene) y dueño |
-| `rest:{id}:comensales`        | todos los celulares (avisos de menú)              |
-| `cuenta:{cuentaId}`           | celulares de esa mesa (solo su cuenta)            |
+| Sala                          | Quién                                                 |
+| ----------------------------- | ----------------------------------------------------- |
+| `rest:{id}`                   | todo el personal                                      |
+| `rest:{id}:meseros` / `:caja` | meseros y dueño / caja y dueño                        |
+| `rest:{id}:repartidores`      | repartidores (`reparto:asignado` trae `repartidorId`) |
+| `rest:{id}:estacion:{estId}`  | cocina (su estación, o todas si no tiene) y dueño     |
+| `rest:{id}:comensales`        | todos los celulares (avisos de menú)                  |
+| `cuenta:{cuentaId}`           | celulares de esa mesa (solo su cuenta)                |
 
 Eventos (siempre después del commit; cada uno trae `updatedAt`): `pedido:nuevo`, `pedido:confirmado`
 (cada estación recibe solo sus ítems), `pedido:cancelado`, `item:estado`, `mesa:llamada`,
@@ -473,10 +492,10 @@ y máxima) de creación y de llegada a cocina. Termina con ✅ si no se perdió 
 | `pnpm typecheck`            | `tsc` en todos los paquetes     |
 | `pnpm lint` / `pnpm format` | ESLint / Prettier               |
 
-## Fuera de alcance (Fase 5)
+## Fuera de alcance (Fases 5–7)
 
-Pagos con tarjeta en línea o pasarelas, verificación automática de SINPE, repartidores con app o
-rastreo GPS, envío calculado por distancia, SMS/WhatsApp automáticos, factura electrónica (los
+Pagos con tarjeta en línea o pasarelas, verificación automática de SINPE, rastreo en vivo del
+repartidor (GPS), envío calculado por distancia, SMS/WhatsApp automáticos, factura electrónica (los
 comprobantes dicen "NO ES FACTURA ELECTRÓNICA"), impresión directa a impresoras térmicas, panel del
 superadmin, cobro de mensualidades, despliegue a producción, traducción automática con IA e
 inventario.

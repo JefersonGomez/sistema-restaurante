@@ -18,6 +18,12 @@ const USUARIOS_DEMO = [
   { rol: 'MESERO', nombre: 'Andrés', email: 'mesero@sodalaesquina.test', password: 'Mesero123!' },
   { rol: 'COCINA', nombre: 'Lucía', email: 'cocina@sodalaesquina.test', password: 'Cocina123!' },
   { rol: 'CAJA', nombre: 'Carlos', email: 'caja@sodalaesquina.test', password: 'Caja123!' },
+  {
+    rol: 'REPARTIDOR',
+    nombre: 'Pepe',
+    email: 'repartidor@sodalaesquina.test',
+    password: 'Repartidor123!',
+  },
 ] as const;
 const PIN_COCINA = '1234';
 
@@ -53,6 +59,20 @@ async function main() {
     console.log('Personalización de ejemplo: banner, eslogan, teléfono y dirección.');
   if (await enLineaDemo(restaurante.id))
     console.log('Pedidos en línea activados (para recoger y a domicilio).');
+  // Usuarios demo que se sumaron después (p. ej. el repartidor de la Fase 7).
+  for (const u of USUARIOS_DEMO) {
+    if (await prisma.usuario.findUnique({ where: { email: u.email } })) continue;
+    await prisma.usuario.create({
+      data: {
+        restauranteId: restaurante.id,
+        rol: u.rol,
+        nombre: u.nombre,
+        email: u.email,
+        passwordHash: await bcrypt.hash(u.password, 10),
+      },
+    });
+    console.log(`Usuario demo agregado: ${u.email}`);
+  }
   const cuentas = await historial(restaurante);
   if (cuentas) console.log(`Historial: ${cuentas} cuentas cerradas en los últimos 30 días.`);
 

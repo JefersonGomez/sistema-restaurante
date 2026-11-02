@@ -23,6 +23,7 @@ enum Rol {
   MESERO
   COCINA
   CAJA
+  REPARTIDOR
 }
 
 enum EstadoCuenta {
@@ -146,7 +147,8 @@ model Usuario {
   refreshTokens      RefreshToken[]
   pedidosConfirmados Pedido[]       @relation("PedidoConfirmadoPor")
   pedidosCreados     Pedido[]       @relation("PedidoCreadoPor")
-  cuentasCerradas    Cuenta[]
+  cuentasCerradas    Cuenta[]       @relation("CuentaCerradaPor")
+  repartos           Cuenta[]       @relation("CuentaRepartidor")
 
   @@index([restauranteId])
 }
@@ -320,6 +322,10 @@ model Cuenta {
   clienteTelefono   String?
   direccionEntrega  String?
   referenciaEntrega String?
+  latEntrega        Float? // punto marcado por el cliente en el mapa (Fase 7)
+  lngEntrega        Float?
+  repartidorId      String?       @db.Uuid
+  efectivoCuadrado  Boolean       @default(false) // la caja recibió el efectivo del repartidor
   costoEnvio        Int           @default(0)
   pagoElegido       MetodoPago? // lo que dijo el cliente (efectivo o SINPE)
   comprobanteSinpe  String?
@@ -336,7 +342,8 @@ model Cuenta {
 
   restaurante Restaurante        @relation(fields: [restauranteId], references: [id])
   mesa        Mesa?              @relation(fields: [mesaId], references: [id], onDelete: Restrict)
-  cerradaPor  Usuario?           @relation(fields: [cerradaPorId], references: [id])
+  cerradaPor  Usuario?           @relation("CuentaCerradaPor", fields: [cerradaPorId], references: [id])
+  repartidor  Usuario?           @relation("CuentaRepartidor", fields: [repartidorId], references: [id])
   pedidos     Pedido[]
   solicitudes SolicitudIngreso[]
   pagos       PagoCuenta[]
@@ -346,6 +353,7 @@ model Cuenta {
   @@index([mesaId])
   @@index([restauranteId, estado, cerradaEn]) // reportes por rango de fechas
   @@index([restauranteId, tipo, etapa])
+  @@index([restauranteId, repartidorId])
 }
 
 enum TipoCuenta {

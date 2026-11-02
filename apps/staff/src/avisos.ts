@@ -5,7 +5,7 @@ import { sonar, vibrar } from './alertas';
 // avisos aunque se cambie de pantalla. Cada aviso suena y vibra una vez y, si se dio permiso,
 // también sale como notificación del sistema.
 
-export type TipoAviso = 'llamada' | 'cuenta' | 'pedido' | 'cocina' | 'listo';
+export type TipoAviso = 'llamada' | 'cuenta' | 'pedido' | 'cocina' | 'listo' | 'reparto';
 export type Aviso = { id: number; tipo: TipoAviso; texto: string; fecha: number; leido: boolean };
 
 const MAXIMO = 30;

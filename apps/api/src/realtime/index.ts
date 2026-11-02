@@ -8,12 +8,13 @@ import { dispositivoVigente } from '../middlewares/auth';
 
 // Salas:
 //   rest:{id}                     todo el personal del restaurante
-//   rest:{id}:meseros | :caja
+//   rest:{id}:meseros | :caja | :repartidores
 //   rest:{id}:estacion:{estId}    pantallas de cocina y bar
 //   rest:{id}:comensales          todos los celulares de comensales (menu:actualizado)
 //   cuenta:{cuentaId}             celulares de una mesa
 //   disp:{dispositivoId}          la tablet vinculada (para cortarla al revocarla)
-export type Sala = 'todos' | 'meseros' | 'caja' | 'comensales' | { estacion: string };
+export type Sala =
+  'todos' | 'meseros' | 'caja' | 'repartidores' | 'comensales' | { estacion: string };
 
 const nombreSala = (restauranteId: string, sala: Sala) =>
   sala === 'todos'
@@ -47,6 +48,7 @@ async function salasDePersonal(token: string) {
   const salas: Sala[] = ['todos'];
   if (rol === 'DUENO' || rol === 'MESERO') salas.push('meseros');
   if (rol === 'DUENO' || rol === 'CAJA') salas.push('caja');
+  if (rol === 'REPARTIDOR') salas.push('repartidores');
   if (rol === 'DUENO' || rol === 'COCINA') {
     // COCINA con estación asignada solo entra a la suya; sin estación (o DUENO), a todas.
     const estaciones =

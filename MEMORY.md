@@ -15,10 +15,47 @@
 - **Fase 5 completa** (5.1–5.5, 2026-10-25; commit `3856406`): pedidos en línea + tiempo para pagar el
   SINPE. Pendiente: prueba del usuario.
 - **Limpieza** (2026-10-25): revisado código muerto y dependencias; se quitaron `seleccionValida` y `GrupoEditorInput` (shared, sin uso) y la redirección vieja `/dueno` del staff. El resto de dependencias se usan (`@prisma/client` lo pide el cliente generado). `/admin` (SUPERADMIN) sigue como "Próximamente".
-- **Fase 6 en curso** (diseño, 2026-10-29): 6.1–6.5 hechos (2026-11-01: 184 tests verdes). Falta la prueba del usuario y el commit.
+- **Fase 6 completa** (diseño, commit `44fa8f5`, 2026-11-01). Pendiente: prueba del usuario.
+- **Fase 7 completa** (domicilio: ubicación y repartidores, 2026-11-01): 7.1–7.3 hechos, 188 tests verdes. Sin commit: falta validación del usuario.
 - **Backlog de mejoras:** `docs/mejoras-pendientes.md` (ideas del usuario, 2026-10-26; nada programado
   aún, revisado 2026-10-29). Cada bloque se convierte en spec de fase y se aprueba antes de empezar.
 - Raíz del monorepo: `C:\Users\gomes\OneDrive\Documentos\sistema-restaurante` (equivale a `menu-qr/` de la spec).
+
+## Plan de la Fase 7 (aprobado 2026-11-01) — spec: docs/especificacion-fase7.md
+
+Decisiones: ubicación + mapa (Leaflet aprobado), el restaurante asigna el repartidor, el efectivo se
+cuadra en caja.
+
+| Paso | Qué                                                                                 | Estado |
+| ---- | ----------------------------------------------------------------------------------- | ------ |
+| 7.1  | Modelo y API: rol REPARTIDOR, ubicación, asignar, /repartos, efectivo por cuadrar   | ✅     |
+| 7.2  | Cliente: "Usar mi ubicación" + mapa con pin (Leaflet) en el checkout                | ✅     |
+| 7.3  | Personal: asignar en En línea, pantalla del repartidor, efectivo en caja, rol, seed | ✅     |
+
+- 7.1: migración `20261102025314_repartidores` (Rol REPARTIDOR; Cuenta.latEntrega/lngEntrega Float?,
+  repartidorId → Usuario onDelete SetNull, efectivoCuadrado). Las relaciones Cuenta↔Usuario ahora
+  tienen nombre ("CuentaCerradaPor", "CuentaRepartidor"; no cambia la BD). `cliente.ubicacion`
+  opcional en `pedidoEnLineaSchema`; DatosEnLinea trae ubicacion, repartidor, efectivoCuadrado.
+  /enlinea: GET /repartidores, POST /:id/repartidor (solo DOMICILIO en ACEPTADO o LISTO;
+  repartidor activo del tenant o 404), GET /efectivo y POST /efectivo/recibir (solo DUENO/CAJA).
+  /repartos (solo REPARTIDOR): GET (suyas: activas + cerradas 12 h), POST /:id/salir, POST
+  /:id/entregar (de otro repartidor → 404). Sala Socket.IO `repartidores`; `reparto:asignado`
+  { cuentaId, repartidorId } y los enlinea:* también van ahí. Staff: INICIO REPARTIDOR → /repartos
+  con "Próximamente" (evita bucle de redirección hasta la 7.3). Tests: `repartos.test.ts` (4).
+- 7.2: `apps/menu/src/componentes/mapa.tsx` (`PuntoEntrega`): "Usar mi ubicación" (geolocation; solo
+  localhost/HTTPS) y mapa Leaflet cargado con import() dinámico (chunk aparte de ~43 kB gzip + CSS,
+  solo al abrirlo). Pin = `L.divIcon` con CSS (`.pin-entrega` en menu/index.css; sin imágenes de
+  Leaflet). Tiles de tile.openstreetmap.org (política de uso de OSM: para producción con mucho
+  tráfico conviene un proveedor de tiles). El punto se recuerda con los datos del cliente.
+- 7.3: EnLineaPage: selector de repartidor (ACEPTADO/LISTO, domicilio), "Repartidor: X" después,
+  insignia "punto en el mapa"; `enlacesMapa()` en ui.tsx (Google Maps y Waze al punto o a la
+  dirección). `RepartosPage` (/repartos): por entregar / entregadas hoy, llamar, mapas, "Salí a
+  entregar" (LISTO), "Entregué" con método (SINPE verificado = ya pagado), efectivo pendiente. Aviso
+  `reparto` (sonido) solo si `repartidorId` es el suyo. Caja: "Efectivo de repartidores" con
+  "Recibido". Personal: rol Repartidor. Seed: Pepe `repartidor@sodalaesquina.test` / `Repartidor123!`,
+  y el seed ahora agrega usuarios demo que falten en una base ya sembrada. salir antes de LISTO →
+  409 "Cocina todavía no termina este pedido". No se probó en el navegador (solo tests/build/script).
+- Después de `prisma migrate dev` hubo que correr `prisma generate` a mano (no regeneró el cliente).
 
 ## Plan de la Fase 6 (pedido 2026-10-29) — spec: docs/especificacion-fase6.md
 
@@ -469,6 +506,7 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ hecho
 
 ## Librerías aprobadas fuera de la lista base
 
+- Aprobada por el usuario (2026-11-01): `leaflet` (mapa del checkout, tiles de OpenStreetMap).
 - (Implícitas en la spec) helmet, cors, express-rate-limit, qrcode, jsonwebtoken.
 - Aprobadas por el usuario (2026-10-20): `tsx`, `react-router-dom`, `cookie-parser`,
   `bcryptjs` (en lugar de `bcrypt`).

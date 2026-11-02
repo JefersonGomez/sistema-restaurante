@@ -20,3 +20,13 @@
   --purple: #8e6aec;
   --purple-soft: #2b2345;
 }
+
+/* Pin del punto de entrega en el mapa (Leaflet divIcon). */
+.pin-entrega {
+  background: var(--purple);
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  transform-origin: center;
+  rotate: -45deg;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}

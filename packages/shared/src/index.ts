@@ -6,7 +6,7 @@ import { HORA_REGEX, zonaHorariaValida } from './horario';
 // Mensajes de validación en español (API y formularios del panel).
 z.config(z.locales.es());
 
-export const rolSchema = z.enum(['SUPERADMIN', 'DUENO', 'MESERO', 'COCINA', 'CAJA']);
+export const rolSchema = z.enum(['SUPERADMIN', 'DUENO', 'MESERO', 'COCINA', 'CAJA', 'REPARTIDOR']);
 export type Rol = z.infer<typeof rolSchema>;
 
 export const monedaSchema = z.enum(['CRC', 'USD']);
@@ -153,7 +153,7 @@ export type AdminRestaurantePatchInput = z.infer<typeof adminRestaurantePatchSch
 
 // --- Usuarios (personal del restaurante) ---
 
-export const rolPersonalSchema = z.enum(['DUENO', 'MESERO', 'COCINA', 'CAJA']);
+export const rolPersonalSchema = z.enum(['DUENO', 'MESERO', 'COCINA', 'CAJA', 'REPARTIDOR']);
 
 export const crearUsuarioSchema = z.object({
   nombre: texto(),
@@ -451,6 +451,10 @@ export const pedidoEnLineaSchema = crearPedidoSchema
       telefono: telefonoSchema,
       direccion: z.string().trim().max(200).optional(),
       referencia: z.string().trim().max(200).optional(),
+      // Punto exacto marcado en el mapa (opcional; solo a domicilio).
+      ubicacion: z
+        .object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) })
+        .optional(),
     }),
     pago: z.object({
       metodo: z.enum(['EFECTIVO', 'SINPE']),
@@ -469,6 +473,8 @@ export const etapaEnLineaCambioSchema = z.object({ etapa: z.enum(['LISTO', 'EN_C
 export const entregarEnLineaSchema = z.object({
   metodoPago: z.enum(['EFECTIVO', 'TARJETA', 'SINPE']),
 });
+export const asignarRepartidorSchema = z.object({ repartidorId: z.uuid() });
+export const recibirEfectivoSchema = z.object({ repartidorId: z.uuid() });
 export const cambiarEstadoItemSchema = z.object({
   estado: z.enum(['EN_PREPARACION', 'LISTO', 'ENTREGADO']),
 });
@@ -562,6 +568,15 @@ export type DatosEnLinea = {
   etapa: EtapaEnLinea;
   tiempoEstimadoMin: number | null;
   motivoRechazo: string | null;
+  ubicacion: { lat: number; lng: number } | null; // punto marcado por el cliente
+  repartidor: { id: string; nombre: string } | null;
+  efectivoCuadrado: boolean;
+};
+// Caja: efectivo cobrado por un repartidor que todavía no se entregó en caja.
+export type EfectivoRepartidor = {
+  repartidor: { id: string; nombre: string };
+  pedidos: number;
+  total: number;
 };
 export type CuentaDetalle = {
   id: string;

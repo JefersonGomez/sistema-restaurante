@@ -1,9 +1,10 @@
-import { Printer, Undo2, Users } from 'lucide-react';
+import { Bike, Printer, Undo2, Users } from 'lucide-react';
 import { IconoMesa, QuantityStepper } from '@menu-qr/ui';
 import { useCallback, useEffect, useState } from 'react';
 import {
   calcularTotales,
   type CuentaDetalle,
+  type EfectivoRepartidor,
   type ItemDetalle,
   type MenuPublico,
   type MesaOperacion,
@@ -54,6 +55,7 @@ export function CajaPage() {
   const [menu, setMenu] = useState<MenuPublico>();
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [efectivo, setEfectivo] = useState<EfectivoRepartidor[]>([]);
 
   useEffect(() => {
     if (usuario?.restaurante) obtenerMenu(usuario.restaurante.slug).then(setMenu, () => {});
@@ -66,6 +68,7 @@ export function CajaPage() {
   const cargar = useCallback(async () => {
     try {
       setMesas(await api<MesaOperacion[]>('/operacion/mesas'));
+      setEfectivo(await api<EfectivoRepartidor[]>('/enlinea/efectivo'));
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -97,6 +100,7 @@ export function CajaPage() {
       'cuenta:actualizada': refrescar,
       'cuenta:solicitada': refrescar,
       'cuenta:cerrada': refrescar,
+      'enlinea:actualizado': refrescar, // un repartidor entregó y cobró
     },
     refrescar,
   );
@@ -248,6 +252,47 @@ export function CajaPage() {
               <span className="font-semibold tabular-nums">{precio(m.cuenta!.total)}</span>
             </button>
           ))}
+
+          {efectivo.length > 0 && (
+            <>
+              <h2 className="pt-4 text-sm font-semibold tracking-wide text-muted uppercase">
+                Efectivo de repartidores
+              </h2>
+              {efectivo.map((e) => (
+                <div
+                  key={e.repartidor.id}
+                  className="flex items-center gap-3 rounded-lg bg-app p-3 shadow-tarjeta"
+                >
+                  <Bike className="size-6 shrink-0 text-info" aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">{e.repartidor.nombre}</span>
+                    <span className="block text-xs text-muted">
+                      {e.pedidos === 1 ? '1 entrega' : `${e.pedidos} entregas`} · {precio(e.total)}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    disabled={ocupado}
+                    onClick={() =>
+                      confirm(
+                        `¿Recibió ${precio(e.total)} en efectivo de ${e.repartidor.nombre}?`,
+                      ) &&
+                      accion(async () => {
+                        await api('/enlinea/efectivo/recibir', {
+                          method: 'POST',
+                          body: { repartidorId: e.repartidor.id },
+                        });
+                        cargar();
+                      })
+                    }
+                    className="min-h-11 rounded-md bg-ok px-3 text-sm font-semibold text-on-accent disabled:opacity-50"
+                  >
+                    Recibido
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
         </aside>
 
         <section className="rounded-lg bg-app p-5 shadow-tarjeta md:sticky md:top-20">

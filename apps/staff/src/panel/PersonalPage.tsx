@@ -32,6 +32,7 @@ const ROLES: { id: Exclude<Rol, 'SUPERADMIN'>; texto: string }[] = [
   { id: 'MESERO', texto: 'Mesero' },
   { id: 'COCINA', texto: 'Cocina / bar' },
   { id: 'CAJA', texto: 'Caja' },
+  { id: 'REPARTIDOR', texto: 'Repartidor' },
   { id: 'DUENO', texto: 'Dueño' },
 ];
 

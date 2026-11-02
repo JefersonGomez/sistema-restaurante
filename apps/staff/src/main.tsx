@@ -25,6 +25,7 @@ import { ReportesPage } from './panel/reportes/ReportesPage';
 import { PersonalizarPage } from './panel/PersonalizarPage';
 import { TabletPage } from './TabletPage';
 import { RegistroPage } from './RegistroPage';
+import { RepartosPage } from './RepartosPage';
 import { tokenTablet } from './api';
 import { Encabezado } from './ui';
 import './index.css';
@@ -36,6 +37,7 @@ const INICIO: Record<Rol, string> = {
   MESERO: '/mesero',
   COCINA: '/cocina',
   CAJA: '/caja',
+  REPARTIDOR: '/repartos',
 };
 
 function Solo({ roles, children }: { roles: Rol[]; children: ReactNode }) {
@@ -45,10 +47,10 @@ function Solo({ roles, children }: { roles: Rol[]; children: ReactNode }) {
   return <div className="anim-entrar">{children}</div>;
 }
 
-function Admin() {
+function Proximamente({ titulo }: { titulo: string }) {
   return (
     <div className="min-h-dvh">
-      <Encabezado titulo="Administración de restaurantes" />
+      <Encabezado titulo={titulo} />
       <main className="min-h-dvh bg-bg p-6 text-muted">Próximamente.</main>
     </div>
   );
@@ -81,7 +83,7 @@ function App() {
           path="/admin"
           element={
             <Solo roles={['SUPERADMIN']}>
-              <Admin />
+              <Proximamente titulo="Administración de restaurantes" />
             </Solo>
           }
         />
@@ -132,6 +134,14 @@ function App() {
           element={
             <Solo roles={['DUENO', 'CAJA', 'MESERO']}>
               <EnLineaPage />
+            </Solo>
+          }
+        />
+        <Route
+          path="/repartos"
+          element={
+            <Solo roles={['REPARTIDOR']}>
+              <RepartosPage />
             </Solo>
           }
         />

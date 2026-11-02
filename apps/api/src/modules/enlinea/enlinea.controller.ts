@@ -42,3 +42,37 @@ export const entregar = async (req: ConId, res: Response) => {
     await service.entregar(restauranteDe(req), req.usuario!.id, req.params.id, req.body.metodoPago),
   );
 };
+
+// Repartidores
+export const repartidores = async (req: Request, res: Response) => {
+  res.json(await service.repartidores(restauranteDe(req)));
+};
+export const asignarRepartidor = async (req: ConId, res: Response) => {
+  res.json(
+    await service.asignarRepartidor(restauranteDe(req), req.params.id, req.body.repartidorId),
+  );
+};
+export const efectivo = async (req: Request, res: Response) => {
+  res.json(await service.efectivoPorCuadrar(restauranteDe(req)));
+};
+export const recibirEfectivo = async (req: Request, res: Response) => {
+  res.json(await service.recibirEfectivo(restauranteDe(req), req.body.repartidorId));
+};
+
+// El repartidor (sus propias entregas)
+export const misRepartos = async (req: Request, res: Response) => {
+  res.json(await service.misRepartos(restauranteDe(req), req.usuario!.id));
+};
+export const salir = async (req: ConId, res: Response) => {
+  res.json(await service.salir(restauranteDe(req), req.usuario!.id, req.params.id));
+};
+export const entregarReparto = async (req: ConId, res: Response) => {
+  res.json(
+    await service.entregarReparto(
+      restauranteDe(req),
+      req.usuario!.id,
+      req.params.id,
+      req.body.metodoPago,
+    ),
+  );
+};

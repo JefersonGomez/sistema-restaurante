@@ -21,6 +21,7 @@ import {
 import * as api from '../api';
 import { guardar, leer } from '../almacen';
 import { CartItem, TotalsSummary } from '../componentes/cuenta';
+import { PuntoEntrega, type Punto } from '../componentes/mapa';
 import { BarraTitulo, ErrorScreen, Main, Toast } from '../componentes/estructura';
 import { avisar } from '../estado/avisos';
 import { useCarrito } from '../estado/carrito';
@@ -208,6 +209,9 @@ function PedidoEnLinea({ menu, slug }: { menu: MenuPublico; slug: string }) {
     nota: '',
     comprobante: '',
   }));
+  const [punto, setPunto] = useState<Punto | null>(
+    () => leer<{ ubicacion?: Punto }>('enlinea:cliente')?.ubicacion ?? null,
+  );
   const [pago, setPago] = useState<'EFECTIVO' | 'SINPE'>('EFECTIVO');
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
@@ -256,6 +260,7 @@ function PedidoEnLinea({ menu, slug }: { menu: MenuPublico; slug: string }) {
           ...(tipo === 'DOMICILIO' && {
             direccion: f.direccion.trim(),
             referencia: f.referencia.trim() || undefined,
+            ubicacion: punto ?? undefined,
           }),
         },
         pago: { metodo: pago, comprobante: f.comprobante.trim() || undefined },
@@ -272,6 +277,7 @@ function PedidoEnLinea({ menu, slug }: { menu: MenuPublico; slug: string }) {
         telefono: f.telefono.trim(),
         direccion: f.direccion.trim(),
         referencia: f.referencia.trim(),
+        ubicacion: punto ?? undefined,
       });
       vaciar();
       navegar(`/seguimiento/${token}`, { replace: true });
@@ -364,6 +370,7 @@ function PedidoEnLinea({ menu, slug }: { menu: MenuPublico; slug: string }) {
               <>
                 {campo('direccion', t.direccionEntrega, { autoComplete: 'street-address' })}
                 {campo('referencia', t.referencia, { placeholder: t.referenciaEjemplo })}
+                <PuntoEntrega punto={punto} onCambio={setPunto} />
               </>
             )}
             {campo('nota', t.notaPedido, { maxLength: 200 })}

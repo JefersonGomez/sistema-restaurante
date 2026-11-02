@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Bell,
+  Bike,
   BellRing,
   ChefHat,
   ClipboardList,
@@ -42,6 +43,21 @@ export const formatoPrecio = (moneda: Moneda) => {
   });
   return (centimos: number) => f.format(centimos / 100);
 };
+
+// Google Maps y Waze al punto que marcó el cliente o, si no marcó, a la dirección escrita.
+export function enlacesMapa(d: {
+  ubicacion: { lat: number; lng: number } | null;
+  direccion: string | null;
+}) {
+  const punto = d.ubicacion && `${d.ubicacion.lat},${d.ubicacion.lng}`;
+  const q = encodeURIComponent(punto ?? d.direccion ?? '');
+  return {
+    google: `https://www.google.com/maps/search/?api=1&query=${q}`,
+    waze: punto
+      ? `https://waze.com/ul?ll=${q}&navigate=yes`
+      : `https://waze.com/ul?q=${q}&navigate=yes`,
+  };
+}
 
 export const hora = (iso: string) =>
   new Date(iso).toLocaleTimeString('es-CR', { hour: 'numeric', minute: '2-digit' });
@@ -193,6 +209,7 @@ const ICONO_AVISO: Record<TipoAviso, typeof Bell> = {
   pedido: ClipboardList,
   cocina: ChefHat,
   listo: Utensils,
+  reparto: Bike,
 };
 const haceCuanto = (t: number) => {
   const min = Math.floor((Date.now() - t) / 60_000);

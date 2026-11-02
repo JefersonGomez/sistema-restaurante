@@ -32,7 +32,7 @@ todavía: antes de empezar cada bloque se convierte en una spec de fase y el usu
    "+ Agregar plato" adentro, guía para empezar ("1. Cree una categoría · 2. Agregue platos") y
    estados vacíos que dicen qué hacer. Mostrar boceto antes de programar.
 
-## Domicilio
+## Domicilio — 6 y 7 en la Fase 7 (`docs/especificacion-fase7.md`)
 
 6. **Ubicación en el mapa (opcional):** botón "Usar mi ubicación actual" (sin librerías, API del
    navegador) y, aparte, elegir un punto en un mapa (requiere aprobar una librería de mapas, p. ej.

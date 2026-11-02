@@ -1,5 +1,6 @@
 import {
   estaAbierto,
+  type EfectivoRepartidor,
   type EtapaEnLinea,
   type PedidoEnLineaInput,
   type SeguimientoEnLinea,
@@ -15,10 +16,11 @@ import { bloquearCuenta, crearPedido, recalcularCuenta } from '../pedidos/pedido
 // Cuántos pedidos sin aceptar puede tener a la vez un mismo teléfono (frena bromas y spam).
 const MAX_PENDIENTES_POR_TELEFONO = 2;
 
-// Al personal (sala y caja): un pedido en línea nuevo o que cambió.
+// Al personal (sala, caja y repartidores): un pedido en línea nuevo o que cambió.
 const avisar = (restauranteId: string, evento: string, payload: object) => {
   emitToRestaurant(restauranteId, 'meseros', evento, payload);
   emitToRestaurant(restauranteId, 'caja', evento, payload);
+  emitToRestaurant(restauranteId, 'repartidores', evento, payload);
 };
 
 // --- Cliente ---
@@ -80,6 +82,8 @@ export async function crear(slug: string, input: PedidoEnLineaInput) {
         clienteTelefono: input.cliente.telefono,
         direccionEntrega: input.tipo === 'DOMICILIO' ? input.cliente.direccion : null,
         referenciaEntrega: input.tipo === 'DOMICILIO' ? input.cliente.referencia || null : null,
+        latEntrega: input.tipo === 'DOMICILIO' ? (input.cliente.ubicacion?.lat ?? null) : null,
+        lngEntrega: input.tipo === 'DOMICILIO' ? (input.cliente.ubicacion?.lng ?? null) : null,
         costoEnvio: input.tipo === 'DOMICILIO' ? r.costoEnvio : 0,
         pagoElegido: input.pago.metodo,
         comprobanteSinpe: input.pago.comprobante || null,
@@ -277,4 +281,119 @@ export async function entregar(
   });
   avisar(restauranteId, 'enlinea:actualizado', { cuentaId: id });
   return detalle(id);
+}
+
+// --- Repartidores (Fase 7) ---
+
+// Para elegir a quién se le asigna una entrega.
+export function repartidores(restauranteId: string) {
+  return prisma.usuario.findMany({
+    where: { restauranteId, rol: 'REPARTIDOR', activo: true },
+    select: { id: true, nombre: true },
+    orderBy: { nombre: 'asc' },
+  });
+}
+
+// Se asigna (o se cambia) mientras el pedido a domicilio no haya salido.
+export async function asignarRepartidor(restauranteId: string, id: string, repartidorId: string) {
+  const c = await cuentaEnLinea(restauranteId, id);
+  if (c.tipo !== 'DOMICILIO') throw etapaInvalida('Solo los pedidos a domicilio llevan repartidor');
+  const repartidor = await prisma.usuario.findFirst({
+    where: { id: repartidorId, restauranteId, rol: 'REPARTIDOR', activo: true },
+    select: { id: true },
+  });
+  if (!repartidor) throw noExiste('Repartidor');
+  const { count } = await prisma.cuenta.updateMany({
+    where: { id, restauranteId, etapa: { in: ['ACEPTADO', 'LISTO'] } },
+    data: { repartidorId },
+  });
+  if (!count) throw etapaInvalida('Se asigna después de aceptar y antes de que salga');
+  avisar(restauranteId, 'enlinea:actualizado', { cuentaId: id });
+  emitToRestaurant(restauranteId, 'repartidores', 'reparto:asignado', {
+    cuentaId: id,
+    repartidorId,
+    lugar: lugarDe({ ...c, mesa: null }),
+  });
+  return detalle(id);
+}
+
+// Lo que ve el repartidor: sus entregas activas y las que cerró en las últimas 12 horas.
+export async function misRepartos(restauranteId: string, repartidorId: string) {
+  const filas = await prisma.cuenta.findMany({
+    where: {
+      restauranteId,
+      repartidorId,
+      tipo: 'DOMICILIO',
+      OR: [
+        { estado: { not: 'CERRADA' } },
+        { cerradaEn: { gte: new Date(Date.now() - 12 * 60 * 60 * 1000) } },
+      ],
+    },
+    orderBy: { abiertaEn: 'asc' },
+    include: incluirCuenta,
+  });
+  return filas.map(aCuenta);
+}
+
+// El repartidor solo toca sus propias entregas (las de otros: 404).
+async function deRepartidor(restauranteId: string, repartidorId: string, id: string) {
+  const c = await prisma.cuenta.findFirst({
+    where: { id, restauranteId, repartidorId },
+    select: { etapa: true },
+  });
+  if (!c) throw noExiste('Entrega');
+  return c;
+}
+
+export async function salir(restauranteId: string, repartidorId: string, id: string) {
+  const c = await deRepartidor(restauranteId, repartidorId, id);
+  if (c.etapa === 'ACEPTADO') throw etapaInvalida('Cocina todavía no termina este pedido');
+  return cambiarEtapa(restauranteId, id, 'EN_CAMINO');
+}
+
+export async function entregarReparto(
+  restauranteId: string,
+  repartidorId: string,
+  id: string,
+  metodoPago: 'EFECTIVO' | 'TARJETA' | 'SINPE',
+) {
+  await deRepartidor(restauranteId, repartidorId, id);
+  return entregar(restauranteId, repartidorId, id, metodoPago);
+}
+
+// Efectivo de entregas ya cobradas que el repartidor todavía no entregó en caja.
+const sinCuadrar = (restauranteId: string) => ({
+  restauranteId,
+  tipo: 'DOMICILIO' as const,
+  etapa: 'ENTREGADO' as const,
+  metodoPago: 'EFECTIVO' as const,
+  efectivoCuadrado: false,
+});
+
+export async function efectivoPorCuadrar(restauranteId: string): Promise<EfectivoRepartidor[]> {
+  const grupos = await prisma.cuenta.groupBy({
+    by: ['repartidorId'],
+    where: { ...sinCuadrar(restauranteId), repartidorId: { not: null } },
+    _sum: { total: true },
+    _count: true,
+  });
+  const nombres = await prisma.usuario.findMany({
+    where: { restauranteId, id: { in: grupos.map((g) => g.repartidorId!) } },
+    select: { id: true, nombre: true },
+  });
+  return grupos
+    .map((g) => ({
+      repartidor: nombres.find((u) => u.id === g.repartidorId)!,
+      pedidos: g._count,
+      total: g._sum.total ?? 0,
+    }))
+    .sort((a, b) => a.repartidor.nombre.localeCompare(b.repartidor.nombre));
+}
+
+export async function recibirEfectivo(restauranteId: string, repartidorId: string) {
+  const { count } = await prisma.cuenta.updateMany({
+    where: { ...sinCuadrar(restauranteId), repartidorId },
+    data: { efectivoCuadrado: true },
+  });
+  return { pedidos: count };
 }

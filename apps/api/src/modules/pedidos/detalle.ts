@@ -37,6 +37,7 @@ export const incluirCuenta = {
   mesa: { select: { id: true, numero: true, nombre: true } },
   pedidos: { orderBy: { createdAt: 'asc' }, include: incluirPedido },
   pagos: { orderBy: { createdAt: 'asc' } },
+  repartidor: { select: { id: true, nombre: true } },
 } satisfies Prisma.CuentaInclude;
 
 type ItemDB = Prisma.PedidoItemGetPayload<{ include: typeof incluirItem }>;
@@ -98,6 +99,12 @@ export const aCuenta = (c: CuentaDB): CuentaDetalle => ({
           etapa: c.etapa ?? 'RECIBIDO',
           tiempoEstimadoMin: c.tiempoEstimadoMin,
           motivoRechazo: c.motivoRechazo,
+          ubicacion:
+            c.latEntrega != null && c.lngEntrega != null
+              ? { lat: c.latEntrega, lng: c.lngEntrega }
+              : null,
+          repartidor: c.repartidor,
+          efectivoCuadrado: c.efectivoCuadrado,
         },
   verificada: c.verificada,
   subtotal: c.subtotal,

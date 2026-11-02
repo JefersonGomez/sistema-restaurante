@@ -6,7 +6,7 @@ type ConMesa = { lugar: string }; // "Mesa 3" o "Para llevar #12 · Ana"
 
 // Escucha los eventos que merecen aviso para el rol de la sesión, en cualquier pantalla. Las
 // pantallas siguen escuchando por su cuenta solo para refrescar sus datos (sin sonar).
-function Oyente({ rol }: { rol: string }) {
+function Oyente({ rol, id }: { rol: string; id: string }) {
   const sala = rol === 'DUENO' || rol === 'MESERO';
   const caja = rol === 'DUENO' || rol === 'CAJA';
   useTiempoReal(
@@ -25,6 +25,11 @@ function Oyente({ rol }: { rol: string }) {
         'pedido:confirmado': (p: ConMesa) =>
           avisar('cocina', `${p.lugar}: pedido nuevo para cocina`, 3),
       }),
+      // Al repartidor, solo las entregas que le asignan a él.
+      ...(rol === 'REPARTIDOR' && {
+        'reparto:asignado': (p: ConMesa & { repartidorId: string }) =>
+          p.repartidorId === id && avisar('reparto', `Nueva entrega: ${p.lugar}`, 3),
+      }),
     },
     () => {},
   );
@@ -35,5 +40,5 @@ export function AvisosGlobales() {
   const { usuario } = useAuth();
   if (!usuario || usuario.rol === 'SUPERADMIN' || usuario.debeCambiarPassword) return null;
   // key: si cambia la sesión, el socket se vuelve a abrir con el token nuevo.
-  return <Oyente key={usuario.id} rol={usuario.rol} />;
+  return <Oyente key={usuario.id} rol={usuario.rol} id={usuario.id} />;
 }

@@ -1,13 +1,23 @@
-import { Bike, Check, MapPin, Phone, Store, X } from 'lucide-react';
+import { Bike, Check, MapPin, Navigation, Phone, Store, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { CuentaDetalle, MenuPublico } from '@menu-qr/shared';
 import { api, obtenerMenu } from './api';
 import { useAuth } from './auth';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
-import { BotonSonido, Conexion, Encabezado, formatoPrecio, hora, pedirMotivo } from './ui';
+import {
+  BotonSonido,
+  Conexion,
+  Encabezado,
+  enlacesMapa,
+  formatoPrecio,
+  hora,
+  pedirMotivo,
+} from './ui';
+
+type Repartidor = { id: string; nombre: string };
 
 const TIEMPOS = [15, 20, 25, 30, 40, 50, 60];
-const METODOS = [
+export const METODOS = [
   { id: 'EFECTIVO', texto: 'Efectivo' },
   { id: 'SINPE', texto: 'SINPE' },
   { id: 'TARJETA', texto: 'Tarjeta' },
@@ -37,6 +47,7 @@ function Tarjeta({
   onAccion,
   ocupado,
   ahora,
+  repartidores,
 }: {
   c: CuentaDetalle;
   precio: (n: number) => string;
@@ -44,6 +55,7 @@ function Tarjeta({
   onAccion: (ruta: string, body?: object) => void;
   ocupado: boolean;
   ahora: number;
+  repartidores: Repartidor[];
 }) {
   const d = c.enLinea!;
   const [tiempo, setTiempo] = useState(tiempoDefecto);
@@ -91,7 +103,7 @@ function Tarjeta({
         </a>
         {domicilio && d.direccion && (
           <a
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(d.direccion)}`}
+            href={enlacesMapa(d).google}
             target="_blank"
             rel="noreferrer"
             className="inline-flex min-h-11 items-center gap-1.5 text-fg"
@@ -99,9 +111,47 @@ function Tarjeta({
             <MapPin className="size-4 shrink-0 text-muted" aria-hidden />
             {d.direccion}
             {d.referencia && <span className="text-muted"> · {d.referencia}</span>}
+            {d.ubicacion && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-info-soft px-2 py-0.5 text-xs font-semibold text-info">
+                <Navigation className="size-3" aria-hidden /> punto en el mapa
+              </span>
+            )}
           </a>
         )}
       </div>
+      {domicilio && (d.repartidor || (!nuevo && !terminado)) && (
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+          <Bike className="size-4 text-muted" aria-hidden />
+          {d.etapa === 'ACEPTADO' || d.etapa === 'LISTO' ? (
+            repartidores.length ? (
+              <select
+                value={d.repartidor?.id ?? ''}
+                disabled={ocupado}
+                onChange={(e) =>
+                  e.target.value && onAccion(`${base}/repartidor`, { repartidorId: e.target.value })
+                }
+                aria-label="Repartidor"
+                className="min-h-11 rounded-md border border-line bg-surface px-2"
+              >
+                <option value="">Elegir repartidor…</option>
+                {repartidores.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.nombre}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-muted">
+                Sin repartidores: el dueño los crea en Panel → Personal.
+              </span>
+            )
+          ) : (
+            <span>
+              Repartidor: <strong>{d.repartidor?.nombre ?? 'sin asignar'}</strong>
+            </span>
+          )}
+        </div>
+      )}
 
       <ul className="mt-2 space-y-0.5 text-sm">
         {items.map((i) => (
@@ -290,6 +340,10 @@ export function EnLineaPage() {
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [ahora, setAhora] = useState(Date.now());
+  const [repartidores, setRepartidores] = useState<Repartidor[]>([]);
+  useEffect(() => {
+    api<Repartidor[]>('/enlinea/repartidores').then(setRepartidores, () => {});
+  }, []);
   useEffect(() => {
     const reloj = setInterval(() => setAhora(Date.now()), 15_000);
     return () => clearInterval(reloj);
@@ -365,6 +419,7 @@ export function EnLineaPage() {
           onAccion={accion}
           ocupado={ocupado}
           ahora={ahora}
+          repartidores={repartidores}
         />
       ))}
     </section>
