@@ -260,7 +260,7 @@ function Detalle({ id, onCerrar }: { id: string; onCerrar: () => void }) {
                   <span className="font-medium">{precio(p.monto)}</span> · {PLANES[p.plan].nombre} ·{' '}
                   {p.meses} {p.meses === 1 ? 'mes' : 'meses'}
                   <span className="block text-xs text-muted">
-                    {p.metodo.toLowerCase()}
+                    {METODOS.find((m) => m.id === p.metodo)?.texto}
                     {p.referencia ? ` · ${p.referencia}` : ''} · cubre {fecha(p.desde)} →{' '}
                     {fecha(p.hasta)}
                   </span>

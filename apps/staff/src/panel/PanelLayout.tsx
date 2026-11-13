@@ -57,7 +57,7 @@ function Navegacion({ onIr }: { onIr?: () => void }) {
   const { usuario, logout } = useAuth();
   const nombre = usuario?.restaurante?.nombre ?? '';
   return (
-    <div className="flex h-full flex-col gap-6 overflow-x-hidden overflow-y-auto p-3">
+    <div className="flex h-full flex-col gap-6 overflow-x-hidden overflow-y-auto p-3 [scrollbar-width:none]">
       <div className="flex items-center gap-3 px-0.5">
         <span className="grid size-11 shrink-0 place-items-center rounded-full bg-purple text-lg font-bold text-on-accent">
           {nombre.charAt(0)}

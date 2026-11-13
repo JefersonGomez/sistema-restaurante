@@ -113,7 +113,7 @@ export function ClientesPage() {
                     <Phone className="size-3.5" aria-hidden /> {telefono(c.telefono)}
                   </a>
                 </div>
-                <dl className="grid grid-cols-3 gap-4 text-sm">
+                <dl className="grid grid-cols-[4rem_6.5rem_6rem] gap-3 text-sm">
                   <div>
                     <dt className="text-xs text-muted">Pedidos</dt>
                     <dd className="font-semibold">{c.pedidos}</dd>

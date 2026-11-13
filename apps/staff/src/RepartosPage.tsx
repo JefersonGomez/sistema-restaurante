@@ -102,11 +102,13 @@ function Entrega({
       )}
 
       <p
-        className={`rounded-md px-3 py-2 text-[15px] font-semibold ${yaPagado ? 'bg-ok-soft text-ok' : 'bg-amber-soft text-amber-ink'}`}
+        className={`rounded-md px-3 py-2 text-[15px] font-semibold ${yaPagado || terminado ? 'bg-ok-soft text-ok' : 'bg-amber-soft text-amber-ink'}`}
       >
-        {yaPagado
-          ? `Ya pagado por SINPE (${precio(c.total)})`
-          : `Cobrar ${precio(c.total)} en ${d.pagoElegido === 'SINPE' ? 'SINPE' : 'efectivo'}`}
+        {terminado
+          ? `Cobrado ${precio(c.total)} (${METODOS.find((m) => m.id === c.metodoPago)?.texto.toLowerCase() ?? ''})`
+          : yaPagado
+            ? `Ya pagado por SINPE (${precio(c.total)})`
+            : `Cobrar ${precio(c.total)} en ${d.pagoElegido === 'SINPE' ? 'SINPE' : 'efectivo'}`}
       </p>
 
       {d.etapa === 'LISTO' && (

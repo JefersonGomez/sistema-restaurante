@@ -18,6 +18,7 @@ function Mapa({ punto, onCambio }: { punto: Punto | null; onCambio: (p: Punto) =
 
   useEffect(() => {
     let vivo = true;
+    let tamano: ResizeObserver | undefined;
     (async () => {
       const L = (await import('leaflet')).default;
       await import('leaflet/dist/leaflet.css');
@@ -29,8 +30,11 @@ function Mapa({ punto, onCambio }: { punto: Punto | null; onCambio: (p: Punto) =
         attribution: '© OpenStreetMap',
       }).addTo(m);
       // Pin dibujado con CSS: sin imágenes que el empaquetador tenga que resolver.
+      // El giro va en un elemento interno: Leaflet mueve el exterior con `transform` y un `rotate`
+      // ahí también giraría ese desplazamiento (el pin se salía del mapa).
       const icono = L.divIcon({
-        className: 'pin-entrega',
+        className: 'pin-caja',
+        html: '<span class="pin-entrega"></span>',
         iconSize: [28, 28],
         iconAnchor: [14, 28],
       });
@@ -47,9 +51,17 @@ function Mapa({ punto, onCambio }: { punto: Punto | null; onCambio: (p: Punto) =
       if (!punto) avisar();
       mapa.current = m;
       pin.current = p;
+      // Leaflet mide el recuadro al crearse; si su tamaño cambia después (CSS que llega tarde,
+      // el teclado del celular…), recalcula y vuelve a centrar el pin para que no quede afuera.
+      tamano = new ResizeObserver(() => {
+        m.invalidateSize();
+        m.panTo(p.getLatLng(), { animate: false });
+      });
+      tamano.observe(caja.current);
     })();
     return () => {
       vivo = false;
+      tamano?.disconnect();
       mapa.current?.remove();
       mapa.current = null;
     };

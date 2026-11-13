@@ -5,7 +5,7 @@
 
 ## Estado actual
 
-- **Fecha última actualización:** 2026-10-29
+- **Fecha última actualización:** 2026-11-09
 - **Fase 1 completa y subida** (commit `a202fd9`).
 - **Fase 2 completa y subida** (commit `a0317b7`).
 - **Frontend del comensal completo y subido** (commit `5869078`, 2026-10-21).
@@ -14,13 +14,13 @@
 - **Fase 4 completa** (4.1–4.10, 2026-10-23). Pendiente: prueba completa del usuario.
 - **Fase 5 completa** (5.1–5.5, 2026-10-25; commit `3856406`): pedidos en línea + tiempo para pagar el
   SINPE. Pendiente: prueba del usuario.
-- **Limpieza** (2026-10-25): revisado código muerto y dependencias; se quitaron `seleccionValida` y `GrupoEditorInput` (shared, sin uso) y la redirección vieja `/dueno` del staff. El resto de dependencias se usan (`@prisma/client` lo pide el cliente generado). `/admin` (SUPERADMIN) sigue como "Próximamente".
+- **Limpieza** (2026-10-25): revisado código muerto y dependencias; se quitaron `seleccionValida` y `GrupoEditorInput` (shared, sin uso) y la redirección vieja `/dueno` del staff. El resto de dependencias se usan (`@prisma/client` lo pide el cliente generado).
 - **Fase 6 completa** (diseño, commit `44fa8f5`, 2026-11-01). Pendiente: prueba del usuario.
 - **Fase 7 completa** (domicilio: ubicación y repartidores, commit `e1fb043`, 2026-11-01). Pendiente: prueba del usuario.
 - **Fase 8 completa** (clientes: lista, cuenta, sellos, WhatsApp; commit `d0bf7c1`, 2026-11-01). Pendiente: prueba del usuario.
-- **Fase 9 completa** (superadmin, planes, recuperar contraseña, 2026-11-01): 9.1–9.4 hechos, 205 tests verdes. Sin commit: falta validación del usuario. Siguiente: despliegue en el VPS del usuario (faltan datos del VPS y el dominio) y la landing de planes (diseño del usuario).
-- **Backlog de mejoras:** `docs/mejoras-pendientes.md` (ideas del usuario, 2026-10-26; nada programado
-  aún, revisado 2026-10-29). Cada bloque se convierte en spec de fase y se aprueba antes de empezar.
+- **Fase 9 completa** (superadmin, planes, recuperar contraseña, 2026-11-01): 9.1–9.4 hechos, 205 tests verdes, commit `dcd557d`. Siguiente: despliegue en el VPS del usuario (faltan datos del VPS y el dominio) y la landing de planes (diseño del usuario).
+- **Backlog de mejoras:** `docs/mejoras-pendientes.md` (ideas del usuario, 2026-10-26; bloques Diseño, Domicilio
+  6–7, Clientes y Superadmin hechos en las Fases 6–9; queda rastreo en vivo y "sin internet"). Cada bloque se convierte en spec de fase y se aprueba antes de empezar.
 - Raíz del monorepo: `C:\Users\gomes\OneDrive\Documentos\sistema-restaurante` (equivale a `menu-qr/` de la spec).
 
 ## Plan de la Fase 9 (aprobado 2026-11-01) — spec: docs/especificacion-fase9.md
@@ -129,6 +129,7 @@ cuadra en caja.
   "Recibido". Personal: rol Repartidor. Seed: Pepe `repartidor@sodalaesquina.test` / `Repartidor123!`,
   y el seed ahora agrega usuarios demo que falten en una base ya sembrada. salir antes de LISTO →
   409 "Cocina todavía no termina este pedido". No se probó en el navegador (solo tests/build/script).
+- Revisión en el navegador (2026-11-12, Chrome): flujo completo cuenta del cliente → pedido a domicilio con mapa → aceptar → asignar repartidor → salir → entregar → cuadre en caja → seguimiento con sellos y WhatsApp → panel /admin. Corregido: (a) el pin del mapa quedaba fuera del recuadro: `rotate` en el elemento que Leaflet mueve con `transform` gira también el desplazamiento → el giro va en un span interno (`.pin-caja` / `.pin-entrega`) y un ResizeObserver hace invalidateSize + panTo; (b) interruptores pegados a "Agotado/Visible" en el editor del menú; (c) columnas desalineadas en Panel → Clientes; (d) "Cobrar" en entregas ya cobradas del repartidor → "Cobrado"; (e) método del pago en minúscula en /admin; (f) barra de desplazamiento visible en la barra lateral. No se revisaron en el navegador: aviso del plan en prueba, plan Básico y olvidé mi contraseña (cubiertos por tests). La PC quedó con <1 GB libre: las capturas de Chrome fallaban.
 - Después de `prisma migrate dev` hubo que correr `prisma generate` a mano (no regeneró el cliente).
 
 ## Plan de la Fase 6 (pedido 2026-10-29) — spec: docs/especificacion-fase6.md

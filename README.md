@@ -4,17 +4,35 @@ SaaS multi-restaurante: los comensales escanean un QR en la mesa, ven el menú (
 celular y piden; los pedidos llegan en tiempo real a cocina, bar, meseros y caja. Una sola
 instancia sirve a todos los restaurantes y ninguno puede ver datos de otro.
 
-> **Estado:** Fase 5 completa (pedidos en línea para recoger y a domicilio, con pago en efectivo o
-> SINPE Móvil verificado a mano). Specs: [`fase 1`](docs/especificacion-fase1.md),
-> [`fase 2`](docs/especificacion-fase2.md), [`frontend del menú`](docs/especificacion-frontend-menu.md),
-> [`fase 3`](docs/especificacion-fase3.md), [`fase 4`](docs/especificacion-fase4.md) y
-> [`fase 5`](docs/especificacion-fase5.md).
+> **Estado (noviembre 2026):** Fases 1 a 9 completas: pedidos en mesa por QR, cocina, mesero y
+> caja, panel del dueño, pedidos en línea (recoger y domicilio, efectivo o SINPE), diseño nuevo,
+> domicilio con mapa y repartidores, clientes con cuenta y tarjeta de sellos, panel del
+> superadmin con planes y recuperar contraseña por correo. **Falta:** desplegar en el VPS
+> (dominio, HTTPS, respaldos), la landing de planes y los textos legales. Specs:
+> [`fase 1`](docs/especificacion-fase1.md), [`fase 2`](docs/especificacion-fase2.md),
+> [`frontend del menú`](docs/especificacion-frontend-menu.md), [`fase 3`](docs/especificacion-fase3.md),
+> [`fase 4`](docs/especificacion-fase4.md), [`fase 5`](docs/especificacion-fase5.md),
+> [`fase 6`](docs/especificacion-fase6.md), [`fase 7`](docs/especificacion-fase7.md),
+> [`fase 8`](docs/especificacion-fase8.md) y [`fase 9`](docs/especificacion-fase9.md). Ideas
+> pendientes: [`docs/mejoras-pendientes.md`](docs/mejoras-pendientes.md).
+
+## Direcciones (con `pnpm dev` corriendo)
+
+| Qué                                    | Dirección                                      |
+| -------------------------------------- | ---------------------------------------------- |
+| Panel del personal, dueño y superadmin | http://localhost:5181                          |
+| Menú en línea del cliente              | http://localhost:5180/r/soda-la-esquina        |
+| Menú de una mesa                       | la imprime `pnpm db:seed` (`/m/<token>`)       |
+| API                                    | http://localhost:4000 (`/health` para revisar) |
+
+Usuarios de prueba: ver [Credenciales de prueba](#credenciales-de-prueba-creadas-por-pnpm-db-seed).
+Desde el celular en la misma red Wi-Fi: ver [Probar con el celular](#probar-con-el-celular-misma-red-wi-fi).
 
 ## Requisitos
 
 - Node.js 20+ (probado con 22)
-- pnpm 10+ (`npm i -g pnpm`)
-- Docker Desktop (solo para PostgreSQL 16)
+- pnpm 10+ (`npm i -g pnpm`, o sin instalarlo: `corepack pnpm …`)
+- Docker Desktop (solo para PostgreSQL 16; ábralo antes de `pnpm db:up`)
 
 ## Instalación
 

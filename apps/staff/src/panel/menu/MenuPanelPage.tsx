@@ -321,7 +321,7 @@ export function MenuPanelPage() {
           </span>
         </Link>
         <div className="flex items-center gap-3 max-sm:w-full max-sm:justify-end">
-          <span className="flex items-center text-xs text-muted">
+          <span className="flex items-center gap-1.5 text-xs text-muted">
             Agotado
             <Interruptor
               activo={p.agotado}
@@ -331,7 +331,7 @@ export function MenuPanelPage() {
               }
             />
           </span>
-          <span className="flex items-center text-xs text-muted">
+          <span className="flex items-center gap-1.5 text-xs text-muted">
             Visible
             <Interruptor
               activo={p.activo}
