@@ -19,9 +19,42 @@
 - **Fase 7 completa** (domicilio: ubicación y repartidores, commit `e1fb043`, 2026-11-01). Pendiente: prueba del usuario.
 - **Fase 8 completa** (clientes: lista, cuenta, sellos, WhatsApp; commit `d0bf7c1`, 2026-11-01). Pendiente: prueba del usuario.
 - **Fase 9 completa** (superadmin, planes, recuperar contraseña, 2026-11-01): 9.1–9.4 hechos, 205 tests verdes, commit `dcd557d`. Siguiente: despliegue en el VPS del usuario (faltan datos del VPS y el dominio) y la landing de planes (diseño del usuario).
+- **Fase 10 completa** (KDS para muchos pedidos + estilo de las pantallas de operación, 2026-11-12): 10.1–10.3 hechos, 210 tests verdes. Sin commit: falta validación del usuario.
+- **Despliegue en el VPS: al final** (decisión del usuario, 2026-11-12). Sin dominio se puede usar sslip.io/nip.io para tener HTTPS con la IP; falta aprobar Caddy y los datos del VPS.
 - **Backlog de mejoras:** `docs/mejoras-pendientes.md` (ideas del usuario, 2026-10-26; bloques Diseño, Domicilio
   6–7, Clientes y Superadmin hechos en las Fases 6–9; queda rastreo en vivo y "sin internet"). Cada bloque se convierte en spec de fase y se aprueba antes de empezar.
 - Raíz del monorepo: `C:\Users\gomes\OneDrive\Documentos\sistema-restaurante` (equivale a `menu-qr/` de la spec).
+
+## Plan de la Fase 10 (pedido 2026-11-12) — spec: docs/especificacion-fase10.md
+
+El usuario pegó una especificación detallada del KDS (tipografía, colores, KPIs, "Pendiente ahora",
+tiempos, olvidados, tablero, tarjeta) y pidió aplicar el estilo a todas las pantallas de operación.
+
+| Paso | Qué                                                                            | Estado |
+| ---- | ------------------------------------------------------------------------------ | ------ |
+| 10.1 | API: canal/número/quién atendió/listoEn, avanzar varios platos, cocina entrega | ✅     |
+| 10.2 | KDS nuevo (EstacionPage)                                                       | ✅     |
+| 10.3 | Tema y encabezado de operación; Mesero, Caja, En línea, Mis entregas, tablet   | ✅     |
+
+- 10.1: PedidoEstacion trae canal, numero, atendio (creadoPor ?? confirmadoPor); ItemDetalle trae
+  listoEn. POST /operacion/pedidos/:id/avanzar { estado, itemIds? } pasa por los estados
+  intermedios con sus marcas (cocina con estación: solo la suya; mesero: solo ENTREGADO). Cocina
+  puede marcar ENTREGADO (cambio de regla pedido por el usuario). `tiempoTranscurrido` (shared):
+  m:ss / X h Y min / X d Y h (los "15784 min" eran pedidos de hace 10 días).
+- 10.2: EstacionPage reescrita: carga todas las estaciones visibles y filtra en pantalla (contador
+  por estación), KPIs, buscador, vista compacta, límite de atraso 10/15/20/30 (localStorage), franja
+  "Pendiente ahora" con resaltado, olvidados (>2 h) fuera de la cola con aviso rojo, columnas
+  Nuevos / En preparación (atrasados arriba) / Listos (lista compacta con Entregado), tarjetas con
+  canal, píldora (60% ámbar, 100% rojo), barra de progreso, etiquetas (alergia por "alerg" en notas,
+  cambios por Sin/Extra/Con/Más/Poco…, estación ≠ "Cocina"), timers cada segundo, deshacer 5 s.
+  Adaptaciones: estaciones del restaurante (no cocina|bar fijo); sin botón "Listo · avisar mesero"
+  (el pedido pasa solo a Listos al marcar el último plato).
+- 10.4 (pedido del usuario): EnLineaPage con el diseño del KDS (ver spec). Componentes compartidos en ui.tsx: `Kpi`, `Segmentado`, `ColumnaTablero`, `tonoTiempo` (el KDS ahora los usa). Cuadrículas con `minmax(min(100%,Npx),1fr)` para no desbordar columnas angostas a 1280 px. Revisado en Chrome.
+- 10.3: Bricolage Grotesque en staff (`font-display`), tokens --linea/--teal; `.tema-operacion`
+  en index.css (siempre oscuro, colores de la spec; tarjetas con borde fino vía --sombra-tarjeta);
+  Encabezado nuevo (título 24/800, subtítulo en mayúsculas, pestañas en bloque, prop `debajo`);
+  `TituloColumna` en ui.tsx. Revisado en Chrome con 3 pedidos de prueba (#100 entregado; #101 y
+  #102 quedaron en curso en la BD de desarrollo).
 
 ## Plan de la Fase 9 (aprobado 2026-11-01) — spec: docs/especificacion-fase9.md
 

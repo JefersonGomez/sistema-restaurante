@@ -191,13 +191,13 @@ export function MeseroPage() {
     'inline-flex min-h-11 items-center justify-center rounded-md bg-surface px-4 text-sm font-medium hover:bg-surface-2';
 
   return (
-    <div className="min-h-dvh bg-bg pb-6">
+    <div className="tema-operacion min-h-dvh pb-6">
       <Encabezado titulo="Meseros">
         <BotonSonido />
         <Conexion conectado={conectado} />
       </Encabezado>
 
-      <nav className="flex border-b border-line bg-app" role="tablist">
+      <nav className="flex gap-1.5 border-b border-line px-3 py-2" role="tablist">
         {tabs.map((x) => (
           <button
             key={x.id}
@@ -205,7 +205,7 @@ export function MeseroPage() {
             role="tab"
             aria-selected={tab === x.id}
             onClick={() => setTab(x.id)}
-            className={`flex min-h-12 flex-1 items-center justify-center gap-2 font-medium ${tab === x.id ? 'border-b-2 border-purple text-purple' : 'text-muted'}`}
+            className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[10px] font-display text-base ${tab === x.id ? 'bg-surface-2 font-extrabold text-fg' : 'font-semibold text-muted hover:bg-surface'}`}
           >
             {x.texto}
             {x.n > 0 && (
@@ -417,7 +417,7 @@ export function MeseroPage() {
       {mesaAbierta && (
         <Modal etiqueta={`Mesa ${mesaAbierta.numero}`} onCerrar={() => setMesaAbierta(null)}>
           <div className="flex items-center justify-between pt-5 pb-3">
-            <h2 className="text-xl font-semibold">Mesa {mesaAbierta.numero}</h2>
+            <h2 className="font-display text-2xl font-extrabold">Mesa {mesaAbierta.numero}</h2>
             <button type="button" onClick={() => setMesaAbierta(null)} className={botonSuave}>
               Cerrar
             </button>

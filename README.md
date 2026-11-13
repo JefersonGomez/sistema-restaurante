@@ -4,16 +4,16 @@ SaaS multi-restaurante: los comensales escanean un QR en la mesa, ven el menú (
 celular y piden; los pedidos llegan en tiempo real a cocina, bar, meseros y caja. Una sola
 instancia sirve a todos los restaurantes y ninguno puede ver datos de otro.
 
-> **Estado (noviembre 2026):** Fases 1 a 9 completas: pedidos en mesa por QR, cocina, mesero y
+> **Estado (noviembre 2026):** Fases 1 a 10 completas: pedidos en mesa por QR, cocina, mesero y
 > caja, panel del dueño, pedidos en línea (recoger y domicilio, efectivo o SINPE), diseño nuevo,
 > domicilio con mapa y repartidores, clientes con cuenta y tarjeta de sellos, panel del
-> superadmin con planes y recuperar contraseña por correo. **Falta:** desplegar en el VPS
+> superadmin con planes, recuperar contraseña por correo y cocina (KDS) para muchos pedidos. **Falta:** desplegar en el VPS
 > (dominio, HTTPS, respaldos), la landing de planes y los textos legales. Specs:
 > [`fase 1`](docs/especificacion-fase1.md), [`fase 2`](docs/especificacion-fase2.md),
 > [`frontend del menú`](docs/especificacion-frontend-menu.md), [`fase 3`](docs/especificacion-fase3.md),
 > [`fase 4`](docs/especificacion-fase4.md), [`fase 5`](docs/especificacion-fase5.md),
 > [`fase 6`](docs/especificacion-fase6.md), [`fase 7`](docs/especificacion-fase7.md),
-> [`fase 8`](docs/especificacion-fase8.md) y [`fase 9`](docs/especificacion-fase9.md). Ideas
+> [`fase 8`](docs/especificacion-fase8.md), [`fase 9`](docs/especificacion-fase9.md) y [`fase 10`](docs/especificacion-fase10.md). Ideas
 > pendientes: [`docs/mejoras-pendientes.md`](docs/mejoras-pendientes.md).
 
 ## Direcciones (con `pnpm dev` corriendo)
@@ -157,6 +157,16 @@ mesero; y una cuenta cerrada hoy (mesa 6) que aparece en el reporte **Hoy** del 
    gastado, último pedido, sellos, "Frecuente" y "Con cuenta"; buscar por nombre o teléfono.
 
 Recuperar la contraseña por correo todavía no existe (falta elegir el proveedor de correos).
+
+### Cocina para muchos pedidos (Fase 10)
+
+En `http://localhost:5181/cocina` (cocina o dueño): KPIs arriba (nuevos, en preparación, listos,
+atrasados, espera promedio), buscador por mesa o pedido, **Todas / estaciones** con contador,
+**Vista compacta** y el límite de **Atraso** (15 min por defecto, se guarda en el dispositivo).
+"Pendiente ahora" suma los platos por hacer; tocar uno los resalta en todas las tarjetas. Tocar un
+plato lo empieza (pedido nuevo) o lo marca listo (en preparación); cuando todos están listos el
+pedido pasa a **Listos** con "Entregado". Los pedidos con más de 2 h salen de la cola a un aviso rojo
+con "Marcar como entregado". Mesero, Caja, En línea y Mis entregas usan el mismo tema oscuro.
 
 ### Superadmin, planes y contraseñas (Fase 9)
 
@@ -394,6 +404,7 @@ Errores siempre con la forma `{ error: { code, message, details? } }`.
 | DUENO                        | `GET /restaurante/suscripcion` (plan, vencimiento, estado)                                                                                                                                                                                                                                 |
 | DUENO                        | `GET /clientes?buscar=` (un cliente por teléfono)                                                                                                                                                                                                                                          |
 | DUENO, CAJA, MESERO          | `POST /clientes/canjear` `{ telefono }` (premio de la tarjeta de sellos)                                                                                                                                                                                                                   |
+| DUENO, COCINA, MESERO        | `POST /operacion/pedidos/:id/avanzar` `{ estado: EN_PREPARACION                                                                                                                                                                                                                            | LISTO | ENTREGADO, itemIds? }` (varios platos; cocina solo su estación, mesero solo entrega) |
 | REPARTIDOR                   | `GET /repartos` (sus entregas), `POST /repartos/:id/salir`, `POST /repartos/:id/entregar` `{ metodoPago }`                                                                                                                                                                                 |
 | DUENO                        | `GET /restaurante/qr-enlinea.png` (QR del enlace /r/:slug; `GET /restaurante` trae `enlaceEnLinea`)                                                                                                                                                                                        |
 | Público (rate limited)       | `POST /public/:slug/pedidos-en-linea` (10 por IP cada 10 min, máx. 2 pendientes por teléfono), `GET /public/seguimiento/:token`                                                                                                                                                            |

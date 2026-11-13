@@ -134,9 +134,9 @@ export async function cambiarEstadoItem(
 ) {
   const item = await itemDelRestaurante(restauranteId, itemId);
 
-  // Cocina prepara (solo su estación si tiene una asignada); el mesero entrega; el dueño todo.
+  // Cocina prepara y también entrega en la barra (solo su estación si tiene una asignada); el
+  // mesero entrega; el dueño todo.
   if (usuario.rol === 'COCINA') {
-    if (estado === 'ENTREGADO') throw new HttpError(403, 'PROHIBIDO', 'Cocina no marca entregas');
     const estacionId = await estacionDe(usuario);
     if (estacionId && estacionId !== item.estacionId)
       throw new HttpError(403, 'PROHIBIDO', 'El ítem es de otra estación');
@@ -185,6 +185,64 @@ export async function cambiarEstadoItem(
     { ...detalle, pedidoId: item.pedidoId },
   );
   return detalle;
+}
+
+const ORDEN: EstadoItem[] = ['PENDIENTE', 'EN_PREPARACION', 'LISTO', 'ENTREGADO'];
+
+// Cocina: avanza varios platos de un pedido hasta `estado` ("Empezar", "Marcar todo listo",
+// "Entregado"), pasando por los estados intermedios con su marca de tiempo. Cocina con estación
+// asignada solo mueve los de su estación; el mesero solo entrega.
+export async function avanzarPedido(
+  restauranteId: string,
+  usuario: UsuarioToken,
+  pedidoId: string,
+  estado: 'EN_PREPARACION' | 'LISTO' | 'ENTREGADO',
+  itemIds?: string[],
+) {
+  if (usuario.rol === 'MESERO' && estado !== 'ENTREGADO')
+    throw new HttpError(403, 'PROHIBIDO', 'El mesero solo marca entregas');
+  const p = await prisma.pedido.findFirst({
+    where: { id: pedidoId, restauranteId },
+    select: { estado: true, cuentaId: true, cuenta: { select: { estado: true, ...datosLugar } } },
+  });
+  if (!p) throw noExiste('Pedido');
+  if (p.estado !== 'CONFIRMADO') throw invalida('El pedido no está confirmado');
+  if (p.cuenta.estado === 'CERRADA') throw invalida('La cuenta ya está cerrada');
+
+  const estacionId = usuario.rol === 'COCINA' ? await estacionDe(usuario) : null;
+  const where = {
+    pedidoId,
+    cancelado: false,
+    ...(itemIds && { id: { in: itemIds } }),
+    ...(estacionId && { estacionId }),
+  };
+  const meta = ORDEN.indexOf(estado);
+  const antes = await prisma.pedidoItem.findMany({ where, select: { id: true, estado: true } });
+  const mover = antes.filter((i) => ORDEN.indexOf(i.estado) < meta).map((i) => i.id);
+  const ahora = new Date();
+  await prisma.$transaction(async (tx) => {
+    // Paso a paso: cada updateMany solo toma los que siguen en el estado anterior.
+    for (let paso = 1; paso <= meta; paso++) {
+      const destino = ORDEN[paso] as keyof typeof MARCA_TIEMPO;
+      await tx.pedidoItem.updateMany({
+        where: { ...where, id: { in: mover }, estado: ORDEN[paso - 1] },
+        data: { estado: destino, [MARCA_TIEMPO[destino]]: ahora },
+      });
+    }
+  });
+
+  const finales = await prisma.pedidoItem.findMany({
+    where: { id: { in: mover } },
+    include: incluirItem,
+  });
+  const ctx = {
+    restauranteId,
+    cuentaId: p.cuentaId,
+    mesa: p.cuenta.mesa,
+    lugar: lugarDe(p.cuenta),
+  };
+  for (const i of finales) avisar.itemEstado(ctx, { ...aItem(i), pedidoId });
+  return { movidos: finales.length };
 }
 
 // Se puede cancelar mientras no esté LISTO; requiere motivo.
@@ -566,12 +624,17 @@ export async function itemsEstacion(
     include: {
       items: { where: filtroItem, orderBy: { createdAt: 'asc' }, include: incluirItem },
       cuenta: { select: datosLugar },
+      creadoPor: { select: { nombre: true } },
+      confirmadoPor: { select: { nombre: true } },
     },
   });
   return filas.map((p) => ({
     pedidoId: p.id,
     mesa: p.cuenta.mesa,
     lugar: lugarDe(p.cuenta),
+    canal: p.cuenta.tipo,
+    numero: p.cuenta.numeroPedido,
+    atendio: p.creadoPor?.nombre ?? p.confirmadoPor?.nombre ?? null,
     confirmadoEn: (p.confirmadoEn ?? p.createdAt).toISOString(),
     nota: p.nota,
     items: p.items.map(aItem),

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  avanzarPedidoSchema,
   cambiarEstadoItemSchema,
   cerrarCuentaSchema,
   cobrarParteSchema,
@@ -67,8 +68,15 @@ operacionRouter.patch(
 operacionRouter.get('/estaciones', cocina, c.estaciones);
 operacionRouter.get('/estaciones/:id/items', cocina, conId, c.itemsEstacion);
 
+operacionRouter.post(
+  '/pedidos/:id/avanzar',
+  requireRole('DUENO', 'COCINA', 'MESERO'),
+  validate({ params: idParamSchema, body: avanzarPedidoSchema }),
+  c.avanzarPedido,
+);
+
 operacionRouter.get('/items', sala, validate({ query: itemsQuerySchema }), c.items);
-// Cocina: EN_PREPARACION/LISTO de su estación. Mesero: ENTREGADO. (El service valida el rol.)
+// Cocina: EN_PREPARACION/LISTO/ENTREGADO de su estación. Mesero: ENTREGADO. (El service valida el rol.)
 operacionRouter.patch(
   '/items/:id/estado',
   requireRole('DUENO', 'COCINA', 'MESERO'),

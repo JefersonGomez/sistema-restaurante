@@ -3,6 +3,41 @@
 /* Tailwind tiene que escanear también los componentes compartidos. */
 @source '../../../packages/ui/src';
 
+/* Pantallas de operación (cocina, mesero, caja, en línea, repartidor; Fase 10): siempre oscuras,
+   con los colores del KDS. Nuevo = azul (info), en preparación = ámbar, listo = verde (ok),
+   atrasado/alergia = rojo (danger). */
+.tema-operacion {
+  --bg: #111214;
+  --app: #1a1b1e;
+  --surface: #232428;
+  --surface-2: #2c2e33;
+  --fg: #f2f2f2;
+  --muted: #a1a1aa;
+  --line: #2c2e33;
+  --purple: #f2f2f2;
+  --purple-soft: #2c2e33;
+  --on-accent: #111214;
+  --amber: #f5b544;
+  --amber-soft: #3a2c10;
+  --amber-ink: #f5b544;
+  --on-amber: #111214;
+  --ok: #4ade80;
+  --ok-soft: #12301f;
+  --danger: #f87171;
+  --peligro-suave: rgba(248, 113, 113, 0.16);
+  --info: #60a5fa;
+  --info-soft: #16233a;
+  --linea: #c4b5fd;
+  --linea-soft: #2a2140;
+  --teal: #5eead4;
+  --teal-soft: #11302d;
+  --sombra-tarjeta: inset 0 0 0 1px #2c2e33; /* en oscuro, las tarjetas llevan borde fino */
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+  background: var(--bg);
+  color: var(--fg);
+}
+
 /* Pre-cuenta en impresora de tickets de 80 mm (window.print). */
 @media print {
   @page {

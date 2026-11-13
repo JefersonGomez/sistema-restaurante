@@ -14,7 +14,7 @@ import {
 import { api, obtenerMenu } from './api';
 import { useAuth } from './auth';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
-import { Conexion, Encabezado, formatoPrecio, hora } from './ui';
+import { Conexion, Encabezado, formatoPrecio, hora, TituloColumna } from './ui';
 
 const METODOS: { id: MetodoPago; texto: string }[] = [
   { id: 'EFECTIVO', texto: 'Efectivo' },
@@ -202,7 +202,7 @@ export function CajaPage() {
   });
 
   return (
-    <div className="min-h-dvh bg-bg">
+    <div className="tema-operacion min-h-dvh">
       <Encabezado titulo="Caja">
         <Conexion conectado={conectado} />
       </Encabezado>
@@ -214,9 +214,7 @@ export function CajaPage() {
 
       <div className="mx-auto grid max-w-6xl items-start gap-4 p-4 md:grid-cols-[320px_1fr] print:hidden">
         <aside className="space-y-2">
-          <h2 className="text-sm font-semibold tracking-wide text-muted uppercase">
-            Cuentas abiertas
-          </h2>
+          <TituloColumna titulo="Cuentas abiertas" punto="bg-amber" cantidad={abiertas.length} />
           {abiertas.length === 0 && (
             <p className="rounded-lg border border-dashed border-line p-6 text-center text-sm text-muted">
               No hay cuentas abiertas.
@@ -255,9 +253,9 @@ export function CajaPage() {
 
           {efectivo.length > 0 && (
             <>
-              <h2 className="pt-4 text-sm font-semibold tracking-wide text-muted uppercase">
-                Efectivo de repartidores
-              </h2>
+              <div className="pt-4">
+                <TituloColumna titulo="Efectivo de repartidores" punto="bg-info" />
+              </div>
               {efectivo.map((e) => (
                 <div
                   key={e.repartidor.id}
@@ -303,7 +301,7 @@ export function CajaPage() {
           ) : (
             <>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-xl font-semibold">{cuenta.lugar}</h2>
+                <h2 className="font-display text-2xl font-extrabold">{cuenta.lugar}</h2>
                 <div
                   role="group"
                   aria-label="¿Cómo pagan?"

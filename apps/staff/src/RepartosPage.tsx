@@ -5,7 +5,15 @@ import { api, obtenerMenu } from './api';
 import { useAuth } from './auth';
 import { METODOS } from './EnLineaPage';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
-import { BotonSonido, Conexion, Encabezado, enlacesMapa, formatoPrecio, hora } from './ui';
+import {
+  BotonSonido,
+  Conexion,
+  Encabezado,
+  enlacesMapa,
+  formatoPrecio,
+  hora,
+  TituloColumna,
+} from './ui';
 
 const boton =
   'inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md px-4 text-[15px] font-semibold disabled:opacity-50';
@@ -43,7 +51,7 @@ function Entrega({
     >
       <header className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-lg font-bold">
+          <p className="truncate font-display text-xl font-extrabold">
             #{d.numero} · {d.clienteNombre}
           </p>
           <p className="text-xs text-muted">Pedido a las {hora(c.abiertaEn)}</p>
@@ -209,7 +217,7 @@ export function RepartosPage() {
     .reduce((n, c) => n + c.total, 0);
 
   return (
-    <div className="min-h-dvh bg-bg">
+    <div className="tema-operacion min-h-dvh">
       <Encabezado titulo="Mis entregas">
         <BotonSonido />
         <Conexion conectado={conectado} />
@@ -237,9 +245,9 @@ export function RepartosPage() {
             <Entrega key={c.id} c={c} precio={precio} ocupado={ocupado} onAccion={accion} />
           ))}
           {hechas.length > 0 && (
-            <h2 className="mt-4 px-1 text-sm font-semibold tracking-wide text-muted uppercase">
-              Entregadas hoy
-            </h2>
+            <div className="mt-4">
+              <TituloColumna titulo="Entregadas hoy" punto="bg-ok" cantidad={hechas.length} />
+            </div>
           )}
           {hechas.map((c) => (
             <Entrega key={c.id} c={c} precio={precio} ocupado={ocupado} onAccion={accion} />

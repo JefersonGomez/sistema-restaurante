@@ -298,8 +298,53 @@ describe('permisos por rol en /operacion', () => {
     ).toEqual(['Bar']);
     expect((await estado(t.cocina, 'EN_PREPARACION')).status).toBe(200);
     expect((await estado(t.cocina, 'LISTO')).status).toBe(200);
-    // Cocina no entrega.
-    expect((await estado(t.cocina, 'ENTREGADO')).status).toBe(403);
+    // Cocina también entrega en la barra (Fase 10); la caja no.
+    expect((await estado(t.caja, 'ENTREGADO')).status).toBe(403);
+    expect((await estado(t.cocina, 'ENTREGADO')).status).toBe(200);
+  });
+});
+
+describe('cocina: varios platos de un pedido a la vez', () => {
+  it('Empezar, marcar todo listo y entregar; el bar solo mueve lo suyo', async () => {
+    const { pedido } = await pedidoPendiente([casado(), { platoId: m.refresco, cantidad: 2 }]);
+    await como(t.mesero).patch(`/operacion/pedidos/${pedido.id}/confirmar`);
+    const avanzar = (token: string, body: object) =>
+      como(token).post(`/operacion/pedidos/${pedido.id}/avanzar`).send(body);
+    const estados = async () =>
+      (
+        await prisma.pedidoItem.findMany({
+          where: { pedidoId: pedido.id },
+          select: { estado: true, platoId: true },
+        })
+      )
+        .sort((a) => (a.platoId === m.casado ? -1 : 1)) // [casado, refresco]
+        .map((i) => i.estado);
+
+    // El usuario de bar solo mueve el refresco.
+    expect((await avanzar(t.bar, { estado: 'EN_PREPARACION' })).body).toEqual({ movidos: 1 });
+    expect(await estados()).toEqual(['PENDIENTE', 'EN_PREPARACION']);
+
+    // De PENDIENTE a LISTO en una llamada (pasa por EN_PREPARACION) y queda la hora de listo.
+    expect((await avanzar(t.cocina, { estado: 'LISTO' })).body).toEqual({ movidos: 2 });
+    expect(await estados()).toEqual(['LISTO', 'LISTO']);
+    const items = await como(t.cocina).get(`/operacion/estaciones/${m.estaciones.cocina}/items`);
+    expect(items.body[0]).toMatchObject({
+      canal: 'MESA',
+      numero: null,
+      atendio: expect.any(String),
+    });
+    expect(items.body[0].items[0].listoEn).not.toBeNull();
+
+    // Solo los platos indicados; el mesero no prepara pero sí entrega.
+    expect((await avanzar(t.mesero, { estado: 'LISTO' })).status).toBe(403);
+    const primero = await prisma.pedidoItem.findFirst({
+      where: { pedidoId: pedido.id, platoId: m.casado },
+    });
+    expect((await avanzar(t.cocina, { estado: 'ENTREGADO', itemIds: [primero!.id] })).body).toEqual(
+      { movidos: 1 },
+    );
+    expect(await estados()).toEqual(['ENTREGADO', 'LISTO']);
+    expect((await avanzar(t.mesero, { estado: 'ENTREGADO' })).body).toEqual({ movidos: 1 });
   });
 });
 

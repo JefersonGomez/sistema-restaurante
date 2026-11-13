@@ -139,14 +139,26 @@ const PANTALLAS: Partial<Record<string, { ruta: string; texto: string }[]>> = {
   ],
 };
 
-export function Encabezado({ titulo, children }: { titulo: string; children?: ReactNode }) {
+// Encabezado de las pantallas de operación: título, negocio, acciones y pestañas por rol (la
+// activa es un bloque claro). `debajo` va pegado bajo las pestañas (p. ej. "Pendiente ahora").
+export function Encabezado({
+  titulo,
+  children,
+  debajo,
+}: {
+  titulo: string;
+  children?: ReactNode;
+  debajo?: ReactNode;
+}) {
   const { usuario, logout } = useAuth();
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-app print:hidden">
-      <div className="flex flex-wrap items-center gap-2 px-4 py-2">
-        <div className="min-w-36 flex-1">
-          <h1 className="truncate text-[17px] font-semibold">{titulo}</h1>
-          <p className="truncate text-xs text-muted">
+    <header className="sticky top-0 z-20 border-b border-line bg-bg print:hidden">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 px-4 pt-3 pb-2.5">
+        <div className="mr-auto min-w-40">
+          <h1 className="font-display text-2xl leading-none font-extrabold tracking-[-0.02em]">
+            {titulo}
+          </h1>
+          <p className="mt-1.5 truncate text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
             {usuario?.nombre}
             {usuario?.restaurante ? ` · ${usuario.restaurante.nombre}` : ''}
           </p>
@@ -156,31 +168,163 @@ export function Encabezado({ titulo, children }: { titulo: string; children?: Re
         <button
           type="button"
           onClick={logout}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-sm text-muted hover:bg-surface"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-3 text-sm font-semibold text-muted hover:bg-surface hover:text-fg"
         >
           <LogOut className="size-4" aria-hidden />
           <span className="max-sm:sr-only">Salir</span>
         </button>
       </div>
       {usuario && PANTALLAS[usuario.rol] && (
-        <nav className="flex gap-1 overflow-x-auto border-t border-line px-2 text-sm">
+        <nav aria-label="Pantallas" className="flex gap-1.5 overflow-x-auto px-3 pb-2.5">
           {PANTALLAS[usuario.rol]!.filter((p) => verSeccion(usuario.restaurante?.plan, p.ruta)).map(
-            (p) => (
-              <NavLink
-                key={p.ruta}
-                to={p.ruta}
-                className={({ isActive }) =>
-                  `flex min-h-11 shrink-0 items-center gap-2 px-3 ${isActive ? 'border-b-2 border-purple font-semibold text-fg' : 'text-muted'}`
-                }
-              >
-                <IconoSeccion ruta={p.ruta} chico />
-                {p.texto}
-              </NavLink>
-            ),
+            (p) => {
+              const { Icono } = SECCIONES[p.ruta]!;
+              return (
+                <NavLink
+                  key={p.ruta}
+                  to={p.ruta}
+                  className={({ isActive }) =>
+                    `flex h-10 shrink-0 items-center gap-2 rounded-[10px] px-3.5 font-display text-base ${
+                      isActive
+                        ? 'bg-fg font-extrabold text-bg'
+                        : 'font-semibold text-muted hover:bg-surface hover:text-fg'
+                    }`
+                  }
+                >
+                  <Icono className="size-[18px]" aria-hidden />
+                  {p.texto}
+                </NavLink>
+              );
+            },
           )}
         </nav>
       )}
+      {debajo}
     </header>
+  );
+}
+
+// Indicador de la barra superior de operación ("3 nuevos"); en rojo sólido si `alerta`.
+export function Kpi({
+  texto,
+  valor,
+  alerta,
+}: {
+  texto: string;
+  valor: string | number;
+  alerta?: boolean;
+}) {
+  return (
+    <span
+      className={`inline-flex h-10 items-center gap-2 rounded-[10px] px-3 text-sm ${alerta ? 'bg-danger text-bg' : 'bg-app text-muted'}`}
+    >
+      <span
+        className={`font-display text-lg font-extrabold tabular-nums ${alerta ? '' : 'text-fg'}`}
+      >
+        {valor}
+      </span>
+      {texto}
+    </span>
+  );
+}
+
+// Selector segmentado (Todas / Cocina / Bar…), cada opción con su contador.
+export function Segmentado<T extends string>({
+  etiqueta,
+  opciones,
+  valor,
+  onCambio,
+}: {
+  etiqueta: string;
+  opciones: { id: T; texto: string; cantidad?: number }[];
+  valor: T;
+  onCambio: (v: T) => void;
+}) {
+  return (
+    <div role="group" aria-label={etiqueta} className="flex h-10 rounded-[10px] bg-app p-1">
+      {opciones.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          aria-pressed={valor === o.id}
+          onClick={() => onCambio(o.id)}
+          className={`flex items-center gap-1.5 rounded-lg px-3 text-sm font-semibold ${
+            valor === o.id ? 'bg-fg text-bg' : 'text-muted hover:text-fg'
+          }`}
+        >
+          {o.texto}
+          {o.cantidad !== undefined && (
+            <span className="tabular-nums opacity-80">{o.cantidad}</span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Columna del tablero de operación: encabezado fijo y cuerpo con scroll propio (en pantallas
+// anchas; en angostas las columnas se apilan).
+export function ColumnaTablero({
+  titulo,
+  punto,
+  cantidad,
+  pista,
+  className,
+  children,
+}: {
+  titulo: string;
+  punto: string;
+  cantidad: number;
+  pista: string;
+  className: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      aria-label={titulo}
+      className={`flex min-w-0 flex-col rounded-2xl border border-line bg-bg lg:min-h-0 ${className}`}
+    >
+      <div className="px-2 py-2.5">
+        <TituloColumna titulo={titulo} punto={punto} cantidad={cantidad} pista={pista} />
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">{children}</div>
+    </section>
+  );
+}
+
+// Color de la píldora de tiempo según cuánto del límite se gastó: verde, ámbar (60%), rojo (100%).
+export const tonoTiempo = (proporcion: number) =>
+  proporcion >= 1
+    ? 'bg-danger text-bg'
+    : proporcion >= 0.6
+      ? 'bg-amber-soft text-amber'
+      : 'bg-ok-soft text-ok';
+
+// Encabezado de columna de las pantallas de operación: punto de color, título, contador y pista.
+export function TituloColumna({
+  titulo,
+  punto,
+  cantidad,
+  pista,
+}: {
+  titulo: string;
+  punto: string; // clase de fondo del punto (bg-info, bg-amber, bg-ok…)
+  cantidad?: number;
+  pista?: string;
+}) {
+  return (
+    <h2 className="flex items-center gap-2 px-1">
+      <span className={`size-2.5 rounded-full ${punto}`} aria-hidden />
+      <span className="font-display text-base font-extrabold tracking-wide uppercase">
+        {titulo}
+      </span>
+      {cantidad !== undefined && (
+        <span className="rounded-full bg-surface-2 px-2 text-sm font-bold tabular-nums">
+          {cantidad}
+        </span>
+      )}
+      {pista && <span className="ml-auto text-xs text-muted">{pista}</span>}
+    </h2>
   );
 }
 

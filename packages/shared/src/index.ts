@@ -531,6 +531,7 @@ export type ItemDetalle = {
   motivoCancelacion: string | null;
   modificadores: ModificadorElegido[];
   pagoId: string | null; // cuentas separadas: grupo en el que se cobró
+  listoEn: string | null; // cuándo quedó listo (espera en "Listos" de cocina)
   updatedAt: string;
 };
 export type PagoDetalle = {
@@ -651,10 +652,18 @@ export type PedidoEstacion = {
   pedidoId: string;
   mesa: { numero: number; nombre: string | null } | null; // null en pedidos en línea
   lugar: string; // lo que se muestra en la tarjeta: "Mesa 3", "Para llevar #12 · Ana"
+  canal: TipoCuenta; // MESA (salón), RECOGER o DOMICILIO
+  numero: number | null; // número del pedido en línea ("#12"); null en mesa
+  atendio: string | null; // quién lo tomó o confirmó (mesero, caja)
   confirmadoEn: string;
   nota: string | null;
   items: ItemDetalle[];
 };
+// Cocina: avanza varios platos de un pedido de una vez (Empezar, Marcar todo listo, Entregado).
+export const avanzarPedidoSchema = z.object({
+  estado: z.enum(['EN_PREPARACION', 'LISTO', 'ENTREGADO']),
+  itemIds: z.array(z.uuid()).min(1).max(100).optional(), // sin itemIds: todos los del pedido
+});
 
 // --- Reportes ---
 
@@ -818,3 +827,4 @@ export type AdminRestauranteDetalle = AdminRestauranteFila & {
 // "Olvidé mi contraseña" (personal y clientes).
 export const olvideSchema = z.object({ email });
 export const restablecerSchema = z.object({ token: z.string().min(20).max(100), password });
+export * from './tiempo';

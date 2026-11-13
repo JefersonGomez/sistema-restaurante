@@ -14,7 +14,7 @@ type InfoTablet = {
 
 function Caja({ children }: { children: React.ReactNode }) {
   return (
-    <main className="grid min-h-dvh place-items-center bg-bg p-4">
+    <main className="tema-operacion grid min-h-dvh place-items-center p-4">
       <div className="w-full max-w-md space-y-5 rounded-[26px] bg-app p-6 shadow-app">
         {children}
       </div>

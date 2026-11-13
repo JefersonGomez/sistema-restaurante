@@ -62,6 +62,7 @@ export const aItem = (i: ItemDB): ItemDetalle => ({
     precioExtra: m.precioExtra,
   })),
   pagoId: i.pagoId,
+  listoEn: i.listoEn?.toISOString() ?? null,
   updatedAt: i.updatedAt.toISOString(),
 });
 

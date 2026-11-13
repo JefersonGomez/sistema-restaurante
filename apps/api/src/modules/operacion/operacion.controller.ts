@@ -55,6 +55,19 @@ export const estadoItem = async (req: ConId, res: Response) => {
   );
 };
 
+// Cocina: varios platos de un pedido de una vez.
+export const avanzarPedido = async (req: ConId, res: Response) => {
+  res.json(
+    await s.avanzarPedido(
+      restauranteDe(req),
+      req.usuario!,
+      req.params.id,
+      req.body.estado,
+      req.body.itemIds,
+    ),
+  );
+};
+
 // Deshace el último avance (el body dice de qué estado se vuelve).
 export const deshacerItem = async (req: ConId, res: Response) => {
   res.json(
