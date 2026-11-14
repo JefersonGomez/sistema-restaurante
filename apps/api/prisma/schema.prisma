@@ -88,6 +88,10 @@ model Restaurante {
   // Suscripción (Fase 9): el registro empieza en COMPLETO con 30 días de prueba.
   plan                     Plan             @default(COMPLETO)
   planVenceEn              DateTime?
+  suspendidoPorPago        Boolean          @default(false) // suspensión automática (un pago la levanta)
+  // Wi-Fi del local: QR para conectarse en la tarjeta de la mesa (Fase 11)
+  wifiNombre               String?
+  wifiClave                String?
   modoConfirmacion         ModoConfirmacion @default(PRIMER_PEDIDO)
   zonaHoraria              String           @default("America/Costa_Rica")
   cerradoManual            Boolean          @default(false) // "Cerrar temporalmente"
@@ -395,6 +399,7 @@ model Pedido {
   creadoPorUsuarioId String?      @db.Uuid
   confirmadoPorId    String?      @db.Uuid
   confirmadoEn       DateTime? // arranca el temporizador de cocina
+  listoAvisadoEn     DateTime? // cocina tocó "Listo · avisar mesero" (Fase 11)
   nota               String?
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt

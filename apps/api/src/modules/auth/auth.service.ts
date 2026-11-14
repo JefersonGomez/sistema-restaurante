@@ -24,7 +24,9 @@ const usuarioPublico = {
   restaurante: { select: { id: true, nombre: true, slug: true, plan: true } },
 } as const;
 
-const conRestaurante = { restaurante: { select: { activo: true } } } as const;
+const conRestaurante = {
+  restaurante: { select: { activo: true, suspendidoPorPago: true } },
+} as const;
 
 // Usuario inactivo o de un restaurante desactivado no puede entrar.
 const puedeEntrar = (u: { activo: boolean; restaurante: { activo: boolean } | null }) =>
@@ -46,6 +48,13 @@ async function emitirTokens({ id, rol, restauranteId }: Omit<UsuarioToken, 'esta
 export async function login({ email, password }: LoginInput) {
   const u = await prisma.usuario.findUnique({ where: { email }, include: conRestaurante });
   const ok = await bcrypt.compare(password, u?.passwordHash ?? HASH_RELLENO);
+  // Con la contraseña correcta se explica por qué no entra si el plan venció.
+  if (u && ok && u.activo && u.restaurante?.suspendidoPorPago && !u.restaurante.activo)
+    throw new HttpError(
+      403,
+      'PLAN_VENCIDO',
+      'El plan de su restaurante venció y el servicio está suspendido. Escríbanos para pagar y reactivarlo.',
+    );
   if (!u || !ok || !puedeEntrar(u))
     throw new HttpError(401, 'CREDENCIALES_INVALIDAS', 'Email o contraseña incorrectos');
 

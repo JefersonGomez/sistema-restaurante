@@ -1,10 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, ChevronDown, Copy, Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react';
+import {
+  Check,
+  ChevronDown,
+  Copy,
+  Pencil,
+  Plus,
+  Printer,
+  Trash2,
+  TriangleAlert,
+} from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { categoriaSchema } from '@menu-qr/shared';
 import { formatoPrecio, FotoPlato } from '@menu-qr/ui';
-import { api, ErrorApi } from '../../api';
+import { api, descargar, ErrorApi } from '../../api';
 import {
   Boton,
   Campo,
@@ -448,6 +457,18 @@ export function MenuPanelPage() {
       <TituloPagina
         titulo="Menú"
         detalle="Arrastre para ordenar. Los cambios se ven en el menú del comensal al instante."
+        acciones={
+          <Boton
+            variante="suave"
+            onClick={() =>
+              descargar('/restaurante/menu.pdf', 'menu.pdf').catch((e: Error) =>
+                setErrorAccion(e.message),
+              )
+            }
+          >
+            <Printer className="size-4" aria-hidden /> Menú en PDF
+          </Boton>
+        }
       />
       {errorAccion && (
         <p role="alert" className="mb-4 rounded-md bg-danger-soft p-3 text-sm text-danger">

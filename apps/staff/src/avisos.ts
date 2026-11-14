@@ -38,7 +38,7 @@ export function avisar(tipo: TipoAviso, texto: string, tonos = 2) {
   sonar(tonos);
   vibrar();
   if (notificacionesActivas() && document.visibilityState !== 'visible')
-    new Notification('Menú QR', { body: texto, tag: tipo, icon: '/icono.svg' });
+    new Notification('KitchaGo', { body: texto, tag: tipo, icon: '/icono.svg' });
 }
 
 export const marcarLeidos = () => cambiar(avisos.map((a) => ({ ...a, leido: true })));

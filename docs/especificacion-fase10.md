@@ -61,10 +61,17 @@ contra el tiempo prometido), barra de progreso (avance de cocina), "ATRASADO" / 
 platos con check de cocina; todas las acciones de antes. "Listo para entregar" se destaca cuando
 cocina terminó.
 
+## Seguimiento del pedido en línea (pedido del usuario, 2026-11-12)
+
+En computadora el seguimiento ocupa todo el ancho (antes era una columna de ~576 px): dos columnas,
+estado grande con los pasos en horizontal + SINPE + detalle del pedido | entrega (tipo, dirección,
+hora, tiempo estimado), sellos y acciones (fija al hacer scroll). En el celular, una columna con
+los pasos en vertical unidos por una línea y los botones al final. Mismos datos y acciones.
+
 ## Fuera de alcance
 
-Cambiar el modelo de estados, impresión de comandas, pantallas para clientes (menú) y el panel
-del dueño (mantienen su tema).
+Cambiar el modelo de estados, impresión de comandas, el resto de pantallas del cliente (menú) y el
+panel del dueño (mantienen su tema).
 
 ## Plan (sub-fases)
 

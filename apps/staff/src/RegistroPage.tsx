@@ -91,6 +91,9 @@ export function RegistroPage() {
         className="anim-entrar w-full max-w-md space-y-4 rounded-[26px] bg-app p-6 shadow-app"
       >
         <div>
+          <p className="mb-3 font-display text-lg font-extrabold tracking-[-0.02em] text-purple">
+            KitchaGo
+          </p>
           <h1 className="text-[22px] font-semibold">Cree la cuenta de su restaurante</h1>
           <p className="mt-1 text-sm text-muted">
             En dos minutos tiene su menú con QR. Después puede agregar el logo, el banner y la

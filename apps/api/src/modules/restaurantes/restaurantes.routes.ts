@@ -14,3 +14,4 @@ restauranteRouter.get('/suscripcion', c.suscripcion);
 restauranteRouter.patch('/', validate({ body: restauranteConfigSchema }), c.actualizarPropio);
 restauranteRouter.put('/horarios', validate({ body: horariosSchema }), c.guardarHorarios);
 restauranteRouter.get('/qr-enlinea.png', c.qrEnLinea);
+restauranteRouter.get('/menu.pdf', c.menuPdf);

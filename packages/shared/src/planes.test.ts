@@ -21,7 +21,8 @@ describe('planes', () => {
     expect(estadoSuscripcion(r(20, 1, false), ahora)).toBe('SUSPENDIDO');
     expect(estadoSuscripcion(r(20, 0), ahora)).toBe('PRUEBA');
     expect(estadoSuscripcion(r(20), ahora)).toBe('AL_DIA');
-    expect(estadoSuscripcion(r(5), ahora)).toBe('POR_VENCER');
+    expect(estadoSuscripcion(r(1.5), ahora)).toBe('POR_VENCER'); // aviso 2 días antes
+    expect(estadoSuscripcion(r(5), ahora)).toBe('AL_DIA');
     expect(estadoSuscripcion(r(-1), ahora)).toBe('VENCIDO');
     expect(estadoSuscripcion(r(-1, 0), ahora)).toBe('VENCIDO'); // prueba vencida
     expect(estadoSuscripcion(r(null), ahora)).toBe('VENCIDO');

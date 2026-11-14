@@ -133,6 +133,7 @@ export function MeseroPage() {
       'cuenta:solicitada': alerta,
       'item:estado': (p: { estado: string }) => (p.estado === 'LISTO' ? alerta() : refrescar()),
       'pedido:confirmado': refrescar,
+      'pedido:listo': refrescar, // cocina avisó (el sonido lo da AvisosGlobales)
       'pedido:cancelado': refrescar,
       'cuenta:cerrada': refrescar,
       'llamada:atendida': refrescar,

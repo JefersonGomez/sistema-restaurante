@@ -1,4 +1,5 @@
 import {
+  DIAS_GRACIA,
   estadoSuscripcion,
   nuevoVencimiento,
   PLANES,
@@ -47,6 +48,7 @@ const aFila = (r: RestauranteDB, pedidos: Map<string, number>): AdminRestaurante
   plan: r.plan,
   planVenceEn: r.planVenceEn?.toISOString() ?? null,
   estado: estadoSuscripcion({ ...r, pagos: r._count.pagosPlan }),
+  suspendidoPorPago: r.suspendidoPorPago,
   pedidos30d: pedidos.get(r.id) ?? 0,
   createdAt: r.createdAt.toISOString(),
 });
@@ -152,9 +154,34 @@ export async function registrarPago(id: string, superadminId: string, input: Reg
         registradoPorId: superadminId,
       },
     });
-    await tx.restaurante.update({ where: { id }, data: { plan: input.plan, planVenceEn: hasta } });
+    // Si estaba suspendido por no pagar, el pago lo reactiva (una suspensión a mano, no).
+    const r2 = await tx.restaurante.findUniqueOrThrow({
+      where: { id },
+      select: { suspendidoPorPago: true },
+    });
+    await tx.restaurante.update({
+      where: { id },
+      data: {
+        plan: input.plan,
+        planVenceEn: hasta,
+        ...(r2.suspendidoPorPago && { activo: true, suspendidoPorPago: false }),
+      },
+    });
   });
   return detalle(id);
+}
+
+// Suspensión automática: vencido hace más de DIAS_GRACIA → nadie entra y el menú no abre, hasta
+// que se registre un pago. Corre al arrancar la API y cada hora.
+export async function suspenderVencidos(ahora = new Date()) {
+  const { count } = await prisma.restaurante.updateMany({
+    where: {
+      activo: true,
+      planVenceEn: { lt: new Date(ahora.getTime() - DIAS_GRACIA * 86_400_000) },
+    },
+    data: { activo: false, suspendidoPorPago: true },
+  });
+  return count;
 }
 
 // Contraseña temporal para el dueño (se muestra una sola vez; debe cambiarla al entrar).

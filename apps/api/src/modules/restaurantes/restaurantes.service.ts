@@ -1,3 +1,4 @@
+import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
 import { env } from '../../lib/env';
 import bcrypt from 'bcryptjs';
@@ -34,7 +35,11 @@ export async function crear({ restaurante, dueno }: CrearRestauranteInput) {
 
 export async function actualizarAdmin(id: string, data: AdminRestaurantePatchInput) {
   if (!(await prisma.restaurante.findUnique({ where: { id } }))) throw noExiste('Restaurante');
-  return prisma.restaurante.update({ where: { id }, data });
+  // Activar o suspender a mano borra la marca de suspensión automática.
+  return prisma.restaurante.update({
+    where: { id },
+    data: { ...data, ...(data.activo !== undefined && { suspendidoPorPago: false }) },
+  });
 }
 
 // --- Dueño (su propio restaurante) ---
@@ -106,4 +111,87 @@ export async function suscripcion(restauranteId: string) {
     estado: estadoSuscripcion({ ...r, pagos: r._count.pagosPlan }),
     soporteWhatsApp: env.SOPORTE_WHATSAPP ?? null,
   };
+}
+
+// Menú en PDF para imprimir (respaldo sin internet, Fase 11): categorías visibles con sus platos
+// activos y no agotados, descripción y precio.
+export async function menuPdf(restauranteId: string) {
+  const r = await prisma.restaurante.findUniqueOrThrow({ where: { id: restauranteId } });
+  const categorias = await prisma.categoria.findMany({
+    where: { restauranteId, activa: true },
+    orderBy: [{ orden: 'asc' }, { nombreEs: 'asc' }],
+    include: {
+      platos: {
+        where: { activo: true, agotado: false },
+        orderBy: [{ orden: 'asc' }, { nombreEs: 'asc' }],
+      },
+    },
+  });
+  const precio = new Intl.NumberFormat('es-CR', {
+    style: 'currency',
+    currency: r.moneda,
+    maximumFractionDigits: r.moneda === 'CRC' ? 0 : 2,
+  });
+
+  const doc = new PDFDocument({
+    size: 'LETTER',
+    margin: 54,
+    info: { Title: `Menú · ${r.nombre}` },
+  });
+  const partes: Buffer[] = [];
+  doc.on('data', (b: Buffer) => partes.push(b));
+  const terminado = new Promise<Buffer>((ok) => doc.on('end', () => ok(Buffer.concat(partes))));
+  const izq = 54;
+  const ancho = 612 - 54 * 2;
+  const finPagina = 792 - 54;
+
+  doc.font('Helvetica-Bold').fontSize(26).fillColor('#1d1b2a').text(r.nombre, { align: 'center' });
+  if (r.eslogan)
+    doc.font('Helvetica').fontSize(11).fillColor('#6f6c80').text(r.eslogan, { align: 'center' });
+  doc.moveDown(1.2);
+
+  for (const c of categorias.filter((c) => c.platos.length > 0)) {
+    if (doc.y > finPagina - 80) doc.addPage();
+    doc.font('Helvetica-Bold').fontSize(15).fillColor('#1d1b2a').text(c.nombreEs, izq, doc.y);
+    doc
+      .moveTo(izq, doc.y + 2)
+      .lineTo(izq + ancho, doc.y + 2)
+      .lineWidth(0.8)
+      .strokeColor('#d9d7e0')
+      .stroke();
+    doc.moveDown(0.6);
+    for (const p of c.platos) {
+      if (doc.y > finPagina - 40) doc.addPage();
+      const y = doc.y;
+      // Nombre a la izquierda y precio a la derecha, en la misma línea.
+      doc.font('Helvetica-Bold').fontSize(11.5).fillColor('#1d1b2a');
+      // Las fuentes estándar del PDF no traen "₡": se usa "¢", como se escribe a mano en Costa Rica.
+      doc.text(precio.format(p.precio / 100).replace('₡', '¢'), izq, y, {
+        width: ancho,
+        align: 'right',
+      });
+      doc.text(p.nombreEs, izq, y, { width: ancho - 90 });
+      if (p.descripcionEs)
+        doc
+          .font('Helvetica')
+          .fontSize(9.5)
+          .fillColor('#6f6c80')
+          .text(p.descripcionEs, izq, doc.y + 1, { width: ancho - 90 });
+      doc.moveDown(0.55);
+    }
+    doc.moveDown(0.6);
+  }
+
+  doc
+    .font('Helvetica')
+    .fontSize(8.5)
+    .fillColor('#6f6c80')
+    .text(
+      `${r.preciosIncluyenImpuestos ? `Precios con IVA (${r.porcentajeIva}%) incluido.` : `Precios más IVA (${r.porcentajeIva}%).`} Menú impreso el ${new Date().toLocaleDateString('es-CR')}.`,
+      izq,
+      Math.max(doc.y + 10, finPagina - 12),
+      { width: ancho, align: 'center' },
+    );
+  doc.end();
+  return terminado;
 }

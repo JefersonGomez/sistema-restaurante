@@ -19,11 +19,46 @@
 - **Fase 7 completa** (domicilio: ubicación y repartidores, commit `e1fb043`, 2026-11-01). Pendiente: prueba del usuario.
 - **Fase 8 completa** (clientes: lista, cuenta, sellos, WhatsApp; commit `d0bf7c1`, 2026-11-01). Pendiente: prueba del usuario.
 - **Fase 9 completa** (superadmin, planes, recuperar contraseña, 2026-11-01): 9.1–9.4 hechos, 205 tests verdes, commit `dcd557d`. Siguiente: despliegue en el VPS del usuario (faltan datos del VPS y el dominio) y la landing de planes (diseño del usuario).
-- **Fase 10 completa** (KDS para muchos pedidos + estilo de las pantallas de operación, 2026-11-12): 10.1–10.3 hechos, 210 tests verdes. Sin commit: falta validación del usuario.
+- **Fase 10 completa** (KDS + pantallas de operación + en línea + seguimiento; commit `07f63cd`, 10.5 sin subir).
+- **Fase 11 completa** (aviso al mesero, vencimiento automático, Wi-Fi, menú PDF, KitchaGo, borradores legales; 2026-11-12). Sin commit: falta validación del usuario.
+- **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.
 - **Despliegue en el VPS: al final** (decisión del usuario, 2026-11-12). Sin dominio se puede usar sslip.io/nip.io para tener HTTPS con la IP; falta aprobar Caddy y los datos del VPS.
 - **Backlog de mejoras:** `docs/mejoras-pendientes.md` (ideas del usuario, 2026-10-26; bloques Diseño, Domicilio
   6–7, Clientes y Superadmin hechos en las Fases 6–9; queda rastreo en vivo y "sin internet"). Cada bloque se convierte en spec de fase y se aprueba antes de empezar.
 - Raíz del monorepo: `C:\Users\gomes\OneDrive\Documentos\sistema-restaurante` (equivale a `menu-qr/` de la spec).
+
+## Plan de la Fase 11 (pedido 2026-11-12) — spec: docs/especificacion-fase11.md
+
+Decisiones: botón "Listo · avisar mesero" sí; plan: aviso 2 días antes, vencido + 1 día de gracia y
+suspensión automática; QR del Wi-Fi y menú PDF; nombre KitchaGo; borradores legales para completar.
+
+| Paso | Qué                                                               | Estado |
+| ---- | ----------------------------------------------------------------- | ------ |
+| 11.1 | Avisar al mesero desde cocina                                     | ✅     |
+| 11.2 | Vencimiento automático (2 días de aviso, 1 de gracia, suspensión) | ✅     |
+| 11.3 | QR del Wi-Fi en las tarjetas y menú en PDF                        | ✅     |
+| 11.4 | Nombre KitchaGo                                                   | ✅     |
+| 11.5 | Borradores de términos y privacidad (docs/legal)                  | ✅     |
+
+- Migración `20261112200000_fase11`: Pedido.listoAvisadoEn (relleno: pedidos ya listos quedan
+  avisados a la hora del último plato), Restaurante.suspendidoPorPago, wifiNombre, wifiClave.
+- 11.1: POST /operacion/pedidos/:id/avisar-listo (DUENO/COCINA; solo con todo listo de su
+  estación; la hora no se corre si se repite) → evento `pedido:listo` a la sala `todos`;
+  AvisosGlobales suena al mesero (y a la caja si canal ≠ MESA). KDS: todo listo sin aviso = sigue
+  en "En preparación" con el botón verde; la espera en Listos se mide desde el aviso.
+- 11.2: DIAS_POR_VENCER 2, DIAS_GRACIA 1, `suspensionDe` (shared). `suspenderVencidos()` en
+  admin.service, corre en server.ts al arrancar y cada hora (no en tests). Pago → reactiva solo si
+  suspendidoPorPago; PATCH activo borra la marca. Login con contraseña correcta y plan suspendido
+  → 403 PLAN_VENCIDO con el motivo. AvisoPlan dice cuándo se suspende; /admin "Suspendido · sin pago".
+- 11.3: `textoWifi()` (mesas.service, formato WIFI: con escapes) y fila de Wi-Fi al pie de cada
+  tarjeta del PDF. GET /restaurante/menu.pdf (pdfkit; "₡" no existe en las fuentes estándar del
+  PDF → se imprime "¢"). Ajustes: tarjeta "Wi-Fi para los clientes"; Menú: botón "Menú en PDF".
+  Revisados los dos PDF (en la soda de desarrollo quedó el Wi-Fi de prueba "Soda La Esquina" /
+  "cafe2026").
+- 11.4: KitchaGo en títulos, notificaciones, manifest, remitente de correo por defecto, login,
+  registro y recuperar contraseña, README y CLAUDE.md.
+- 11.5: `docs/legal/terminos-y-condiciones.md` y `docs/legal/politica-de-privacidad.md` (Ley 8968,
+  responsable/encargado, PRODHAB) con campos [ENTRE CORCHETES] para el usuario.
 
 ## Plan de la Fase 10 (pedido 2026-11-12) — spec: docs/especificacion-fase10.md
 
@@ -50,6 +85,7 @@ tiempos, olvidados, tablero, tarjeta) y pidió aplicar el estilo a todas las pan
   Adaptaciones: estaciones del restaurante (no cocina|bar fijo); sin botón "Listo · avisar mesero"
   (el pedido pasa solo a Listos al marcar el último plato).
 - 10.4 (pedido del usuario): EnLineaPage con el diseño del KDS (ver spec). Componentes compartidos en ui.tsx: `Kpi`, `Segmentado`, `ColumnaTablero`, `tonoTiempo` (el KDS ahora los usa). Cuadrículas con `minmax(min(100%,Npx),1fr)` para no desbordar columnas angostas a 1280 px. Revisado en Chrome.
+- 10.5: `apps/menu/src/pantallas/Seguimiento.tsx`: grid `lg:grid-cols-[minmax(0,1fr)_360px]`, pasos horizontales en md+ (línea entre círculos) y verticales en celular, tarjeta "Entrega" (textos nuevos seguimientoEntrega / PedidoA / ListoEn). Revisado en Chrome a 1568 px y en un iframe de 390 px (sin desborde).
 - 10.3: Bricolage Grotesque en staff (`font-display`), tokens --linea/--teal; `.tema-operacion`
   en index.css (siempre oscuro, colores de la spec; tarjetas con borde fino vía --sombra-tarjeta);
   Encabezado nuevo (título 24/800, subtítulo en mayúsculas, pestañas en bloque, prop `debajo`);

@@ -119,6 +119,7 @@ function Tarjeta({
   nombreEstacion,
   onItem,
   onPedido,
+  onAvisar,
 }: {
   p: Vista;
   items: ItemDetalle[];
@@ -128,6 +129,7 @@ function Tarjeta({
   nombreEstacion: (i: ItemDetalle) => string | null;
   onItem: (p: Vista, i: ItemDetalle) => void;
   onPedido: (p: Vista, estado: 'EN_PREPARACION' | 'LISTO') => void;
+  onAvisar: (p: Vista) => void;
 }) {
   const proporcion = p.edad / limiteMs;
   const pildora = tonoTiempo(proporcion);
@@ -260,6 +262,14 @@ function Tarjeta({
           >
             Empezar
           </button>
+        ) : listos === items.length ? (
+          <button
+            type="button"
+            onClick={() => onAvisar(p)}
+            className="min-h-11 rounded-[10px] bg-ok px-4 text-sm font-bold text-bg"
+          >
+            Listo · avisar mesero
+          </button>
         ) : (
           <button
             type="button"
@@ -329,6 +339,7 @@ export function EstacionPage() {
       'pedido:confirmado': refrescar, // el aviso con sonido lo da AvisosGlobales
       'item:estado': refrescar,
       'pedido:cancelado': refrescar,
+      'pedido:listo': refrescar, // otra pantalla de cocina avisó al mesero
       'cuenta:cerrada': refrescar,
       'menu:actualizado': () => verAgotados && cargarPlatos(),
     },
@@ -353,13 +364,17 @@ export function EstacionPage() {
       pedidos.flatMap((p): Vista[] => {
         const items = p.items.filter((i) => estacion === TODAS || i.estacionId === estacion);
         if (items.length === 0) return [];
+        // Todo listo pero sin avisar al mesero: se queda en preparación con el botón verde.
         const columna: Columna = items.every(hecho)
-          ? 'listos'
+          ? p.listoAvisadoEn
+            ? 'listos'
+            : 'prep'
           : items.every((i) => i.estado === 'PENDIENTE')
             ? 'nuevos'
             : 'prep';
         const edad = ahora - Date.parse(p.confirmadoEn);
-        const listoEn = Math.max(...items.map((i) => (i.listoEn ? Date.parse(i.listoEn) : 0)));
+        // La espera en Listos se mide desde el aviso al mesero.
+        const listoEn = p.listoAvisadoEn ? Date.parse(p.listoAvisadoEn) : 0;
         return [
           {
             ...p,
@@ -460,6 +475,13 @@ export function EstacionPage() {
       }),
     );
   };
+  const avisarMesero = (p: Vista) => {
+    const hora = new Date().toISOString();
+    setPedidos((ps) =>
+      ps.map((x) => (x.pedidoId === p.pedidoId ? { ...x, listoAvisadoEn: hora } : x)),
+    );
+    llamar(() => api(`/operacion/pedidos/${p.pedidoId}/avisar-listo`, { method: 'POST' }));
+  };
   const deshacer = () => {
     if (!deshacible) return;
     const { item, estado } = deshacible;
@@ -487,6 +509,7 @@ export function EstacionPage() {
       nombreEstacion={nombreEstacion}
       onItem={tocarItem}
       onPedido={avanzarPedido}
+      onAvisar={avisarMesero}
     />
   );
   const vacio = (texto: string) => (

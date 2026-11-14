@@ -20,6 +20,18 @@ function Oyente({ rol, id }: { rol: string; id: string }) {
         'cuenta:solicitada': (p: ConMesa) => avisar('cuenta', `${p.lugar} pidió la cuenta`),
         'enlinea:nuevo': (p: ConMesa) => avisar('pedido', `Pedido en línea nuevo: ${p.lugar}`, 3),
       }),
+      // Cocina tocó "Listo · avisar mesero": al mesero (y a la caja si es un pedido en línea).
+      ...((sala || caja) && {
+        'pedido:listo': (p: ConMesa & { canal: string }) =>
+          (sala || p.canal !== 'MESA') &&
+          avisar(
+            'listo',
+            p.canal === 'MESA'
+              ? `${p.lugar}: pedido listo para llevar`
+              : `${p.lugar}: pedido listo para entregar`,
+            3,
+          ),
+      }),
       // El dueño ya recibe los pedidos nuevos; a cocina le avisa cuando entran a preparar.
       ...(rol === 'COCINA' && {
         'pedido:confirmado': (p: ConMesa) =>

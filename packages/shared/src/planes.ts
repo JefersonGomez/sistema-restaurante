@@ -5,7 +5,7 @@ export const PLANES: Record<PlanId, { nombre: string; mensual: number; incluye: 
   BASICO: {
     nombre: 'Básico',
     mensual: 990_000,
-    incluye: 'Menú QR, pedidos en mesa, cocina, caja y reportes',
+    incluye: 'Menú con QR, pedidos en mesa, cocina, caja y reportes',
   },
   COMPLETO: {
     nombre: 'Completo',
@@ -15,7 +15,11 @@ export const PLANES: Record<PlanId, { nombre: string; mensual: number; incluye: 
 };
 
 export const DIAS_PRUEBA = 30;
-export const DIAS_POR_VENCER = 7;
+// Aviso "por vencer" 2 días antes; vencido, 1 día de gracia y luego se suspende solo (Fase 11).
+export const DIAS_POR_VENCER = 2;
+export const DIAS_GRACIA = 1;
+export const suspensionDe = (venceEn: Date | string) =>
+  new Date(new Date(venceEn).getTime() + DIAS_GRACIA * 86_400_000);
 
 // Cada 12 meses se cobran 10 (anual con 2 meses gratis).
 export const montoSugerido = (plan: PlanId, meses: number) =>

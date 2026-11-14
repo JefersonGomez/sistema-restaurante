@@ -346,6 +346,25 @@ describe('cocina: varios platos de un pedido a la vez', () => {
     expect(await estados()).toEqual(['ENTREGADO', 'LISTO']);
     expect((await avanzar(t.mesero, { estado: 'ENTREGADO' })).body).toEqual({ movidos: 1 });
   });
+
+  it('"Listo · avisar mesero": solo con todo listo, una vez, y lo ve la pantalla de cocina', async () => {
+    const { pedido } = await pedidoPendiente([casado()]);
+    await como(t.mesero).patch(`/operacion/pedidos/${pedido.id}/confirmar`);
+    const avisarListo = (token: string) =>
+      como(token).post(`/operacion/pedidos/${pedido.id}/avisar-listo`);
+
+    expect((await avisarListo(t.cocina)).body.error.code).toBe('TRANSICION_INVALIDA');
+    await como(t.cocina).post(`/operacion/pedidos/${pedido.id}/avanzar`).send({ estado: 'LISTO' });
+    expect((await avisarListo(t.mesero)).status).toBe(403);
+    const primero = await avisarListo(t.cocina);
+    expect(primero.status).toBe(200);
+    // Repetirlo no corre la hora del aviso.
+    await avisarListo(t.cocina);
+    const [enCocina] = (
+      await como(t.cocina).get(`/operacion/estaciones/${m.estaciones.cocina}/items`)
+    ).body;
+    expect(enCocina.listoAvisadoEn).toBe(primero.body.listoAvisadoEn);
+  });
 });
 
 describe('aislamiento entre restaurantes', () => {

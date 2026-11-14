@@ -31,7 +31,7 @@ const schema = z.object({
   SOPORTE_WHATSAPP: z.string().optional(),
   STAFF_PUBLIC_URL: z.url().default('http://localhost:5181'),
   RESEND_API_KEY: z.string().optional(),
-  CORREO_REMITENTE: z.string().default('Menú QR <no-responder@localhost>'),
+  CORREO_REMITENTE: z.string().default('KitchaGo <no-responder@localhost>'),
 });
 
 const parsed = schema.parse(process.env);

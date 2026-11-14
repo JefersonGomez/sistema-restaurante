@@ -16,6 +16,9 @@ function Marco({
     <main className="grid min-h-dvh place-items-center bg-bg p-4">
       <div className="w-full max-w-sm space-y-4 rounded-[26px] bg-app p-6 shadow-app">
         <div>
+          <p className="mb-3 font-display text-lg font-extrabold tracking-[-0.02em] text-purple">
+            KitchaGo
+          </p>
           <h1 className="text-[22px] font-semibold">{titulo}</h1>
           <p className="mt-1 text-sm text-muted">{detalle}</p>
         </div>

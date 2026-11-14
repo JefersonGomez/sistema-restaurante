@@ -75,6 +75,8 @@ operacionRouter.post(
   c.avanzarPedido,
 );
 
+operacionRouter.post('/pedidos/:id/avisar-listo', cocina, conId, c.avisarListo);
+
 operacionRouter.get('/items', sala, validate({ query: itemsQuerySchema }), c.items);
 // Cocina: EN_PREPARACION/LISTO/ENTREGADO de su estación. Mesero: ENTREGADO. (El service valida el rol.)
 operacionRouter.patch(

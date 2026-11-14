@@ -36,10 +36,11 @@ const METODOS = [
 ] as const;
 const MESES = [1, 3, 6, 12];
 
-function Estado({ e }: { e: EstadoSuscripcion }) {
+function Estado({ e, sinPago }: { e: EstadoSuscripcion; sinPago?: boolean }) {
   return (
     <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${ESTADOS[e].tono}`}>
       {ESTADOS[e].texto}
+      {e === 'SUSPENDIDO' && sinPago ? ' · sin pago' : ''}
     </span>
   );
 }
@@ -154,7 +155,7 @@ function Detalle({ id, onCerrar }: { id: string; onCerrar: () => void }) {
         <div>
           <dt className="text-xs text-muted">Plan</dt>
           <dd className="flex items-center gap-2 font-medium">
-            {PLANES[r.plan].nombre} <Estado e={r.estado} />
+            {PLANES[r.plan].nombre} <Estado e={r.estado} sinPago={r.suspendidoPorPago} />
           </dd>
           <dd className="text-muted">Vence el {fecha(r.planVenceEn)}</dd>
         </div>
@@ -404,7 +405,7 @@ export function AdminPage() {
                     <span className="text-sm">{PLANES[r.plan].nombre}</span>
                     <span className="w-28 text-xs text-muted">Vence {fecha(r.planVenceEn)}</span>
                     <span className="w-24 text-xs text-muted">{r.pedidos30d} pedidos/30 d</span>
-                    <Estado e={r.estado} />
+                    <Estado e={r.estado} sinPago={r.suspendidoPorPago} />
                   </button>
                 </li>
               ))}

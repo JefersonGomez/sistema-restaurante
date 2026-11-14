@@ -55,6 +55,11 @@ export const estadoItem = async (req: ConId, res: Response) => {
   );
 };
 
+// Cocina: "Listo · avisar mesero".
+export const avisarListo = async (req: ConId, res: Response) => {
+  res.json(await s.avisarListo(restauranteDe(req), req.usuario!, req.params.id));
+};
+
 // Cocina: varios platos de un pedido de una vez.
 export const avanzarPedido = async (req: ConId, res: Response) => {
   res.json(

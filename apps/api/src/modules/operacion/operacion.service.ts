@@ -187,6 +187,38 @@ export async function cambiarEstadoItem(
   return detalle;
 }
 
+// Cocina: "Listo · avisar mesero". Solo con todos los platos (de su estación, si tiene una) listos;
+// la primera vez fija la hora (desde ahí se mide la espera en "Listos") y avisa al personal.
+export async function avisarListo(restauranteId: string, usuario: UsuarioToken, pedidoId: string) {
+  const p = await prisma.pedido.findFirst({
+    where: { id: pedidoId, restauranteId },
+    select: {
+      estado: true,
+      cuentaId: true,
+      cuenta: { select: { estado: true, ...datosLugar } },
+      items: { where: { cancelado: false }, select: { estado: true, estacionId: true } },
+    },
+  });
+  if (!p) throw noExiste('Pedido');
+  if (p.estado !== 'CONFIRMADO') throw invalida('El pedido no está confirmado');
+  const estacionId = usuario.rol === 'COCINA' ? await estacionDe(usuario) : null;
+  const suyos = p.items.filter((i) => !estacionId || i.estacionId === estacionId);
+  if (!suyos.length || suyos.some((i) => i.estado !== 'LISTO' && i.estado !== 'ENTREGADO'))
+    throw invalida('Todavía hay platos sin terminar');
+  const ahora = new Date();
+  await prisma.pedido.updateMany({
+    where: { id: pedidoId, restauranteId, listoAvisadoEn: null },
+    data: { listoAvisadoEn: ahora },
+  });
+  avisar.pedidoListo(
+    { restauranteId, cuentaId: p.cuentaId, mesa: p.cuenta.mesa, lugar: lugarDe(p.cuenta) },
+    pedidoId,
+    p.cuenta.tipo,
+    ahora.toISOString(),
+  );
+  return { listoAvisadoEn: ahora.toISOString() };
+}
+
 const ORDEN: EstadoItem[] = ['PENDIENTE', 'EN_PREPARACION', 'LISTO', 'ENTREGADO'];
 
 // Cocina: avanza varios platos de un pedido hasta `estado` ("Empezar", "Marcar todo listo",
@@ -635,6 +667,7 @@ export async function itemsEstacion(
     canal: p.cuenta.tipo,
     numero: p.cuenta.numeroPedido,
     atendio: p.creadoPor?.nombre ?? p.confirmadoPor?.nombre ?? null,
+    listoAvisadoEn: p.listoAvisadoEn?.toISOString() ?? null,
     confirmadoEn: (p.confirmadoEn ?? p.createdAt).toISOString(),
     nota: p.nota,
     items: p.items.map(aItem),

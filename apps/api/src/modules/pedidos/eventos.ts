@@ -156,3 +156,16 @@ export function ingresoSolicitado(cuentaId: string, solicitud: { id: string; cre
 export function ingresoResuelto(cuentaId: string, id: string, estado: string) {
   emitToCuenta(cuentaId, 'ingreso:resuelto', { id, estado });
 }
+
+// Cocina tocó "Listo · avisar mesero": a todo el personal (avisa el mesero y, si es en línea, la
+// caja; las demás pantallas solo refrescan).
+export function pedidoListo(ctx: Ctx, pedidoId: string, canal: string, updatedAt: string) {
+  emitToRestaurant(ctx.restauranteId, 'todos', 'pedido:listo', {
+    cuentaId: ctx.cuentaId,
+    mesa: ctx.mesa,
+    lugar: ctx.lugar,
+    pedidoId,
+    canal,
+    updatedAt,
+  });
+}

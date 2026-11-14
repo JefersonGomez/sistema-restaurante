@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { PLANES, type EstadoSuscripcion, type Plan } from '@menu-qr/shared';
+import { PLANES, suspensionDe, type EstadoSuscripcion, type Plan } from '@menu-qr/shared';
 import { api } from '../api';
 
 type Suscripcion = {
@@ -26,7 +26,7 @@ export function AvisoPlan() {
       ? `Está en su mes de prueba del plan ${PLANES[s.plan].nombre}: le quedan ${dias} ${dias === 1 ? 'día' : 'días'} (hasta el ${fecha}).`
       : s.estado === 'POR_VENCER'
         ? `Su plan ${PLANES[s.plan].nombre} vence el ${fecha}. Renuévelo para no perder el servicio.`
-        : `Su plan venció el ${fecha}. Pague la mensualidad para seguir usando el sistema sin interrupciones.`;
+        : `Su plan venció el ${fecha}. Si no se registra el pago, el servicio se suspende el ${s.venceEn ? suspensionDe(s.venceEn).toLocaleDateString('es-CR', { day: 'numeric', month: 'long' }) : ''}.`;
   const tono =
     s.estado === 'VENCIDO'
       ? 'bg-danger-soft text-danger'

@@ -38,6 +38,9 @@ export function LoginPage() {
         aria-describedby={error ? 'error-login' : undefined}
       >
         <div>
+          <p className="mb-3 font-display text-lg font-extrabold tracking-[-0.02em] text-purple">
+            KitchaGo
+          </p>
           <h1 className="text-[22px] font-semibold">Ingreso del personal</h1>
           <p className="mt-1 text-sm text-muted">
             Use el correo y la contraseña que le dio el dueño.

@@ -76,6 +76,15 @@ async function logoPng(url: string | null) {
 
 const TEXTO_QR = 'Escanee para ver el menú y pedir · Scan to see the menu and order';
 
+// Formato estándar del QR de Wi-Fi (Android e iPhone lo entienden): los caracteres \ ; , : " van
+// escapados; sin clave, red abierta.
+export function textoWifi(nombre: string, clave: string | null) {
+  const esc = (t: string) => t.replace(/([\\;,:"])/g, '\\$1');
+  return clave
+    ? `WIFI:T:WPA;S:${esc(nombre)};P:${esc(clave)};;`
+    : `WIFI:T:nopass;S:${esc(nombre)};;`;
+}
+
 // PDF tamaño carta con los QR. "tarjetas": 2×3 por hoja con líneas de corte; "acrilico": una por hoja.
 export async function pdfQr(
   restauranteId: string,
@@ -93,6 +102,15 @@ export async function pdfQr(
 
   const r = await prisma.restaurante.findUniqueOrThrow({ where: { id: restauranteId } });
   const logo = await logoPng(r.logoUrl);
+  // Wi-Fi del local (opcional): un segundo QR que conecta el celular con un toque.
+  const wifi = r.wifiNombre
+    ? await QRCode.toBuffer(textoWifi(r.wifiNombre, r.wifiClave), {
+        type: 'png',
+        width: 300,
+        margin: 1,
+        errorCorrectionLevel: 'M',
+      })
+    : null;
   const qrs = await Promise.all(
     mesas.map((m) =>
       QRCode.toBuffer(`${env.MENU_PUBLIC_URL}/m/${m.tokenQr}`, {
@@ -134,7 +152,8 @@ export async function pdfQr(
       .fontSize(13 * k)
       .text(r.nombre, x + 10, cy, { width: w - 20, align: 'center' });
     cy += 20 * k;
-    const lado = Math.min(w - 40, h - (cy - y) - 70 * k);
+    const filaWifi = wifi ? 46 * k : 0; // alto de la fila del Wi-Fi al pie de la tarjeta
+    const lado = Math.min(w - 40, h - (cy - y) - 70 * k - filaWifi);
     doc.image(qrs[i]!, x + (w - lado) / 2, cy, { width: lado });
     cy += lado + 6 * k;
     doc
@@ -148,6 +167,24 @@ export async function pdfQr(
       .fontSize(8.5 * k)
       .fillColor('#6f6c80')
       .text(TEXTO_QR, x + 14, cy, { width: w - 28, align: 'center' });
+    if (wifi) {
+      // Fila al pie: QR chico del Wi-Fi a la izquierda y el nombre de la red al lado.
+      const qrWifi = 38 * k;
+      const fy = y + h - qrWifi - 8 * k;
+      const fx = x + w / 2 - 70 * k;
+      doc.image(wifi, fx, fy, { width: qrWifi });
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(8.5 * k)
+        .fillColor('#1d1b2a')
+        .text(`Wi-Fi: ${r.wifiNombre}`, fx + qrWifi + 6 * k, fy + 6 * k, { width: 100 * k })
+        .font('Helvetica')
+        .fontSize(7.5 * k)
+        .fillColor('#6f6c80')
+        .text('Escanee para conectarse sin escribir la clave', {
+          width: 100 * k,
+        });
+    }
   };
 
   if (formato === 'acrilico') {

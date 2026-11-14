@@ -2,6 +2,7 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { AdminRestauranteDetalle, AdminRestauranteFila, AdminResumen } from '@menu-qr/shared';
 import { app } from '../src/app';
+import { suspenderVencidos } from '../src/modules/admin/admin.service';
 import { prisma } from '../src/lib/prisma';
 import { crearUsuario, limpiarBD, PASSWORD, tokenDe } from './helpers';
 
@@ -111,6 +112,46 @@ describe('superadmin: planes y suscripciones', () => {
       .send({ email: 'uno@x.test', password: r.body.passwordTemporal });
     expect(nuevo.status).toBe(200);
     expect(nuevo.body.usuario.debeCambiarPassword).toBe(true);
+  });
+
+  it('vencido + 1 día de gracia: se suspende solo, explica por qué y un pago lo reactiva', async () => {
+    const { id } = await registrar('Soda Uno', 'uno@x.test');
+    const { id: otro } = await registrar('Pizzería Dos', 'dos@x.test');
+    const haceDias = (d: number) => new Date(Date.now() - d * 86_400_000);
+    // Uno venció hace 2 días (pasó la gracia); el otro venció hace 12 horas (todavía en gracia).
+    await prisma.restaurante.update({ where: { id }, data: { planVenceEn: haceDias(2) } });
+    await prisma.restaurante.update({ where: { id: otro }, data: { planVenceEn: haceDias(0.5) } });
+
+    expect(await suspenderVencidos()).toBe(1);
+    const fila = (await como(admin).get(`/admin/restaurantes/${id}`))
+      .body as AdminRestauranteDetalle;
+    expect(fila).toMatchObject({ estado: 'SUSPENDIDO', suspendidoPorPago: true });
+    const login = await request(app)
+      .post('/auth/login')
+      .send({ email: 'uno@x.test', password: PASSWORD });
+    expect(login.body.error.code).toBe('PLAN_VENCIDO');
+    // Con la contraseña mala no se revela nada.
+    const mala = await request(app)
+      .post('/auth/login')
+      .send({ email: 'uno@x.test', password: 'x' });
+    expect(mala.body.error.code).toBe('CREDENCIALES_INVALIDAS');
+
+    await como(admin)
+      .post(`/admin/restaurantes/${id}/pagos`)
+      .send({ plan: 'COMPLETO', meses: 1, monto: 1_990_000, metodo: 'SINPE' });
+    const pagado = (await como(admin).get(`/admin/restaurantes/${id}`)).body;
+    expect(pagado).toMatchObject({ estado: 'AL_DIA', suspendidoPorPago: false });
+    expect(
+      (await request(app).post('/auth/login').send({ email: 'uno@x.test', password: PASSWORD }))
+        .status,
+    ).toBe(200);
+
+    // Una suspensión a mano no se levanta con un pago.
+    await como(admin).patch(`/admin/restaurantes/${otro}`).send({ activo: false });
+    await como(admin)
+      .post(`/admin/restaurantes/${otro}/pagos`)
+      .send({ plan: 'COMPLETO', meses: 1, monto: 1_990_000, metodo: 'SINPE' });
+    expect((await como(admin).get(`/admin/restaurantes/${otro}`)).body.estado).toBe('SUSPENDIDO');
   });
 
   it('solo el superadmin entra a /admin', async () => {

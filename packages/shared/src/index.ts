@@ -127,6 +127,9 @@ export const restauranteConfigSchema = z
     fidelidadActiva: z.boolean(),
     sellosMeta: z.number().int().min(2).max(50),
     premioFidelidad: z.string().trim().max(80).nullable(),
+    // Wi-Fi del local (Fase 11): QR para conectarse en la tarjeta de la mesa.
+    wifiNombre: z.string().trim().min(1).max(32).nullable(),
+    wifiClave: z.string().max(63).nullable(),
   })
   .partial();
 export type RestauranteConfigInput = z.infer<typeof restauranteConfigSchema>;
@@ -655,6 +658,7 @@ export type PedidoEstacion = {
   canal: TipoCuenta; // MESA (salón), RECOGER o DOMICILIO
   numero: number | null; // número del pedido en línea ("#12"); null en mesa
   atendio: string | null; // quién lo tomó o confirmó (mesero, caja)
+  listoAvisadoEn: string | null; // cocina tocó "Listo · avisar mesero"
   confirmadoEn: string;
   nota: string | null;
   items: ItemDetalle[];
@@ -802,6 +806,7 @@ export type AdminRestauranteFila = {
   plan: Plan;
   planVenceEn: string | null;
   estado: EstadoSuscripcion;
+  suspendidoPorPago: boolean; // suspendido solo por no pagar (un pago lo reactiva)
   pedidos30d: number;
   createdAt: string;
 };

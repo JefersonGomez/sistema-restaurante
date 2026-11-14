@@ -21,6 +21,13 @@ export const actualizarPropio = async (req: Request, res: Response) => {
   res.json(await service.actualizarPropio(restauranteDe(req), req.body));
 };
 
+export const menuPdf = async (req: Request, res: Response) => {
+  res
+    .type('application/pdf')
+    .attachment('menu.pdf')
+    .send(await service.menuPdf(restauranteDe(req)));
+};
+
 export const qrEnLinea = async (req: Request, res: Response) => {
   const { png } = await service.qrEnLinea(restauranteDe(req));
   res.type('image/png').attachment('qr-pedidos-en-linea.png').send(png);

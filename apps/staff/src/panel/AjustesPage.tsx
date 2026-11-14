@@ -21,9 +21,60 @@ import {
 } from './comunes';
 
 type Turno = { diaSemana: number; abre: string; cierra: string };
+
+// Wi-Fi del local: sale como un segundo QR en las tarjetas de las mesas (clientes sin datos).
+function AjustesWifi({ r }: { r: { wifiNombre: string | null; wifiClave: string | null } }) {
+  const qc = useQueryClient();
+  const [nombre, setNombre] = useState(r.wifiNombre ?? '');
+  const [clave, setClave] = useState(r.wifiClave ?? '');
+  const [aviso, setAviso] = useState<{ ok: boolean; texto: string } | null>(null);
+  const guardar = useMutation({
+    mutationFn: () =>
+      api('/restaurante', {
+        method: 'PATCH',
+        body: { wifiNombre: nombre.trim() || null, wifiClave: clave || null },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['restaurante'] });
+      setAviso({ ok: true, texto: 'Guardado. Vuelva a descargar el PDF de QR en Mesas y QR.' });
+    },
+    onError: (e: ErrorApi) => setAviso({ ok: false, texto: e.message }),
+  });
+  return (
+    <Tarjeta className="space-y-3">
+      <div>
+        <h2 className="font-semibold">Wi-Fi para los clientes</h2>
+        <p className="text-sm text-muted">
+          Si lo anota, las tarjetas de las mesas llevan un segundo QR para conectarse al Wi-Fi con
+          un toque. Ayuda a los clientes que no tienen datos en el celular.
+        </p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Campo
+          etiqueta="Nombre de la red"
+          value={nombre}
+          maxLength={32}
+          onChange={(e) => setNombre(e.target.value)}
+        />
+        <Campo
+          etiqueta="Clave (vacía si la red es abierta)"
+          value={clave}
+          maxLength={63}
+          onChange={(e) => setClave(e.target.value)}
+        />
+      </div>
+      {aviso && <p className={`text-sm ${aviso.ok ? 'text-ok' : 'text-danger'}`}>{aviso.texto}</p>}
+      <Boton onClick={() => guardar.mutate()} disabled={guardar.isPending}>
+        Guardar Wi-Fi
+      </Boton>
+    </Tarjeta>
+  );
+}
 type Restaurante = {
   nombre: string;
   plan: 'BASICO' | 'COMPLETO';
+  wifiNombre: string | null;
+  wifiClave: string | null;
   logoUrl: string | null;
   colorAcento: string | null;
   moneda: Moneda;
@@ -366,6 +417,7 @@ export function AjustesPage() {
           </Tarjeta>
           <Horarios inicial={r.horarios} />
           <Formulario r={r} />
+          <AjustesWifi r={r} />
           {r.plan === 'BASICO' ? (
             <Tarjeta>
               <h2 className="font-semibold">Pedidos en línea</h2>

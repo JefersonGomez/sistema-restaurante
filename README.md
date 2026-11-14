@@ -1,14 +1,14 @@
-# Menú QR — Sistema de pedidos para restaurantes (Costa Rica)
+# KitchaGo — Sistema de pedidos para restaurantes (Costa Rica)
 
 SaaS multi-restaurante: los comensales escanean un QR en la mesa, ven el menú (ES/EN) en su
 celular y piden; los pedidos llegan en tiempo real a cocina, bar, meseros y caja. Una sola
 instancia sirve a todos los restaurantes y ninguno puede ver datos de otro.
 
-> **Estado (noviembre 2026):** Fases 1 a 10 completas: pedidos en mesa por QR, cocina, mesero y
+> **Estado (noviembre 2026):** Fases 1 a 11 completas: pedidos en mesa por QR, cocina, mesero y
 > caja, panel del dueño, pedidos en línea (recoger y domicilio, efectivo o SINPE), diseño nuevo,
 > domicilio con mapa y repartidores, clientes con cuenta y tarjeta de sellos, panel del
-> superadmin con planes, recuperar contraseña por correo y cocina (KDS) para muchos pedidos. **Falta:** desplegar en el VPS
-> (dominio, HTTPS, respaldos), la landing de planes y los textos legales. Specs:
+> superadmin con planes, recuperar contraseña por correo y cocina (KDS) para muchos pedidos, aviso al mesero, vencimiento automático del plan, QR del Wi-Fi y menú impreso. **Falta:** desplegar en el VPS
+> (dominio, HTTPS, respaldos), la landing de planes y completar los textos legales. Specs:
 > [`fase 1`](docs/especificacion-fase1.md), [`fase 2`](docs/especificacion-fase2.md),
 > [`frontend del menú`](docs/especificacion-frontend-menu.md), [`fase 3`](docs/especificacion-fase3.md),
 > [`fase 4`](docs/especificacion-fase4.md), [`fase 5`](docs/especificacion-fase5.md),
@@ -158,6 +158,17 @@ mesero; y una cuenta cerrada hoy (mesa 6) que aparece en el reporte **Hoy** del 
 
 Recuperar la contraseña por correo todavía no existe (falta elegir el proveedor de correos).
 
+### Avisar al mesero, Wi-Fi y menú impreso (Fase 11)
+
+- **Cocina:** cuando todos los platos de un pedido están listos queda en "En preparación" con
+  **Listo · avisar mesero**; al tocarlo pasa a Listos y al mesero (y a la caja si es en línea) le
+  suena el aviso "Mesa 5: pedido listo para llevar".
+- **Panel → Ajustes → Wi-Fi para los clientes:** con el nombre y la clave, el PDF de **Mesas y QR**
+  lleva un segundo QR para conectarse al Wi-Fi.
+- **Panel → Menú → Menú en PDF:** el menú para imprimir (sin agotados ni ocultos), por si se cae
+  el internet.
+- Borradores legales para completar: [`docs/legal/`](docs/legal/).
+
 ### Cocina para muchos pedidos (Fase 10)
 
 En `http://localhost:5181/cocina` (cocina o dueño): KPIs arriba (nuevos, en preparación, listos,
@@ -181,8 +192,9 @@ con "Marcar como entregado". Mesero, Caja, En línea y Mis entregas usan el mism
 3. Planes: **Básico** ₡9 900/mes y **Completo** ₡19 900/mes (anual = 10 meses). Todo registro nuevo
    empieza en Completo con 30 días de prueba. Con Básico desaparecen "En línea" y "Clientes" del
    panel, la API responde 403 `PLAN_NO_INCLUYE` y el menú en línea no abre. El dueño ve un aviso
-   arriba de su panel cuando está en prueba, por vencer (7 días) o vencido. Vencido **no** se
-   suspende solo: lo decide el superadmin.
+   arriba de su panel cuando está en prueba, por vencer (2 días antes) o vencido. Desde la Fase 11,
+   vencido + 1 día de gracia se **suspende solo** (la API lo revisa al arrancar y cada hora) y un
+   pago registrado lo reactiva; la suspensión a mano no se levanta con un pago.
 4. **¿Olvidó su contraseña?** en el login del personal y en "Entrar" del menú en línea: llega un
    enlace por correo (1 hora, un solo uso). Sin `RESEND_API_KEY` el correo con el enlace aparece en
    la consola de la API.
@@ -280,7 +292,7 @@ Todas viven en el `.env` de la raíz (ver `.env.example`). Los frontends solo le
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL` | —                                                        | Obligatorias con `STORAGE_DRIVER=r2`                                   |
 | `STAFF_PUBLIC_URL`                                                                        | `http://localhost:5181`                                  | Base de los enlaces de "olvidé mi contraseña" del personal             |
 | `RESEND_API_KEY`                                                                          | `re_...`                                                 | Envía correos con Resend; sin ella se escriben en la consola de la API |
-| `CORREO_REMITENTE`                                                                        | `Menú QR <no-responder@tu-dominio.com>`                  | Remitente (dominio verificado en Resend)                               |
+| `CORREO_REMITENTE`                                                                        | `KitchaGo <no-responder@tu-dominio.com>`                 | Remitente (dominio verificado en Resend)                               |
 | `SOPORTE_WHATSAPP`                                                                        | `50688888888`                                            | WhatsApp de soporte en el aviso del plan del dueño (opcional)          |
 
 Generar un secreto: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`.
@@ -405,6 +417,8 @@ Errores siempre con la forma `{ error: { code, message, details? } }`.
 | DUENO                        | `GET /clientes?buscar=` (un cliente por teléfono)                                                                                                                                                                                                                                          |
 | DUENO, CAJA, MESERO          | `POST /clientes/canjear` `{ telefono }` (premio de la tarjeta de sellos)                                                                                                                                                                                                                   |
 | DUENO, COCINA, MESERO        | `POST /operacion/pedidos/:id/avanzar` `{ estado: EN_PREPARACION                                                                                                                                                                                                                            | LISTO | ENTREGADO, itemIds? }` (varios platos; cocina solo su estación, mesero solo entrega) |
+| DUENO, COCINA                | `POST /operacion/pedidos/:id/avisar-listo` ("Listo · avisar mesero"; evento `pedido:listo`)                                                                                                                                                                                                |
+| DUENO                        | `GET /restaurante/menu.pdf` (menú para imprimir); `PATCH /restaurante` acepta `wifiNombre`, `wifiClave`                                                                                                                                                                                    |
 | REPARTIDOR                   | `GET /repartos` (sus entregas), `POST /repartos/:id/salir`, `POST /repartos/:id/entregar` `{ metodoPago }`                                                                                                                                                                                 |
 | DUENO                        | `GET /restaurante/qr-enlinea.png` (QR del enlace /r/:slug; `GET /restaurante` trae `enlaceEnLinea`)                                                                                                                                                                                        |
 | Público (rate limited)       | `POST /public/:slug/pedidos-en-linea` (10 por IP cada 10 min, máx. 2 pendientes por teléfono), `GET /public/seguimiento/:token`                                                                                                                                                            |

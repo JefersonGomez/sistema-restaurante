@@ -78,12 +78,12 @@ todavía: antes de empezar cada bloque se convierte en una spec de fase y el usu
 
 Hoy todo depende de que el celular del cliente y los equipos del restaurante lleguen al servidor.
 
-13. **QR del Wi-Fi en la tarjeta de la mesa** (recomendado primero): el dueño anota nombre y clave
+13. **[Hecho en la Fase 11]** **QR del Wi-Fi en la tarjeta de la mesa** (recomendado primero): el dueño anota nombre y clave
     del Wi-Fi en Ajustes y el PDF de QR lleva un segundo código que conecta el celular con un toque.
     Para clientes sin datos móviles.
 14. **Mesero toma el pedido** si el cliente no tiene conexión: ya existe ("Tomar pedido"); solo
     capacitación.
-15. **Menú en PDF para imprimir** desde el panel, como respaldo.
+15. **[Hecho en la Fase 11]** **Menú en PDF para imprimir** desde el panel, como respaldo.
 16. **Router con respaldo 4G** en el restaurante (sin código): recomendación para los dueños.
 17. **Aguantar cortes cortos** en los equipos del personal (guardar acciones y enviarlas al volver):
     fase futura; riesgo de conflictos.
