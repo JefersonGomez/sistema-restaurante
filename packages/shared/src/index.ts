@@ -909,4 +909,47 @@ export type AdminRestauranteDetalle = AdminRestauranteFila & {
 // "Olvidé mi contraseña" (personal y clientes).
 export const olvideSchema = z.object({ email });
 export const restablecerSchema = z.object({ token: z.string().min(20).max(100), password });
+// --- Arqueo de caja (Fase 14) ---
+export const abrirCajaSchema = z.object({ fondoInicial: centimos });
+export const movimientoCajaSchema = z.object({
+  tipo: z.enum(['ENTRADA', 'SALIDA']),
+  monto: centimos.refine((n) => n > 0, 'El monto debe ser mayor a cero'),
+  motivo: texto(120),
+});
+export const cerrarCajaSchema = z.object({
+  efectivoContado: centimos,
+  nota: z.string().trim().max(300).optional(),
+});
+export type MovimientoCajaDetalle = {
+  id: string;
+  tipo: 'ENTRADA' | 'SALIDA';
+  monto: number;
+  motivo: string;
+  usuarioNombre: string;
+  createdAt: string;
+};
+// Lo que se vendió en el turno y el efectivo que debería haber en la gaveta.
+export type ResumenTurno = {
+  ventasEfectivo: number;
+  ventasTarjeta: number;
+  ventasSinpe: number;
+  cuentas: number;
+  entradas: number;
+  salidas: number;
+  efectivoEsperado: number; // fondo + ventas en efectivo + entradas − salidas
+};
+export type TurnoCajaDetalle = {
+  id: string;
+  abiertoPorNombre: string;
+  abiertoEn: string;
+  fondoInicial: number;
+  cerradoPorNombre: string | null;
+  cerradoEn: string | null;
+  efectivoContado: number | null;
+  diferencia: number | null; // contado − esperado (negativo = faltante)
+  nota: string | null;
+  resumen: ResumenTurno;
+  movimientos: MovimientoCajaDetalle[];
+};
+
 export * from './tiempo';

@@ -428,7 +428,7 @@ export async function efectivoPorCuadrar(restauranteId: string): Promise<Efectiv
 export async function recibirEfectivo(restauranteId: string, repartidorId: string) {
   const { count } = await prisma.cuenta.updateMany({
     where: { ...sinCuadrar(restauranteId), repartidorId },
-    data: { efectivoCuadrado: true },
+    data: { efectivoCuadrado: true, efectivoRecibidoEn: new Date() }, // entra al turno de caja
   });
   return { pedidos: count };
 }

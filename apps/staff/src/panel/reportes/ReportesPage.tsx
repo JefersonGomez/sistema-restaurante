@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { lazy, Suspense, useState, type ReactNode } from 'react';
-import type { Moneda, Reporte } from '@menu-qr/shared';
+import type { Moneda, Reporte, TurnoCajaDetalle } from '@menu-qr/shared';
 import { formatoPrecio } from '@menu-qr/ui';
 import { api } from '../../api';
+import { Diferencia } from '../../TurnoCaja';
 import {
   Boton,
   Campo,
@@ -407,6 +408,76 @@ export function ReportesPage() {
           </div>
         </div>
       )}
+      <CierresCaja precio={precio} />
     </>
+  );
+}
+
+// Arqueo (Fase 14): últimos cierres de caja, sin depender del rango elegido.
+function CierresCaja({ precio }: { precio: (c: number) => string }) {
+  const cierres = useQuery({
+    queryKey: ['cierres-caja'],
+    queryFn: () => api<TurnoCajaDetalle[]>('/caja/turnos'),
+  });
+  const fecha = (iso: string | null) =>
+    iso
+      ? new Date(iso).toLocaleString('es-CR', {
+          day: 'numeric',
+          month: 'short',
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+      : '';
+  return (
+    <div className="mt-4">
+      <Seccion titulo="Cierres de caja" detalle="Los últimos 60 arqueos hechos en Caja.">
+        {!cierres.data?.length ? (
+          <p className="py-4 text-sm text-muted">
+            Todavía no hay cierres. Se abre y cierra la caja en la pantalla de Caja.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
+              <thead className="text-left text-muted">
+                <tr>
+                  <th className="py-1.5 font-medium">Turno</th>
+                  <th className="py-1.5 font-medium">Cerró</th>
+                  <th className="py-1.5 text-right font-medium">Esperado</th>
+                  <th className="py-1.5 text-right font-medium">Contado</th>
+                  <th className="py-1.5 text-right font-medium">Diferencia</th>
+                  <th className="py-1.5 text-right font-medium">Tarjeta</th>
+                  <th className="py-1.5 text-right font-medium">SINPE</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {cierres.data.map((t) => (
+                  <tr key={t.id} title={t.nota ?? undefined}>
+                    <td className="py-1.5">
+                      {fecha(t.abiertoEn)} → {fecha(t.cerradoEn)}
+                    </td>
+                    <td className="py-1.5">{t.cerradoPorNombre}</td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {precio(t.resumen.efectivoEsperado)}
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {precio(t.efectivoContado ?? 0)}
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      <Diferencia valor={t.diferencia ?? 0} precio={precio} />
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {precio(t.resumen.ventasTarjeta)}
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {precio(t.resumen.ventasSinpe)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Seccion>
+    </div>
   );
 }

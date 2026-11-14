@@ -18,6 +18,7 @@ import { reportesRouter } from './modules/reportes/reportes.routes';
 import { dispositivosRouter } from './modules/dispositivos/dispositivos.routes';
 import { clientesRouter } from './modules/clientes/clientes.routes';
 import { enLineaRouter, repartosRouter } from './modules/enlinea/enlinea.routes';
+import { cajaRouter } from './modules/caja/caja.routes';
 
 export const app = express();
 
@@ -55,6 +56,7 @@ app.use('/dispositivos', dispositivosRouter);
 app.use('/enlinea', enLineaRouter);
 app.use('/repartos', repartosRouter);
 app.use('/clientes', clientesRouter);
+app.use('/caja', cajaRouter);
 
 app.use(noEncontrado);
 app.use(errorHandler);

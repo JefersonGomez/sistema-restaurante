@@ -138,6 +138,7 @@ model Restaurante {
   clientes       ClienteRegistrado[]
   canjes         CanjeSello[]
   pagosPlan      PagoSuscripcion[]
+  turnosCaja     TurnoCaja[]
 }
 
 model Usuario {
@@ -319,47 +320,48 @@ model Modificador {
 // "cuenta_unica_abierta" (Prisma no soporta índices parciales en el schema).
 
 model Cuenta {
-  id                String        @id @default(uuid()) @db.Uuid
-  restauranteId     String        @db.Uuid
-  mesaId            String?       @db.Uuid // null en pedidos en línea (para recoger / a domicilio)
-  tipo              TipoCuenta    @default(MESA)
-  estado            EstadoCuenta  @default(ABIERTA)
-  verificada        Boolean       @default(false)
+  id                 String        @id @default(uuid()) @db.Uuid
+  restauranteId      String        @db.Uuid
+  mesaId             String?       @db.Uuid // null en pedidos en línea (para recoger / a domicilio)
+  tipo               TipoCuenta    @default(MESA)
+  estado             EstadoCuenta  @default(ABIERTA)
+  verificada         Boolean       @default(false)
   // Totales en céntimos; los recalcula el servidor con calcularTotales() (packages/shared).
-  subtotal          Int           @default(0)
-  montoServicio     Int           @default(0)
-  montoIva          Int           @default(0)
-  total             Int           @default(0)
-  metodoPago        MetodoPago?
-  cerradaPorId      String?       @db.Uuid
-  numeroComensales  Int? // cupo: lo dice el primero que escanea; sube al aceptar a alguien
-  ingresoBloqueado  Boolean       @default(false) // demasiados intentos de entrar: nadie más se une
-  rechazosIngreso   Int           @default(0)
+  subtotal           Int           @default(0)
+  montoServicio      Int           @default(0)
+  montoIva           Int           @default(0)
+  total              Int           @default(0)
+  metodoPago         MetodoPago?
+  cerradaPorId       String?       @db.Uuid
+  numeroComensales   Int? // cupo: lo dice el primero que escanea; sube al aceptar a alguien
+  ingresoBloqueado   Boolean       @default(false) // demasiados intentos de entrar: nadie más se une
+  rechazosIngreso    Int           @default(0)
   // Pedido en línea (Fase 5): quién pide, a dónde, cómo paga y en qué etapa va.
-  numeroPedido      Int? // "Pedido #12" (correlativo por restaurante)
-  clienteNombre     String?
-  clienteTelefono   String?
-  telefonoNormal    String? // últimos 8 dígitos del teléfono: identifica al cliente (Fase 8)
-  clienteId         String?       @db.Uuid // cuenta del cliente, si pidió con sesión
-  direccionEntrega  String?
-  referenciaEntrega String?
-  latEntrega        Float? // punto marcado por el cliente en el mapa (Fase 7)
-  lngEntrega        Float?
-  repartidorId      String?       @db.Uuid
-  efectivoCuadrado  Boolean       @default(false) // la caja recibió el efectivo del repartidor
-  costoEnvio        Int           @default(0)
-  pagoElegido       MetodoPago? // lo que dijo el cliente (efectivo o SINPE)
-  comprobanteSinpe  String?
-  pagoVerificado    Boolean       @default(false)
-  pagarAntesDe      DateTime? // SINPE: límite para pagar; no entra a cocina sin el pago verificado
-  etapa             EtapaEnLinea?
-  tiempoEstimadoMin Int?
-  motivoRechazo     String?
-  tokenSeguimiento  String?       @unique // enlace de seguimiento del cliente
-  abiertaEn         DateTime      @default(now())
-  cerradaEn         DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  numeroPedido       Int? // "Pedido #12" (correlativo por restaurante)
+  clienteNombre      String?
+  clienteTelefono    String?
+  telefonoNormal     String? // últimos 8 dígitos del teléfono: identifica al cliente (Fase 8)
+  clienteId          String?       @db.Uuid // cuenta del cliente, si pidió con sesión
+  direccionEntrega   String?
+  referenciaEntrega  String?
+  latEntrega         Float? // punto marcado por el cliente en el mapa (Fase 7)
+  lngEntrega         Float?
+  repartidorId       String?       @db.Uuid
+  efectivoCuadrado   Boolean       @default(false) // la caja recibió el efectivo del repartidor
+  efectivoRecibidoEn DateTime? // cuándo (Fase 14: entra al turno de caja en ese momento)
+  costoEnvio         Int           @default(0)
+  pagoElegido        MetodoPago? // lo que dijo el cliente (efectivo o SINPE)
+  comprobanteSinpe   String?
+  pagoVerificado     Boolean       @default(false)
+  pagarAntesDe       DateTime? // SINPE: límite para pagar; no entra a cocina sin el pago verificado
+  etapa              EtapaEnLinea?
+  tiempoEstimadoMin  Int?
+  motivoRechazo      String?
+  tokenSeguimiento   String?       @unique // enlace de seguimiento del cliente
+  abiertaEn          DateTime      @default(now())
+  cerradaEn          DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
   restaurante Restaurante        @relation(fields: [restauranteId], references: [id])
   mesa        Mesa?              @relation(fields: [mesaId], references: [id], onDelete: Restrict)
@@ -723,4 +725,59 @@ model RecuperacionPassword {
 
   usuario Usuario?           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   cliente ClienteRegistrado? @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+}
+
+// --- Arqueo de caja (Fase 14) ---
+
+// Turno de la gaveta: se abre con un fondo y se cierra contando el efectivo. Solo uno abierto por
+// restaurante (índice único parcial en la migración). Al cerrar se guarda el resumen fijo.
+model TurnoCaja {
+  id               String    @id @default(uuid()) @db.Uuid
+  restauranteId    String    @db.Uuid
+  abiertoPorId     String    @db.Uuid
+  abiertoPorNombre String
+  abiertoEn        DateTime  @default(now())
+  fondoInicial     Int // céntimos
+  cerradoPorId     String?   @db.Uuid
+  cerradoPorNombre String?
+  cerradoEn        DateTime?
+  ventasEfectivo   Int?
+  ventasTarjeta    Int?
+  ventasSinpe      Int?
+  cuentas          Int?
+  entradas         Int?
+  salidas          Int?
+  efectivoEsperado Int?
+  efectivoContado  Int?
+  diferencia       Int? // contado − esperado (negativo = faltante)
+  nota             String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  restaurante Restaurante      @relation(fields: [restauranteId], references: [id])
+  movimientos MovimientoCaja[]
+
+  @@index([restauranteId, abiertoEn])
+}
+
+enum TipoMovimientoCaja {
+  ENTRADA
+  SALIDA
+}
+
+// Efectivo que entra o sale de la gaveta sin ser una venta (pago a un proveedor, retiro…).
+model MovimientoCaja {
+  id            String             @id @default(uuid()) @db.Uuid
+  turnoId       String             @db.Uuid
+  tipo          TipoMovimientoCaja
+  monto         Int // céntimos
+  motivo        String
+  usuarioId     String             @db.Uuid
+  usuarioNombre String
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  turno TurnoCaja @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+
+  @@index([turnoId])
 }

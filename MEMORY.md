@@ -22,6 +22,7 @@
 - **Fase 10 completa** (KDS + pantallas de operación + en línea + seguimiento; commit `07f63cd`, 10.5 sin subir).
 - **Fase 11 completa** (commit `6b0dd7b`).
 - **Fase 12 completa** (landing de KitchaGo + logo animado del gorro, 2026-11-13). Subida (commit `e1db2d5`).
+- **Fase 14 completa** (arqueo de caja, 2026-11-13). Subida. Siguiente: Fase 15 (factura electrónica, borrador).
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.
@@ -29,6 +30,39 @@
 - **Backlog de mejoras:** `docs/mejoras-pendientes.md` (ideas del usuario, 2026-10-26; bloques Diseño, Domicilio
   6–7, Clientes y Superadmin hechos en las Fases 6–9; queda rastreo en vivo y "sin internet"). Cada bloque se convierte en spec de fase y se aprueba antes de empezar.
 - Raíz del monorepo: `C:\Users\gomes\OneDrive\Documentos\sistema-restaurante` (equivale a `menu-qr/` de la spec).
+
+## Plan de la Fase 14 (pedido 2026-11-13) — spec: docs/especificacion-fase14.md
+
+| Paso | Qué                                                       | Estado |
+| ---- | --------------------------------------------------------- | ------ |
+| 14.1 | `TurnoCaja` + `MovimientoCaja`, `efectivoRecibidoEn`, API | ✅     |
+| 14.2 | Caja: abrir, entradas/salidas, cierre con conteo, ticket  | ✅     |
+| 14.3 | Cierres de caja en Reportes                               | ✅     |
+
+- Migración `arqueo_caja` con índice único parcial "una caja abierta por restaurante".
+- `/caja` (DUENO, CAJA): GET turno, POST turno/abrir, turno/movimientos, turno/cerrar; GET turnos
+  (últimos 60) y turnos/:id. Errores `CAJA_CERRADA` y `CAJA_YA_ABIERTA`.
+- Esperado = fondo + ventas en efectivo + entradas − salidas. Ventas del turno con
+  `cobradoPorMetodo` (nuevo `reportes/porMetodo.ts`, lo usan también los Reportes): cuentas
+  cerradas en el turno; domicilio en efectivo por `efectivoRecibidoEn` (lo marca "Recibido").
+- Al cerrar se guarda el resumen fijo (no cambia después). Nombres guardados como texto.
+- UI: `apps/staff/src/TurnoCaja.tsx` arriba de las cuentas en Caja (conteo por billetes y monedas
+  de CR, diferencia en vivo, ticket `TicketCierre` con firma). Reportes: tabla "Cierres de caja".
+- Decisiones por defecto (en la spec, revisables): cobrar sin caja abierta sigue permitido; una
+  gaveta por local; solo se guarda el total contado.
+- Verificado: 227 tests (api 176), typecheck, lint, prettier, builds; revisado en Chrome (abrir
+  y conteo). En la BD de desarrollo quedó una caja abierta con ₡30 000 de fondo.
+- Hacienda: el usuario está inscrito como proveedor de sistemas tecnológicos, régimen general.
+- Mejora pedida antes de subir ("se ve mal cuando abro el cierre de caja, que ocupe todo el
+  espacio y en mobile esté bien"): el cierre es ahora una pantalla completa (diálogo fijo):
+  conteo por billetes y monedas a la izquierda, "Compare" fijo a la derecha; en celular apilado
+  con barra fija abajo (diferencia + "Cerrar e imprimir"). Escape vuelve. Revisado en Chrome a
+  1568 px y en marco de 390 px (sin desborde horizontal).
+- Fase 15 (factura electrónica): borrador `docs/especificacion-fase15.md`. Aprobado: 10 % en
+  OtrosCargos código 06 sin IVA; un comprobante por cobro (tiquete por defecto, factura con datos
+  del cliente); cola de envío con reintentos. Variables vacías `HACIENDA_*`, `PROVEEDOR_*`,
+  `EMISOR_*` en `.env` y `.env.example`; `*.p12` y `secretos/` en .gitignore. Pendiente: que el
+  usuario las rellene y verificar plazos de contingencia y campos v4.4.
 
 ## Plan de la Fase 13 (pedido 2026-11-13) — spec: docs/especificacion-fase13.md
 

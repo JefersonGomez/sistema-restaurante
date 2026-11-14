@@ -6,3 +6,7 @@ coverage
 apps/api/src/generated
 apps/api/uploads
 *.tsbuildinfo
+
+# Factura electrónica: llaves criptográficas y otros secretos (nunca al repo)
+*.p12
+secretos/

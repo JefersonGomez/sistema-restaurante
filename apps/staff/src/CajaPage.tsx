@@ -13,10 +13,12 @@ import {
   type MetodoPago,
   metodoDeLineas,
   type Totales,
+  type TurnoCajaDetalle,
 } from '@menu-qr/shared';
 import { api, obtenerMenu } from './api';
 import { useAuth } from './auth';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
+import { TicketCierre, TurnoCaja } from './TurnoCaja';
 import { Conexion, Encabezado, formatoPrecio, hora, TituloColumna } from './ui';
 
 const METODOS: { id: MetodoPago; texto: string }[] = [
@@ -56,6 +58,8 @@ export function CajaPage() {
   const [eleccion, setEleccion] = useState<Record<string, number>>({}); // itemId → unidades
   const [nombreGrupo, setNombreGrupo] = useState('');
   const [ticket, setTicket] = useState<Ticket | null>(null);
+  const [cierre, setCierre] = useState<TurnoCajaDetalle | null>(null); // ticket del arqueo
+  const [version, setVersion] = useState(0); // ventas nuevas → el turno recalcula el esperado
   const [menu, setMenu] = useState<MenuPublico>();
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -73,6 +77,7 @@ export function CajaPage() {
   const cargar = useCallback(async () => {
     try {
       setMesas(await api<MesaOperacion[]>('/operacion/mesas'));
+      setVersion((v) => v + 1);
       setEfectivo(await api<EfectivoRepartidor[]>('/enlinea/efectivo'));
       setError(null);
     } catch (e) {
@@ -112,6 +117,7 @@ export function CajaPage() {
 
   // Imprime el ticket indicado (se dibuja y luego se abre el diálogo de impresión).
   const imprimir = (t: Ticket) => {
+    setCierre(null);
     setTicket(t);
     setTimeout(() => window.print(), 50);
   };
@@ -236,6 +242,17 @@ export function CajaPage() {
 
       <div className="mx-auto grid max-w-6xl items-start gap-4 p-4 md:grid-cols-[320px_1fr] print:hidden">
         <aside className="space-y-2">
+          <TurnoCaja
+            precio={precio}
+            billetes={enColones}
+            version={version}
+            onImprimir={(t) => {
+              setTicket(null);
+              setCierre(t);
+              setTimeout(() => window.print(), 50);
+            }}
+          />
+          <div className="h-2" />
           <TituloColumna titulo="Cuentas abiertas" punto="bg-amber" cantidad={abiertas.length} />
           {abiertas.length === 0 && (
             <p className="rounded-lg border border-dashed border-line p-6 text-center text-sm text-muted">
@@ -555,6 +572,13 @@ export function CajaPage() {
       </div>
 
       {/* Ticket de 80 mm: solo visible al imprimir (ver index.css). */}
+      {cierre && (
+        <TicketCierre
+          t={cierre}
+          restaurante={r?.nombre ?? usuario?.restaurante?.nombre ?? ''}
+          precio={precio}
+        />
+      )}
       {ticket && (
         <div className="ticket hidden print:block">
           <p className="text-center font-bold">{r?.nombre ?? usuario?.restaurante?.nombre}</p>
