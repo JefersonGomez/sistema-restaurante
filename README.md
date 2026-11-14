@@ -4,11 +4,11 @@ SaaS multi-restaurante: los comensales escanean un QR en la mesa, ven el menú (
 celular y piden; los pedidos llegan en tiempo real a cocina, bar, meseros y caja. Una sola
 instancia sirve a todos los restaurantes y ninguno puede ver datos de otro.
 
-> **Estado (noviembre 2026):** Fases 1 a 11 completas: pedidos en mesa por QR, cocina, mesero y
+> **Estado (noviembre 2026):** Fases 1 a 12 completas: pedidos en mesa por QR, cocina, mesero y
 > caja, panel del dueño, pedidos en línea (recoger y domicilio, efectivo o SINPE), diseño nuevo,
 > domicilio con mapa y repartidores, clientes con cuenta y tarjeta de sellos, panel del
-> superadmin con planes, recuperar contraseña por correo y cocina (KDS) para muchos pedidos, aviso al mesero, vencimiento automático del plan, QR del Wi-Fi y menú impreso. **Falta:** desplegar en el VPS
-> (dominio, HTTPS, respaldos), la landing de planes y completar los textos legales. Specs:
+> superadmin con planes, recuperar contraseña por correo y cocina (KDS) para muchos pedidos, aviso al mesero, vencimiento automático del plan, QR del Wi-Fi y menú impreso, y la landing con el logo animado. **Falta:** desplegar en el VPS
+> (dominio, HTTPS, respaldos) y completar los textos legales. Specs:
 > [`fase 1`](docs/especificacion-fase1.md), [`fase 2`](docs/especificacion-fase2.md),
 > [`frontend del menú`](docs/especificacion-frontend-menu.md), [`fase 3`](docs/especificacion-fase3.md),
 > [`fase 4`](docs/especificacion-fase4.md), [`fase 5`](docs/especificacion-fase5.md),
@@ -20,6 +20,7 @@ instancia sirve a todos los restaurantes y ninguno puede ver datos de otro.
 
 | Qué                                    | Dirección                                      |
 | -------------------------------------- | ---------------------------------------------- |
+| Landing de KitchaGo (planes, registro) | http://localhost:5182                          |
 | Panel del personal, dueño y superadmin | http://localhost:5181                          |
 | Menú en línea del cliente              | http://localhost:5180/r/soda-la-esquina        |
 | Menú de una mesa                       | la imprime `pnpm db:seed` (`/m/<token>`)       |
@@ -42,7 +43,7 @@ pnpm install
 pnpm db:up             # PostgreSQL 16 en Docker (puerto 5433)
 pnpm db:migrate        # aplica migraciones
 pnpm db:seed           # datos de prueba (imprime la URL de cada mesa)
-pnpm dev               # api :4000 · menu :5180 · staff :5181
+pnpm dev               # api :4000 · menu :5180 · staff :5181 · landing :5182
 ```
 
 El seed completa lo que falte sin borrar nada (fotos de platos, 30 días de ventas, tablet), así
@@ -286,6 +287,7 @@ Todas viven en el `.env` de la raíz (ver `.env.example`). Los frontends solo le
 | `CORS_ORIGINS`                                                                            | `http://localhost:5180,http://localhost:5181`            | Orígenes permitidos (separados por coma)                               |
 | `MENU_PUBLIC_URL`                                                                         | `http://localhost:5180`                                  | Base de la URL que codifica el QR                                      |
 | `VITE_API_URL`                                                                            | `http://localhost:4000`                                  | URL de la API para los frontends                                       |
+| `VITE_PANEL_URL`                                                                          | `http://localhost:5181`                                  | Landing: base del panel para "Entrar" y "Probar gratis"                |
 | `STORAGE_DRIVER`                                                                          | `local`                                                  | `local` (disco, servido en `/uploads`) o `r2` (Cloudflare R2)          |
 | `UPLOADS_DIR`                                                                             | `apps/api/uploads`                                       | Carpeta de imágenes con `local`                                        |
 | `API_PUBLIC_URL`                                                                          | `http://localhost:4000`                                  | Base de las URLs de imágenes locales                                   |

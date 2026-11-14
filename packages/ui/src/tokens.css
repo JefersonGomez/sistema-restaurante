@@ -21,6 +21,9 @@
   --ok-soft: #e2f4eb;
   --info: #2563c9;
   --info-soft: #e3ecfb;
+  /* Marca KitchaGo (logo: gorro coral con check oscuro). */
+  --kg-coral: #ff6f4f;
+  --kg-tinta: #17181b;
   --linea: #6d28d9;
   --linea-soft: #ede9fe;
   --teal: #0f766e;
@@ -239,43 +242,72 @@ a:active {
   scale: 0.97;
 }
 
-/* Cargando: tenedor y cuchillo se separan y se cruzan. */
-@keyframes tenedor {
-  0%,
+/* Logo de KitchaGo animado (carga): la banda se dibuja, el gorro cae girando, rebota al
+   asentarse y el check se dibuja. Sin animación (reducir movimiento) queda el logo completo. */
+@keyframes kg-banda {
+  0% {
+    transform: scaleX(0);
+  }
+  18%,
   100% {
-    transform: rotate(-32deg);
-  }
-  50% {
-    transform: rotate(-4deg) translateX(-6px);
+    transform: scaleX(1);
   }
 }
-@keyframes cuchillo {
+@keyframes kg-cae {
   0%,
+  12% {
+    transform: translateY(-34px) rotate(-14deg);
+    opacity: 0;
+  }
+  38% {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
+  46% {
+    transform: scale(1.08, 0.88);
+  }
+  56%,
   100% {
-    transform: rotate(32deg);
-  }
-  50% {
-    transform: rotate(4deg) translateX(6px);
+    transform: none;
   }
 }
-.cubiertos-tenedor,
-.cubiertos-cuchillo {
-  transform-box: view-box;
-  transform-origin: 32px 40px;
-}
-.cubiertos-tenedor {
-  animation: tenedor 1.3s ease-in-out infinite;
-}
-.cubiertos-cuchillo {
-  animation: cuchillo 1.3s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .cubiertos-tenedor {
-    transform: rotate(-32deg);
+@keyframes kg-check {
+  0%,
+  55% {
+    stroke-dashoffset: 30;
   }
-  .cubiertos-cuchillo {
-    transform: rotate(32deg);
+  72%,
+  100% {
+    stroke-dashoffset: 0;
   }
+}
+.kg-banda,
+.kg-gorro {
+  transform-box: fill-box;
+}
+.kg-banda {
+  transform-origin: center;
+}
+.kg-gorro {
+  transform-origin: 50% 100%;
+}
+.kg-check {
+  stroke-dasharray: 30;
+}
+.kg-animado .kg-banda {
+  animation: kg-banda 2.2s ease-out infinite;
+}
+.kg-animado .kg-gorro {
+  animation: kg-cae 2.2s cubic-bezier(0.3, 0.7, 0.4, 1) infinite;
+}
+.kg-animado .kg-check {
+  animation: kg-check 2.2s ease-out infinite;
+}
+/* Una sola vez (landing). */
+.kg-una-vez .kg-banda,
+.kg-una-vez .kg-gorro,
+.kg-una-vez .kg-check {
+  animation-iteration-count: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

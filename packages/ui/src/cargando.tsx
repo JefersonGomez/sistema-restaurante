@@ -1,5 +1,55 @@
-// Animación de carga: un tenedor y un cuchillo que se cruzan. SVG + CSS (tokens.css), sin
-// librerías; con "reducir movimiento" quedan quietos y cruzados.
+// Gorro de KitchaGo en SVG. `animado`: cae y rebota en bucle (carga); `unaVez`: solo al aparecer.
+// Colores de marca en tokens.css (--kg-coral, --kg-tinta).
+export function LogoGorro({
+  tam = 88,
+  animado = false,
+  unaVez = false,
+  className = '',
+}: {
+  tam?: number;
+  animado?: boolean;
+  unaVez?: boolean;
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      width={tam}
+      height={tam}
+      aria-hidden
+      className={`${animado ? 'kg-animado' : ''} ${unaVez ? 'kg-una-vez' : ''} ${className}`}
+    >
+      <rect
+        className="kg-banda"
+        x="15"
+        y="47"
+        width="34"
+        height="7"
+        rx="3.5"
+        fill="var(--kg-coral)"
+      />
+      <g className="kg-gorro">
+        <g fill="var(--kg-coral)">
+          <circle cx="21" cy="24" r="11" />
+          <circle cx="32" cy="17" r="13" />
+          <circle cx="43" cy="24" r="11" />
+          <rect x="13" y="22" width="38" height="21" rx="4" />
+        </g>
+        <path
+          className="kg-check"
+          d="M24 31.5l6 6 11.5-11.5"
+          fill="none"
+          stroke="var(--kg-tinta)"
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+    </svg>
+  );
+}
+
+// Animación de carga: el gorro de KitchaGo cae y rebota (con "reducir movimiento", quieto).
 export function Cargando({ texto, pantalla = true }: { texto?: string; pantalla?: boolean }) {
   return (
     <div
@@ -7,21 +57,7 @@ export function Cargando({ texto, pantalla = true }: { texto?: string; pantalla?
       aria-live="polite"
       className={`flex flex-col items-center justify-center gap-4 ${pantalla ? 'min-h-dvh bg-app' : 'py-16'}`}
     >
-      <svg viewBox="0 0 64 64" width="88" height="88" aria-hidden className="cubiertos">
-        {/* Tenedor */}
-        <g className="cubiertos-tenedor" fill="var(--purple)">
-          <rect x="22.5" y="6" width="3" height="16" rx="1.5" />
-          <rect x="28.5" y="6" width="3" height="16" rx="1.5" />
-          <rect x="34.5" y="6" width="3" height="16" rx="1.5" />
-          <path d="M22.5 19h15v4a7.5 7.5 0 0 1-15 0z" />
-          <rect x="27.5" y="26" width="5" height="33" rx="2.5" />
-        </g>
-        {/* Cuchillo */}
-        <g className="cubiertos-cuchillo" fill="var(--amber)">
-          <path d="M29 5c7 3 8.5 14 5.5 25h-5.5z" />
-          <rect x="29" y="29" width="5.5" height="30" rx="2.75" />
-        </g>
-      </svg>
+      <LogoGorro animado />
       {texto && <p className="text-sm font-medium text-muted">{texto}</p>}
     </div>
   );

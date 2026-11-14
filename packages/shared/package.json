@@ -10,7 +10,8 @@
     "./seleccion": "./src/seleccion.ts",
     "./horario": "./src/horario.ts",
     "./color": "./src/color.ts",
-    "./mapa": "./src/mapa.ts"
+    "./mapa": "./src/mapa.ts",
+    "./planes": "./src/planes.ts"
   },
   "scripts": {
     "typecheck": "tsc -p .",

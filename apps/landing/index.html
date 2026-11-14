@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KitchaGo · Pedidos por QR para restaurantes y sodas</title>
+    <meta
+      name="description"
+      content="KitchaGo recibe los pedidos por QR, en línea y a domicilio y los manda directo a cocina, mesero y caja. Sin comisión por pedido. 30 días gratis."
+    />
+    <meta name="theme-color" content="#141416" />
+    <link rel="icon" href="/icono.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Fredoka:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    />
+  </head>
+  <body>
+    <a class="saltar" href="#contenido">Saltar al contenido</a>
+
+    <!-- Encabezado -->
+    <header class="barra">
+      <div class="contenedor barra-fila">
+        <a href="#" class="marca" aria-label="KitchaGo, inicio">
+          <svg
+            class="gorro kg-una-vez kg-animado"
+            viewBox="0 0 64 64"
+            width="34"
+            height="34"
+            aria-hidden="true"
+          >
+            <rect class="kg-banda" x="15" y="47" width="34" height="7" rx="3.5" />
+            <g class="kg-gorro">
+              <circle cx="21" cy="24" r="11" />
+              <circle cx="32" cy="17" r="13" />
+              <circle cx="43" cy="24" r="11" />
+              <rect x="13" y="22" width="38" height="21" rx="4" />
+              <path class="kg-check" d="M24 31.5l6 6 11.5-11.5" />
+            </g>
+          </svg>
+          <span class="palabra">kitcha<span>go</span></span>
+        </a>
+        <nav class="menu-sitio" aria-label="Secciones">
+          <a href="#como-funciona">Cómo funciona</a>
+          <a href="#funciones">Funciones</a>
+          <a href="#planes">Planes</a>
+          <a href="#preguntas">Preguntas</a>
+        </nav>
+        <div class="barra-acciones">
+          <a class="enlace-entrar" data-panel="/login" href="#">Entrar</a>
+          <a class="boton boton-coral" data-panel="/registro" href="#">Probar gratis</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="contenido">
+      <!-- Hero -->
+      <section class="hero">
+        <div class="contenedor hero-grid">
+          <div class="hero-texto">
+            <p class="etiqueta etiqueta-oscura entra" style="--retraso: 0ms">
+              Hecho en Costa Rica · Sin comisión por pedido
+            </p>
+            <h1 class="entra" style="--retraso: 80ms">
+              La cocina en orden,<br />aunque se <em>llene</em> el local.
+            </h1>
+            <p class="hero-sub entra" style="--retraso: 160ms">
+              Sus clientes piden desde la mesa con un QR, en línea o a domicilio. KitchaGo manda
+              cada pedido directo a cocina, avisa al mesero cuando está listo y deja la cuenta lista
+              en caja.
+            </p>
+            <div class="hero-botones entra" style="--retraso: 240ms">
+              <a class="boton boton-coral boton-grande" data-panel="/registro" href="#"
+                >Probar <span data-dias-prueba>30</span> días gratis</a
+              >
+              <a class="boton boton-contorno-claro boton-grande" href="#como-funciona"
+                >Ver cómo funciona</a
+              >
+            </div>
+            <p class="hero-nota entra" style="--retraso: 320ms">
+              Sin tarjeta. Listo en una tarde: suba su menú e imprima los QR.
+            </p>
+          </div>
+
+          <!-- Ilustración: celular con el menú → pantalla de cocina con comandas -->
+          <div class="hero-escena entra" style="--retraso: 200ms" aria-hidden="true">
+            <div class="celular">
+              <div class="celular-barra"></div>
+              <p class="celular-titulo">Soda La Esquina</p>
+              <div class="celular-plato">
+                <span class="foto f1"></span
+                ><span><b>Casado con pollo</b><small>₡4 800</small></span
+                ><span class="mas">+</span>
+              </div>
+              <div class="celular-plato">
+                <span class="foto f2"></span><span><b>Chifrijo</b><small>₡3 900</small></span
+                ><span class="mas">+</span>
+              </div>
+              <div class="celular-plato">
+                <span class="foto f3"></span
+                ><span><b>Refresco natural</b><small>₡1 500</small></span
+                ><span class="mas">+</span>
+              </div>
+              <div class="celular-boton">Enviar pedido · ₡10 200</div>
+            </div>
+            <svg class="flecha-pedido" viewBox="0 0 120 60">
+              <path d="M4 50 C 40 50, 60 10, 112 10" />
+              <path d="M102 3l10 7-10 7" />
+            </svg>
+            <div class="pantalla-cocina">
+              <div class="pc-cabeza">
+                <span class="punto"></span>Cocina · <b data-contador>3</b> en preparación
+              </div>
+              <ul class="pc-comandas" data-comandas>
+                <li class="comanda"><b>Mesa 4</b><span>2× Casado con pollo</span><i>0:42</i></li>
+                <li class="comanda">
+                  <b>Llevar #12</b><span>1× Chifrijo · 1× Café</span><i>2:15</i>
+                </li>
+                <li class="comanda listo">
+                  <b>Mesa 1</b><span>Listo · avisar mesero</span><i>6:03</i>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Franjas retro con los colores de la marca -->
+        <div class="franjas" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="contenedor hero-pie">
+          <span>Pedidos en mesa</span><span>Para llevar</span><span>A domicilio</span
+          ><span>SINPE Móvil</span><span>Cocina y bar</span>
+        </div>
+      </section>
+
+      <!-- Cómo funciona -->
+      <section class="seccion" id="como-funciona">
+        <div class="contenedor">
+          <p class="etiqueta revelar">Cómo funciona</p>
+          <h2 class="revelar">Del QR a la mesa, sin papelitos.</h2>
+          <ol class="pasos">
+            <li class="paso revelar">
+              <span class="paso-num">1</span>
+              <h3>El cliente escanea y pide</h3>
+              <p>
+                Cada mesa tiene su QR. El cliente ve el menú con fotos, en español o inglés, y manda
+                su pedido desde el celular. También puede pedir en línea para recoger o a domicilio.
+              </p>
+            </li>
+            <li class="paso revelar">
+              <span class="paso-num">2</span>
+              <h3>Cocina lo prepara en orden</h3>
+              <p>
+                El pedido aparece al instante en la pantalla de cocina o bar, con el tiempo
+                corriendo. Los atrasados se marcan en rojo y lo pendiente se suma para cocinar en
+                tanda.
+              </p>
+            </li>
+            <li class="paso revelar">
+              <span class="paso-num">3</span>
+              <h3>El mesero lleva, caja cobra</h3>
+              <p>
+                Al terminar, cocina toca "avisar mesero" y le suena en el celular. La cuenta se arma
+                sola: caja cobra junto o separado, en efectivo, tarjeta o SINPE.
+              </p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- Funciones -->
+      <section class="seccion seccion-papel" id="funciones">
+        <div class="contenedor">
+          <p class="etiqueta revelar">Funciones</p>
+          <h2 class="revelar">Todo el servicio en una sola pantalla por puesto.</h2>
+          <div class="tarjetas">
+            <article class="tarjeta revelar">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2z" />
+              </svg>
+              <h3>Menú con QR</h3>
+              <p>
+                Fotos, opciones, alérgenos y agotados al instante. Promoción del día y menús del
+                día.
+              </p>
+            </article>
+            <article class="tarjeta revelar">
+              <svg viewBox="0 0 24 24">
+                <path d="M6 13a4 4 0 1 1 2.5-7.1A4.5 4.5 0 0 1 16 5a4 4 0 0 1 2 7.5V18H6z" />
+                <path d="M6 21h12" />
+              </svg>
+              <h3>Pantalla de cocina</h3>
+              <p>
+                Pensada para la hora pico: tiempos, atrasados, "pendiente ahora" y vista compacta.
+              </p>
+            </article>
+            <article class="tarjeta revelar">
+              <svg viewBox="0 0 24 24">
+                <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z" />
+                <path d="M10 21h4" />
+              </svg>
+              <h3>Avisos al mesero</h3>
+              <p>
+                Llamadas de mesa, pedidos por confirmar y platos listos, con sonido y vibración.
+              </p>
+            </article>
+            <article class="tarjeta revelar">
+              <svg viewBox="0 0 24 24">
+                <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" />
+                <path d="M9 8h6M9 12h6" />
+              </svg>
+              <h3>Caja y cuentas separadas</h3>
+              <p>Cada grupo paga lo suyo. Pre-cuenta impresa y cierre por método de pago.</p>
+            </article>
+            <article class="tarjeta revelar">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+              </svg>
+              <h3>Pedidos en línea</h3>
+              <p>
+                Para recoger o a domicilio, con efectivo o SINPE Móvil y seguimiento en vivo para el
+                cliente.
+              </p>
+            </article>
+            <article class="tarjeta revelar">
+              <svg viewBox="0 0 24 24">
+                <circle cx="6" cy="17" r="3" />
+                <circle cx="18" cy="17" r="3" />
+                <path d="M6 17l4-8h5l3 8M10 9H8" />
+              </svg>
+              <h3>Domicilio con repartidor</h3>
+              <p>
+                El cliente marca su punto en el mapa; el repartidor abre la ruta en Google Maps o
+                Waze.
+              </p>
+            </article>
+            <article class="tarjeta revelar">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 9h16v12H4zM2 5h20v4H2zM12 5v16" />
+                <path d="M12 5c-2-3-6-3-6 0M12 5c2-3 6-3 6 0" />
+              </svg>
+              <h3>Clientes y tarjeta de sellos</h3>
+              <p>Reconozca a sus frecuentes. Cada pedido suma un sello; usted decide el premio.</p>
+            </article>
+            <article class="tarjeta revelar">
+              <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>
+              <h3>Reportes</h3>
+              <p>
+                Ventas por día, por canal y por plato, ticket promedio y horas pico. Exporta a CSV.
+              </p>
+            </article>
+            <article class="tarjeta revelar">
+              <svg viewBox="0 0 24 24">
+                <path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0" />
+                <circle cx="12" cy="19.5" r="1" />
+              </svg>
+              <h3>Aunque falle el internet</h3>
+              <p>
+                QR del Wi-Fi en cada mesa para quien no tiene datos y menú en PDF para imprimir.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sin comisión -->
+      <section class="seccion seccion-oscura">
+        <div class="contenedor comision">
+          <div class="revelar">
+            <p class="etiqueta etiqueta-oscura">Lo que ahorra</p>
+            <h2>Una mensualidad fija.<br />Cero comisión por pedido.</h2>
+            <p class="comision-sub">
+              Los pedidos en línea y a domicilio son suyos: los cobra usted, en efectivo o por
+              SINPE, sin que nadie se quede con un porcentaje de cada venta.
+            </p>
+          </div>
+          <div class="cero revelar" aria-label="Cero por ciento de comisión">
+            <span>0</span><small>%</small>
+            <p>de comisión por pedido</p>
+          </div>
+        </div>
+        <div class="franjas franjas-cortas" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </section>
+
+      <!-- Planes -->
+      <section class="seccion" id="planes">
+        <div class="contenedor">
+          <p class="etiqueta revelar">Planes</p>
+          <h2 class="revelar">Empiece gratis. Pague solo si le sirve.</h2>
+          <p class="seccion-sub revelar">
+            <span data-dias-prueba>30</span> días gratis con todas las funciones. Pago anual con 2
+            meses de regalo.
+          </p>
+          <div class="planes">
+            <article class="plan revelar">
+              <h3>Básico</h3>
+              <p class="plan-para">Para la soda que atiende en el local.</p>
+              <p class="precio"><b data-precio="BASICO">₡9 900</b> / mes</p>
+              <p class="anual">o <span data-anual="BASICO">₡99 000</span> al año</p>
+              <ul>
+                <li>Menú con QR y pedidos en mesa</li>
+                <li>Pantalla de cocina y bar</li>
+                <li>Mesero con avisos y caja</li>
+                <li>Cuentas separadas y reportes</li>
+                <li>Personal y tablets ilimitados</li>
+              </ul>
+              <a class="boton boton-contorno boton-ancho" data-panel="/registro" href="#"
+                >Empezar gratis</a
+              >
+            </article>
+            <article class="plan plan-destacado revelar">
+              <span class="plan-cinta">Más completo</span>
+              <h3>Completo</h3>
+              <p class="plan-para">Para el restaurante que también vende en línea.</p>
+              <p class="precio"><b data-precio="COMPLETO">₡19 900</b> / mes</p>
+              <p class="anual">o <span data-anual="COMPLETO">₡199 000</span> al año</p>
+              <ul>
+                <li>Todo lo del Básico</li>
+                <li>Pedidos en línea para recoger y a domicilio</li>
+                <li>Repartidores con mapa y cuadre de efectivo</li>
+                <li>Clientes, cuentas y tarjeta de sellos</li>
+                <li>Seguimiento en vivo y comprobante por WhatsApp</li>
+              </ul>
+              <a class="boton boton-coral boton-ancho" data-panel="/registro" href="#"
+                >Probar el Completo gratis</a
+              >
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Preguntas -->
+      <section class="seccion seccion-papel" id="preguntas">
+        <div class="contenedor angosto">
+          <p class="etiqueta revelar">Preguntas frecuentes</p>
+          <h2 class="revelar">Lo que nos preguntan los dueños.</h2>
+          <div class="preguntas">
+            <details class="revelar">
+              <summary>¿Necesito comprar equipo especial?</summary>
+              <p>
+                No. Funciona en el navegador: celulares, tablets y computadoras que ya tenga. Para
+                la cocina basta una tablet o una pantalla con navegador.
+              </p>
+            </details>
+            <details class="revelar">
+              <summary>¿Los clientes tienen que bajar una aplicación?</summary>
+              <p>
+                No. Escanean el QR con la cámara y el menú se abre en el navegador. Si quieren,
+                pueden crear una cuenta para pedir más rápido y juntar sellos.
+              </p>
+            </details>
+            <details class="revelar">
+              <summary>¿Cómo cobro los pedidos en línea?</summary>
+              <p>
+                En efectivo al entregar o por SINPE Móvil. Usted verifica el SINPE y recién ahí el
+                pedido pasa a cocina. La plata llega directo a usted.
+              </p>
+            </details>
+            <details class="revelar">
+              <summary>¿Qué pasa si se cae el internet?</summary>
+              <p>
+                El mesero puede tomar pedidos desde su pantalla cuando vuelve la conexión, los
+                pedidos que estaban en camino se reintentan solos y puede imprimir el menú en PDF.
+                Le recomendamos un router con respaldo de datos móviles.
+              </p>
+            </details>
+            <details class="revelar">
+              <summary>¿Emite factura electrónica?</summary>
+              <p>
+                Todavía no: los comprobantes son pre-cuentas. La factura electrónica la sigue
+                haciendo con su sistema actual.
+              </p>
+            </details>
+            <details class="revelar">
+              <summary>¿Cómo pago la mensualidad?</summary>
+              <p>
+                Por SINPE Móvil o transferencia. Le avisamos en el panel dos días antes de que
+                venza.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- Llamada final -->
+      <section class="final">
+        <div class="franjas" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="contenedor final-caja revelar">
+          <svg
+            class="gorro gorro-grande kg-animado"
+            viewBox="0 0 64 64"
+            width="72"
+            height="72"
+            aria-hidden="true"
+          >
+            <rect class="kg-banda" x="15" y="47" width="34" height="7" rx="3.5" />
+            <g class="kg-gorro">
+              <circle cx="21" cy="24" r="11" />
+              <circle cx="32" cy="17" r="13" />
+              <circle cx="43" cy="24" r="11" />
+              <rect x="13" y="22" width="38" height="21" rx="4" />
+              <path class="kg-check" d="M24 31.5l6 6 11.5-11.5" />
+            </g>
+          </svg>
+          <h2>Su próxima hora pico, en orden.</h2>
+          <p>Cree su restaurante, suba el menú e imprima los QR hoy mismo.</p>
+          <a class="boton boton-coral boton-grande" data-panel="/registro" href="#"
+            >Probar <span data-dias-prueba>30</span> días gratis</a
+          >
+        </div>
+      </section>
+    </main>
+
+    <footer class="pie">
+      <div class="contenedor pie-fila">
+        <span class="palabra palabra-chica">kitcha<span>go</span></span>
+        <nav aria-label="Enlaces del pie">
+          <a data-panel="/login" href="#">Entrar</a>
+          <a data-panel="/registro" href="#">Crear cuenta</a>
+          <a href="#planes">Planes</a>
+          <span class="pie-pronto" title="Disponible pronto">Términos y privacidad (pronto)</span>
+        </nav>
+        <small>© <span data-anio>2026</span> KitchaGo · Hecho en Costa Rica</small>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
