@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { MenuPublico } from '@menu-qr/shared';
 import type { NuevaLinea } from '@menu-qr/ui';
 import { guardar, leer } from '../almacen';
 
@@ -8,6 +9,17 @@ export type LineaCarrito = NuevaLinea & {
 };
 
 export const CANTIDAD_MAX = 20;
+
+// Líneas con la tarifa de IVA de su plato (Fase 13), para estimar el total como el servidor.
+export function conTarifas(lineas: LineaCarrito[], menu: MenuPublico) {
+  const tarifas = new Map(
+    [...menu.categorias.flatMap((c) => c.platos), ...menu.menuDelDia].map((p) => [
+      p.id,
+      p.tarifaIva,
+    ]),
+  );
+  return lineas.map((l) => ({ ...l, tarifaIva: tarifas.get(l.platoId) ?? null }));
+}
 
 export const claveLinea = (platoId: string, modificadores: string[], nota: string) =>
   JSON.stringify([platoId, [...modificadores].sort(), nota.trim()]);

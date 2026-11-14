@@ -1,4 +1,4 @@
-import { Bike, Printer, Undo2, Users } from 'lucide-react';
+import { Bike, Plus, Printer, Undo2, Users, X } from 'lucide-react';
 import { IconoMesa, QuantityStepper } from '@menu-qr/ui';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -6,9 +6,12 @@ import {
   type CuentaDetalle,
   type EfectivoRepartidor,
   type ItemDetalle,
+  type LineaCobroDetalle,
+  type LineaCobroInput,
   type MenuPublico,
   type MesaOperacion,
   type MetodoPago,
+  metodoDeLineas,
   type Totales,
 } from '@menu-qr/shared';
 import { api, obtenerMenu } from './api';
@@ -30,6 +33,7 @@ type Ticket = {
   lineas: { id: string; cantidad: number; nombre: string; monto: number }[];
   totales: Totales;
   metodo?: string;
+  pago?: string[]; // detalle del cobro: "Efectivo ₡10 000 · vuelto ₡847"
 };
 const lineasDe = (items: ItemDetalle[]) =>
   items.map((i) => ({
@@ -47,7 +51,7 @@ export function CajaPage() {
   const [mesas, setMesas] = useState<MesaOperacion[]>([]);
   const [seleccion, setSeleccion] = useState<string | null>(null);
   const [cuenta, setCuenta] = useState<CuentaDetalle | null>(null);
-  const [metodo, setMetodo] = useState<MetodoPago | null>(null);
+  const [cobro, setCobro] = useState<Cobro>(COBRO_VACIO);
   const [modo, setModo] = useState<'junto' | 'separado'>('junto');
   const [eleccion, setEleccion] = useState<Record<string, number>>({}); // itemId → unidades
   const [nombreGrupo, setNombreGrupo] = useState('');
@@ -62,6 +66,7 @@ export function CajaPage() {
   }, [usuario]);
   const r = menu?.restaurante;
   const precio = formatoPrecio(r?.moneda ?? 'CRC');
+  const enColones = (r?.moneda ?? 'CRC') === 'CRC';
   const iva = r?.porcentajeIva ?? 13;
   const servicio = r?.porcentajeServicio ?? 10;
 
@@ -85,7 +90,7 @@ export function CajaPage() {
   }, [cargar]);
   useEffect(() => {
     cargarCuenta(seleccion);
-    setMetodo(null);
+    setCobro(COBRO_VACIO);
     setModo('junto');
     setEleccion({});
     setNombreGrupo('');
@@ -129,7 +134,11 @@ export function CajaPage() {
   const elegidos = sinPagar.filter((i) => eleccion[i.id]);
   const totalGrupo = r
     ? calcularTotales(
-        elegidos.map((i) => ({ precioUnitario: i.precioUnitario, cantidad: eleccion[i.id]! })),
+        elegidos.map((i) => ({
+          precioUnitario: i.precioUnitario,
+          cantidad: eleccion[i.id]!,
+          tarifaIva: i.tarifaIva,
+        })),
         r,
       )
     : null;
@@ -146,14 +155,25 @@ export function CajaPage() {
     }
   };
 
+  const cobroJunto = cuenta ? armarCobro(cobro, cuenta.total, precio) : null;
+  const cobroGrupo = totalGrupo ? armarCobro(cobro, totalGrupo.total, precio) : null;
+  // Confirmación con el vuelto a la vista.
+  const confirmar = (texto: string, lineas: LineaCobroInput[]) => {
+    const vuelto = lineas.reduce((n, l) => n + (l.recibido ? l.recibido - l.monto : 0), 0);
+    return confirm(vuelto ? `${texto}\n\nVuelto: ${precio(vuelto)}` : texto);
+  };
+
   const cerrarJunto = () =>
     cuenta &&
-    metodo &&
-    confirm(`¿Cerrar la cuenta (${cuenta.lugar}) por ${precio(cuenta.total)}?`) &&
+    cobroJunto?.datos &&
+    confirmar(
+      `¿Cerrar la cuenta (${cuenta.lugar}) por ${precio(cuenta.total)}?`,
+      cobroJunto.datos.lineas,
+    ) &&
     accion(async () => {
       await api(`/operacion/cuentas/${cuenta.id}/cerrar`, {
         method: 'POST',
-        body: { metodoPago: metodo },
+        body: cobroJunto.datos,
       });
       setSeleccion(null);
       cargar();
@@ -161,8 +181,10 @@ export function CajaPage() {
 
   const cobrarGrupo = () =>
     cuenta &&
-    metodo &&
+    cobroGrupo?.datos &&
+    totalGrupo &&
     elegidos.length > 0 &&
+    confirmar(`¿Cobrar este grupo por ${precio(totalGrupo.total)}?`, cobroGrupo.datos.lineas) &&
     accion(async () => {
       const r = await api<{ cuenta: CuentaDetalle; cerrada: boolean }>(
         `/operacion/cuentas/${cuenta.id}/pagos`,
@@ -170,14 +192,14 @@ export function CajaPage() {
           method: 'POST',
           body: {
             nombre: nombreGrupo.trim() || undefined,
-            metodoPago: metodo,
+            ...cobroGrupo.datos,
             items: elegidos.map((i) => ({ itemId: i.id, cantidad: eleccion[i.id] })),
           },
         },
       );
       setEleccion({});
       setNombreGrupo('');
-      setMetodo(null);
+      setCobro(COBRO_VACIO);
       if (r.cerrada) {
         setSeleccion(null);
         cargar();
@@ -359,7 +381,14 @@ export function CajaPage() {
                     </tbody>
                   </table>
                   <Desglose totales={cuenta} precio={precio} iva={iva} servicio={servicio} />
-                  <Metodos metodo={metodo} onElegir={setMetodo} />
+                  <PanelCobro
+                    cobro={cobro}
+                    onCambio={setCobro}
+                    total={cuenta.total}
+                    precio={precio}
+                    billetes={enColones}
+                    error={cobroJunto?.error ?? null}
+                  />
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -371,7 +400,7 @@ export function CajaPage() {
                     <button
                       type="button"
                       onClick={cerrarJunto}
-                      disabled={!metodo || ocupado || pendientes}
+                      disabled={!cobroJunto?.datos || ocupado || pendientes}
                       className="min-h-12 flex-1 rounded-md bg-purple font-semibold text-on-accent disabled:opacity-50"
                     >
                       {ocupado ? 'Cerrando…' : `Cobrar todo · ${precio(cuenta.total)}`}
@@ -399,6 +428,11 @@ export function CajaPage() {
                             <p className="mt-0.5 text-muted">
                               {suyos.map((i) => `${i.cantidad}× ${i.nombreEs}`).join(', ')}
                             </p>
+                            {p.lineas.length > 0 && (
+                              <p className="mt-0.5 text-xs">
+                                {p.lineas.map((l) => textoLinea(l, precio)).join(' + ')}
+                              </p>
+                            )}
                             <div className="mt-2 flex gap-2">
                               <button
                                 type="button"
@@ -408,6 +442,7 @@ export function CajaPage() {
                                     lineas: lineasDe(suyos),
                                     totales: p,
                                     metodo: NOMBRE_METODO[p.metodoPago],
+                                    pago: p.lineas.map((l) => textoLinea(l, precio)),
                                   })
                                 }
                                 className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-app px-3 font-medium hover:bg-surface"
@@ -490,11 +525,20 @@ export function CajaPage() {
                           servicio={servicio}
                         />
                       )}
-                      <Metodos metodo={metodo} onElegir={setMetodo} />
+                      {totalGrupo && elegidos.length > 0 && (
+                        <PanelCobro
+                          cobro={cobro}
+                          onCambio={setCobro}
+                          total={totalGrupo.total}
+                          precio={precio}
+                          billetes={enColones}
+                          error={cobroGrupo?.error ?? null}
+                        />
+                      )}
                       <button
                         type="button"
                         onClick={cobrarGrupo}
-                        disabled={!metodo || !elegidos.length || ocupado || pendientes}
+                        disabled={!cobroGrupo?.datos || !elegidos.length || ocupado || pendientes}
                         className="mt-4 min-h-12 w-full rounded-md bg-purple font-semibold text-on-accent disabled:opacity-50"
                       >
                         {elegidos.length && totalGrupo
@@ -528,6 +572,9 @@ export function CajaPage() {
           <hr />
           <Desglose totales={ticket.totales} precio={precio} iva={iva} servicio={servicio} />
           {ticket.metodo && <p>Pagado con: {ticket.metodo}</p>}
+          {ticket.pago?.map((t) => (
+            <p key={t}>{t}</p>
+          ))}
           <hr />
           <p className="text-center font-bold">*** NO ES FACTURA ELECTRÓNICA ***</p>
           <p className="text-center">Documento informativo sin validez fiscal.</p>
@@ -537,13 +584,119 @@ export function CajaPage() {
   );
 }
 
-function Metodos({
+// --- Detalle del cobro (Fase 13): cuánto dio, vuelto, tarjeta, SINPE y mixto ---
+
+type MetodoLinea = LineaCobroInput['metodo'];
+type LineaUI = {
+  metodo: MetodoLinea;
+  monto: string; // solo en mixto; con un método el monto es el total
+  recibido: string;
+  ultimos4: string;
+  autorizacion: string;
+  comprobante: string;
+};
+type Cobro = { metodo: MetodoPago | null; lineas: LineaUI[] };
+const nuevaLinea = (metodo: MetodoLinea): LineaUI => ({
   metodo,
-  onElegir,
+  monto: '',
+  recibido: '',
+  ultimos4: '',
+  autorizacion: '',
+  comprobante: '',
+});
+const COBRO_VACIO: Cobro = { metodo: null, lineas: [] };
+const aCentimos = (v: string) => {
+  const n = Number(v.replace(/[\s,]/g, ''));
+  return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : 0;
+};
+
+// Arma lo que se manda a la API, o dice qué falta para poder cobrar.
+function armarCobro(
+  c: Cobro,
+  total: number,
+  precio: (n: number) => string,
+): { datos: { metodoPago: MetodoPago; lineas: LineaCobroInput[] } | null; error: string | null } {
+  const no = (error: string | null) => ({ datos: null, error });
+  if (!c.metodo) return no(null);
+  const mixto = c.metodo === 'MIXTO';
+  const lineas: LineaCobroInput[] = [];
+  for (const l of c.lineas) {
+    const monto = mixto ? aCentimos(l.monto) : total;
+    if (!monto) return no('Escriba el monto de cada parte');
+    const linea: LineaCobroInput = { metodo: l.metodo, monto };
+    if (l.metodo === 'EFECTIVO' && l.recibido.trim()) {
+      const recibido = aCentimos(l.recibido);
+      if (recibido < monto) return no('Lo que entregó en efectivo no alcanza');
+      linea.recibido = recibido;
+    }
+    if (l.metodo === 'TARJETA') {
+      if (l.ultimos4 && !/^\d{4}$/.test(l.ultimos4))
+        return no('Los últimos dígitos de la tarjeta son 4 números');
+      if (l.ultimos4) linea.ultimos4 = l.ultimos4;
+      if (l.autorizacion.trim()) linea.autorizacion = l.autorizacion.trim();
+    }
+    if (l.metodo === 'SINPE' && l.comprobante.trim()) linea.comprobante = l.comprobante.trim();
+    lineas.push(linea);
+  }
+  const falta = total - lineas.reduce((n, l) => n + l.monto, 0);
+  if (falta > 0) return no(`Falta ${precio(falta)}`);
+  if (falta < 0) return no(`Sobra ${precio(-falta)}: revise los montos`);
+  return { datos: { metodoPago: metodoDeLineas(lineas), lineas }, error: null };
+}
+
+const NOMBRE_LINEA: Record<MetodoLinea, string> = {
+  EFECTIVO: 'Efectivo',
+  TARJETA: 'Tarjeta',
+  SINPE: 'SINPE',
+};
+function textoLinea(l: LineaCobroDetalle, precio: (n: number) => string) {
+  const partes = [`${NOMBRE_LINEA[l.metodo as MetodoLinea] ?? l.metodo} ${precio(l.monto)}`];
+  if (l.recibido) partes.push(`recibió ${precio(l.recibido)}`, `vuelto ${precio(l.vuelto)}`);
+  if (l.ultimos4) partes.push(`····${l.ultimos4}`);
+  if (l.autorizacion) partes.push(`Aut. ${l.autorizacion}`);
+  if (l.comprobante) partes.push(`Comp. ${l.comprobante}`);
+  return partes.join(' · ');
+}
+
+// Billetes rápidos para "le dio": exacto, redondeo a mil y billetes comunes por encima del monto.
+function billetesPara(monto: number) {
+  const mil = 100000;
+  const opciones = [monto, Math.ceil(monto / mil) * mil, 500000, 1000000, 2000000, 5000000];
+  return [...new Set(opciones)].filter((n) => n >= monto).slice(0, 5);
+}
+
+const claseCampo = 'mt-1 h-11 w-full rounded-xl border border-line bg-surface px-3 tabular-nums';
+
+function PanelCobro({
+  cobro,
+  onCambio,
+  total,
+  precio,
+  billetes,
+  error,
 }: {
-  metodo: MetodoPago | null;
-  onElegir: (m: MetodoPago) => void;
+  cobro: Cobro;
+  onCambio: (c: Cobro) => void;
+  total: number;
+  precio: (n: number) => string;
+  billetes: boolean; // botones de billetes (solo en colones)
+  error: string | null;
 }) {
+  const elegir = (m: MetodoPago) =>
+    onCambio({
+      metodo: m,
+      lineas: m === 'MIXTO' ? [nuevaLinea('EFECTIVO'), nuevaLinea('TARJETA')] : [nuevaLinea(m)],
+    });
+  const cambiar = (i: number, cambio: Partial<LineaUI>) =>
+    onCambio({
+      ...cobro,
+      lineas: cobro.lineas.map((l, n) => (n === i ? { ...l, ...cambio } : l)),
+    });
+  const mixto = cobro.metodo === 'MIXTO';
+  const montoDe = (l: LineaUI) => (mixto ? aCentimos(l.monto) : total);
+  const falta = total - cobro.lineas.reduce((n, l) => n + montoDe(l), 0);
+  const aTexto = (c: number) => String(c / 100);
+
   return (
     <fieldset className="mt-4">
       <legend className="mb-2 text-sm font-medium">Método de pago</legend>
@@ -552,14 +705,175 @@ function Metodos({
           <button
             key={m.id}
             type="button"
-            aria-pressed={metodo === m.id}
-            onClick={() => onElegir(m.id)}
-            className={claseBoton(metodo === m.id)}
+            aria-pressed={cobro.metodo === m.id}
+            onClick={() => elegir(m.id)}
+            className={claseBoton(cobro.metodo === m.id)}
           >
             {m.texto}
           </button>
         ))}
       </div>
+
+      {cobro.lineas.length > 0 && (
+        <div className="mt-3 space-y-3">
+          {cobro.lineas.map((l, i) => {
+            const monto = montoDe(l);
+            const recibido = aCentimos(l.recibido);
+            return (
+              <div key={i} className="anim-entrar rounded-lg bg-surface p-3 text-sm">
+                {mixto && (
+                  <div className="flex flex-wrap items-end gap-2">
+                    <label className="flex-1">
+                      <span className="font-medium">Parte {i + 1}</span>
+                      <select
+                        value={l.metodo}
+                        onChange={(e) =>
+                          cambiar(i, {
+                            ...nuevaLinea(e.target.value as MetodoLinea),
+                            monto: l.monto,
+                          })
+                        }
+                        className={claseCampo}
+                      >
+                        {(Object.keys(NOMBRE_LINEA) as MetodoLinea[]).map((m) => (
+                          <option key={m} value={m}>
+                            {NOMBRE_LINEA[m]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex-1">
+                      <span className="font-medium">Monto</span>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        value={l.monto}
+                        onChange={(e) => cambiar(i, { monto: e.target.value })}
+                        className={claseCampo}
+                      />
+                    </label>
+                    {falta > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => cambiar(i, { monto: aTexto(monto + falta) })}
+                        className="min-h-11 rounded-md bg-app px-3 font-medium hover:bg-surface-2"
+                      >
+                        + lo que falta
+                      </button>
+                    )}
+                    {cobro.lineas.length > 2 && (
+                      <button
+                        type="button"
+                        aria-label={`Quitar parte ${i + 1}`}
+                        onClick={() =>
+                          onCambio({ ...cobro, lineas: cobro.lineas.filter((_, n) => n !== i) })
+                        }
+                        className="grid min-h-11 min-w-11 place-items-center rounded-md text-muted hover:bg-app"
+                      >
+                        <X className="size-4" aria-hidden />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {l.metodo === 'EFECTIVO' && (
+                  <div className={mixto ? 'mt-2' : ''}>
+                    <label className="block">
+                      <span className="font-medium">¿Cuánto le dio? (opcional)</span>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        value={l.recibido}
+                        placeholder={monto ? aTexto(monto) : ''}
+                        onChange={(e) => cambiar(i, { recibido: e.target.value })}
+                        className={claseCampo}
+                      />
+                    </label>
+                    {monto > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {(billetes ? billetesPara(monto) : [monto]).map((b) => (
+                          <button
+                            key={b}
+                            type="button"
+                            onClick={() => cambiar(i, { recibido: aTexto(b) })}
+                            className="min-h-11 rounded-md bg-app px-3 font-medium tabular-nums hover:bg-surface-2"
+                          >
+                            {b === monto ? 'Exacto' : precio(b)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {recibido > 0 && monto > 0 && (
+                      <p
+                        className={`mt-2 font-display text-2xl font-extrabold tabular-nums ${recibido >= monto ? 'text-ok' : 'text-danger'}`}
+                      >
+                        {recibido >= monto
+                          ? `Vuelto: ${precio(recibido - monto)}`
+                          : `Faltan ${precio(monto - recibido)}`}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {l.metodo === 'TARJETA' && (
+                  <div className={`grid grid-cols-2 gap-2 ${mixto ? 'mt-2' : ''}`}>
+                    <label>
+                      <span className="font-medium">Últimos 4 dígitos</span>
+                      <input
+                        inputMode="numeric"
+                        maxLength={4}
+                        value={l.ultimos4}
+                        placeholder="1234"
+                        onChange={(e) =>
+                          cambiar(i, { ultimos4: e.target.value.replace(/\D/g, '') })
+                        }
+                        className={claseCampo}
+                      />
+                    </label>
+                    <label>
+                      <span className="font-medium">N.º de autorización</span>
+                      <input
+                        maxLength={20}
+                        value={l.autorizacion}
+                        placeholder="Del voucher"
+                        onChange={(e) => cambiar(i, { autorizacion: e.target.value })}
+                        className={claseCampo}
+                      />
+                    </label>
+                  </div>
+                )}
+
+                {l.metodo === 'SINPE' && (
+                  <label className={`block ${mixto ? 'mt-2' : ''}`}>
+                    <span className="font-medium">N.º de comprobante (opcional)</span>
+                    <input
+                      maxLength={40}
+                      value={l.comprobante}
+                      onChange={(e) => cambiar(i, { comprobante: e.target.value })}
+                      className={claseCampo}
+                    />
+                  </label>
+                )}
+              </div>
+            );
+          })}
+
+          {mixto && cobro.lineas.length < 6 && (
+            <button
+              type="button"
+              onClick={() =>
+                onCambio({ ...cobro, lineas: [...cobro.lineas, nuevaLinea('EFECTIVO')] })
+              }
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-sm font-medium hover:bg-surface"
+            >
+              <Plus className="size-4" aria-hidden /> Agregar otra parte
+            </button>
+          )}
+          {error && <p className="text-sm font-medium text-amber-ink">{error}</p>}
+        </div>
+      )}
     </fieldset>
   );
 }

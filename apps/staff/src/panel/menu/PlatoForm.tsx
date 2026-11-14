@@ -23,6 +23,7 @@ import {
   TituloPagina,
 } from '../comunes';
 import { EditorGrupos, type GrupoForm } from './EditorGrupos';
+import { FacturaPlato } from './FacturaPlato';
 import type { Categoria } from './MenuPanelPage';
 
 const ALERGENOS = [
@@ -51,6 +52,8 @@ type PlatoApi = {
   agotado: boolean;
   activo: boolean;
   alergenos: string[];
+  cabys: string | null;
+  tarifaIva: number | null;
   menuDelDia: boolean;
   diasSemana: number[];
   fechaMenu: string | null;
@@ -104,7 +107,8 @@ export function PlatoForm() {
   });
   const restaurante = useQuery({
     queryKey: ['restaurante'],
-    queryFn: () => api<{ moneda: Moneda }>('/restaurante'),
+    queryFn: () =>
+      api<{ moneda: Moneda; porcentajeIva: number; cabysGeneral: string | null }>('/restaurante'),
   });
   const platosTodos = useQuery({
     queryKey: ['platos'],
@@ -131,6 +135,8 @@ export function PlatoForm() {
     agotado: false,
     activo: true,
     alergenos: [] as string[],
+    cabys: '',
+    tarifaIva: null as number | null,
     menuDelDia: params.get('menuDelDia') === '1',
     diasSemana: [] as number[],
     fechaMenu: '',
@@ -165,6 +171,8 @@ export function PlatoForm() {
       agotado: p.agotado,
       activo: p.activo,
       alergenos: p.alergenos,
+      cabys: p.cabys ?? '',
+      tarifaIva: p.tarifaIva,
       menuDelDia: p.menuDelDia,
       diasSemana: p.diasSemana,
       fechaMenu: p.fechaMenu?.slice(0, 10) ?? '',
@@ -240,6 +248,8 @@ export function PlatoForm() {
         agotado: f.agotado,
         activo: f.activo,
         alergenos: f.alergenos,
+        cabys: f.cabys || null,
+        tarifaIva: f.tarifaIva,
         menuDelDia: f.menuDelDia,
         diasSemana: f.menuDelDia ? f.diasSemana : [],
         fechaMenu: f.menuDelDia && f.fechaMenu ? f.fechaMenu : null,
@@ -308,6 +318,7 @@ export function PlatoForm() {
     agotado: f.agotado,
     precioAntes: null,
     alergenos: f.alergenos,
+    tarifaIva: f.tarifaIva,
     grupos: grupos.map((g) => ({
       id: g.clave,
       nombreEs: g.nombreEs || 'Grupo',
@@ -609,6 +620,16 @@ export function PlatoForm() {
               </div>
             </fieldset>
           </Tarjeta>
+
+          <FacturaPlato
+            cabys={f.cabys}
+            tarifaIva={f.tarifaIva}
+            ivaRestaurante={restaurante.data?.porcentajeIva ?? 13}
+            cabysGeneral={restaurante.data?.cabysGeneral ?? null}
+            onCabys={(v) => poner('cabys', v)}
+            onTarifa={(v) => poner('tarifaIva', v)}
+            error={errores.cabys}
+          />
 
           <section className="space-y-2">
             <h2 className="font-semibold">Opciones y modificadores</h2>

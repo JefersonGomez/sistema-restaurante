@@ -6,6 +6,7 @@ import {
   actualizarModificadorSchema,
   actualizarPlatoSchema,
   agotadoSchema,
+  cabysQuerySchema,
   categoriaSchema,
   estacionSchema,
   grupoParamSchema,
@@ -73,6 +74,7 @@ platosRouter.get(
 platosRouter.post('/', dueno, validate({ body: platoSchema }), platosCtrl.crear);
 // Antes de '/:id' para que "orden" no se tome como id.
 platosRouter.patch('/orden', dueno, validate({ body: ordenSchema }), platosCtrl.ordenar);
+platosRouter.get('/cabys', dueno, validate({ query: cabysQuerySchema }), platosCtrl.cabys);
 platosRouter.get('/:id', personalMenu, conId, platosCtrl.obtener);
 platosRouter.patch(
   '/:id',

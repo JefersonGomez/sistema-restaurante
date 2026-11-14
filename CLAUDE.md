@@ -1,15 +1,15 @@
 # CLAUDE.md — Cómo trabajar en este repo
 
 KitchaGo: SaaS multi-restaurante de pedidos por QR (Costa Rica). Monorepo pnpm: `apps/api`, `apps/menu`,
-`apps/staff`, `packages/shared`.
+`apps/staff`, `apps/landing`, `packages/shared`, `packages/ui`.
 
 ## Antes de cada tarea
 
 1. Leer `MEMORY.md` (estado actual, decisiones, pendientes).
 2. Si la tarea toca alcance, leer la spec de la fase en curso (fuente de verdad):
    `docs/especificacion-fase1.md`, `docs/especificacion-fase2.md`, `docs/especificacion-frontend-menu.md`,
-   `docs/especificacion-fase3.md`, `docs/especificacion-fase4.md`, `docs/especificacion-fase5.md`, `docs/especificacion-fase6.md`, `docs/especificacion-fase7.md`, `docs/especificacion-fase8.md`, `docs/especificacion-fase9.md`, `docs/especificacion-fase10.md` (hechas) y
-   `docs/especificacion-fase11.md` (en curso: aviso al mesero, vencimiento, sin internet, KitchaGo, legales). Backlog: `docs/mejoras-pendientes.md`. Anotar en la spec cada pedido nuevo
+   `docs/especificacion-fase3.md`, `docs/especificacion-fase4.md`, `docs/especificacion-fase5.md`, `docs/especificacion-fase6.md`, `docs/especificacion-fase7.md`, `docs/especificacion-fase8.md`, `docs/especificacion-fase9.md`, `docs/especificacion-fase10.md`, `docs/especificacion-fase11.md`, `docs/especificacion-fase12.md` (hechas) y
+   `docs/especificacion-fase13.md` (en curso: datos del pago en caja). Backlog: `docs/mejoras-pendientes.md`. Anotar en la spec cada pedido nuevo
    del usuario antes de programarlo.
 
 ## Después de cada cambio

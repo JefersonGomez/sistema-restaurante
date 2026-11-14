@@ -57,7 +57,7 @@ export async function recalcularCuenta(tx: Tx, cuentaId: string) {
     cuenta.tipo === 'MESA' ? ['CONFIRMADO'] : ['CONFIRMADO', 'PENDIENTE'];
   const lineas = await tx.pedidoItem.findMany({
     where: { pedido: { cuentaId, estado: { in: estados } } },
-    select: { precioUnitario: true, cantidad: true, cancelado: true },
+    select: { precioUnitario: true, cantidad: true, cancelado: true, tarifaIva: true },
   });
   // Pedidos en línea: sin el 10 % de servicio (es servicio a la mesa) y con el costo de envío.
   const enMesa = cuenta.tipo === 'MESA';
@@ -227,6 +227,7 @@ export async function crearPedido(p: NuevoPedido) {
           cantidad: i.cantidad,
           notas: i.notas || null,
           precioUnitario,
+          tarifaIva: porId.get(i.platoId)?.tarifaIva ?? null, // copia, como el precio
           modificadores: { create: modificadores },
         };
       });

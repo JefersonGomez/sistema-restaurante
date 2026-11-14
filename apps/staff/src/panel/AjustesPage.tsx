@@ -9,6 +9,7 @@ import {
 } from '@menu-qr/shared';
 import { api, type ErrorApi } from '../api';
 import { AjustesEnLinea, type ConfigEnLinea } from './AjustesEnLinea';
+import { AjustesFactura } from './menu/FacturaPlato';
 import {
   Boton,
   Campo,
@@ -75,6 +76,7 @@ type Restaurante = {
   plan: 'BASICO' | 'COMPLETO';
   wifiNombre: string | null;
   wifiClave: string | null;
+  cabysGeneral: string | null;
   logoUrl: string | null;
   colorAcento: string | null;
   moneda: Moneda;
@@ -418,6 +420,7 @@ export function AjustesPage() {
           <Horarios inicial={r.horarios} />
           <Formulario r={r} />
           <AjustesWifi r={r} />
+          <AjustesFactura cabysGeneral={r.cabysGeneral} />
           {r.plan === 'BASICO' ? (
             <Tarjeta>
               <h2 className="font-semibold">Pedidos en línea</h2>

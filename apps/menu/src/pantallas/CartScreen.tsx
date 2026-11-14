@@ -4,7 +4,7 @@ import { useEnviarPedido, useEstadoEnvio } from '../datos/acciones';
 import { useMesa } from '../datos/mesa';
 import { CartItem, TotalsSummary } from '../componentes/cuenta';
 import { BarraTitulo, Main } from '../componentes/estructura';
-import { useCarrito } from '../estado/carrito';
+import { conTarifas, useCarrito } from '../estado/carrito';
 import { useTextos } from '../estado/idioma';
 import { formatoPrecio } from '@menu-qr/ui';
 
@@ -27,7 +27,7 @@ export function CartScreen() {
       .map((p) => p.id),
   );
   const hayAgotados = lineas.some((l) => agotados.has(l.platoId));
-  const estimado = calcularTotales(lineas, r);
+  const estimado = calcularTotales(conTarifas(lineas, menu!), r);
 
   if (lineas.length === 0)
     return (

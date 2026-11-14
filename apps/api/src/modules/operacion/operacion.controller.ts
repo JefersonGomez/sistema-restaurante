@@ -100,9 +100,7 @@ export const atender = async (req: ConId, res: Response) => {
 };
 
 export const cerrar = async (req: ConId, res: Response) => {
-  res.json(
-    await s.cerrarCuenta(restauranteDe(req), req.usuario!.id, req.params.id, req.body.metodoPago),
-  );
+  res.json(await s.cerrarCuenta(restauranteDe(req), req.usuario!.id, req.params.id, req.body));
 };
 
 type ConPago = Request<{ id: string; pagoId: string }>;

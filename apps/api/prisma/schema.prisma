@@ -92,6 +92,8 @@ model Restaurante {
   // Wi-Fi del local: QR para conectarse en la tarjeta de la mesa (Fase 11)
   wifiNombre               String?
   wifiClave                String?
+  // Factura electrónica (Fase 13): CABYS de los platos sin código propio (según la modalidad)
+  cabysGeneral             String?
   modoConfirmacion         ModoConfirmacion @default(PRIMER_PEDIDO)
   zonaHoraria              String           @default("America/Costa_Rica")
   cerradoManual            Boolean          @default(false) // "Cerrar temporalmente"
@@ -249,6 +251,9 @@ model Plato {
   activo        Boolean   @default(true)
   orden         Int       @default(0)
   alergenos     String[]  @default([])
+  // Factura electrónica (Fase 13): código CABYS y tarifa de IVA propia (null = la del restaurante).
+  cabys         String?
+  tarifaIva     Int?
   // Menú del día (combo): se ofrece los días de la semana marcados (0 = domingo) o, a mano, en
   // una fecha puntual. Fijo (partes en la descripción) o con opciones (grupos de modificadores).
   menuDelDia    Boolean   @default(false)
@@ -364,6 +369,7 @@ model Cuenta {
   pedidos     Pedido[]
   solicitudes SolicitudIngreso[]
   pagos       PagoCuenta[]
+  lineasCobro LineaCobro[]
   sesiones    SesionCliente[]
 
   @@index([restauranteId])
@@ -422,6 +428,7 @@ model PedidoItem {
   cantidad          Int
   notas             String?
   precioUnitario    Int // céntimos, copia al momento del pedido
+  tarifaIva         Int? // % de IVA del plato al pedir (null = el del restaurante)
   estado            EstadoPedidoItem @default(PENDIENTE)
   cancelado         Boolean          @default(false)
   motivoCancelacion String?
@@ -582,8 +589,32 @@ model PagoCuenta {
 
   cuenta Cuenta       @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
   items  PedidoItem[]
+  lineas LineaCobro[]
 
   @@index([cuentaId])
+}
+
+// Detalle de un cobro en caja (Fase 13): cuánto en cada método. Un cobro mixto tiene varias.
+// Sin pagoId = cobro de la cuenta completa; con pagoId = grupo de una cuenta separada.
+model LineaCobro {
+  id           String     @id @default(uuid()) @db.Uuid
+  cuentaId     String     @db.Uuid
+  pagoId       String?    @db.Uuid
+  metodo       MetodoPago // EFECTIVO, TARJETA o SINPE
+  monto        Int // céntimos
+  recibido     Int? // efectivo: lo que entregó el cliente
+  vuelto       Int        @default(0)
+  ultimos4     String? // tarjeta
+  autorizacion String? // tarjeta: número del voucher
+  comprobante  String? // SINPE
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  cuenta Cuenta      @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
+  pago   PagoCuenta? @relation(fields: [pagoId], references: [id], onDelete: Cascade)
+
+  @@index([cuentaId])
+  @@index([pagoId])
 }
 
 // --- Clientes (Fase 8) ---

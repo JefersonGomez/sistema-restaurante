@@ -119,6 +119,7 @@ export async function menu(slug: string): Promise<MenuPublico> {
           fotoMiniUrl: true,
           agotado: true,
           alergenos: true,
+          tarifaIva: true,
           menuDelDia: true,
           diasSemana: true,
           fechaMenu: true,

@@ -126,13 +126,27 @@ export async function rango(
          AND c."cerradaEn" >= ${ini} AND c."cerradaEn" < ${fin}
          AND extract(hour FROM (c."cerradaEn" AT TIME ZONE 'UTC') AT TIME ZONE ${tz}) = h
         GROUP BY h ORDER BY h`,
+    // Por método: con detalle del cobro (Fase 13) cada parte suma en su método; si no hay
+    // detalle, el grupo o la cuenta completa cuenta en su método (cuentas viejas y en línea).
     prisma.$queryRaw<{ metodo: string; total: bigint; cuentas: bigint }[]>`
-        SELECT COALESCE(c."metodoPago"::text, 'SIN_DATO') AS metodo,
-               SUM(c.total) AS total, COUNT(*) AS cuentas
-        FROM "Cuenta" c
-        WHERE c."restauranteId" = ${restauranteId}::uuid AND c.estado = 'CERRADA' AND c.etapa IS DISTINCT FROM 'RECHAZADO'
-          AND c."cerradaEn" >= ${ini} AND c."cerradaEn" < ${fin}
-        GROUP BY 1 ORDER BY 2 DESC`,
+        WITH c AS (
+          SELECT id, total, "metodoPago" FROM "Cuenta"
+          WHERE "restauranteId" = ${restauranteId}::uuid AND estado = 'CERRADA' AND etapa IS DISTINCT FROM 'RECHAZADO'
+            AND "cerradaEn" >= ${ini} AND "cerradaEn" < ${fin}
+        ), partes AS (
+          SELECT l."cuentaId", l.metodo::text AS metodo, l.monto AS total
+          FROM "LineaCobro" l JOIN c ON c.id = l."cuentaId"
+          UNION ALL
+          SELECT p."cuentaId", p."metodoPago"::text, p.total
+          FROM "PagoCuenta" p JOIN c ON c.id = p."cuentaId"
+          WHERE NOT EXISTS (SELECT 1 FROM "LineaCobro" l WHERE l."pagoId" = p.id)
+          UNION ALL
+          SELECT c.id, COALESCE(c."metodoPago"::text, 'SIN_DATO'), c.total FROM c
+          WHERE NOT EXISTS (SELECT 1 FROM "PagoCuenta" p WHERE p."cuentaId" = c.id)
+            AND NOT EXISTS (SELECT 1 FROM "LineaCobro" l WHERE l."cuentaId" = c.id)
+        )
+        SELECT metodo, SUM(total) AS total, COUNT(DISTINCT "cuentaId") AS cuentas
+        FROM partes GROUP BY 1 ORDER BY 2 DESC`,
     // Ítems vendidos: de pedidos confirmados y no cancelados, en cuentas cerradas del rango.
     prisma.$queryRaw<{ categoria: string; cantidad: bigint; total: bigint }[]>`
         SELECT cat."nombreEs" AS categoria, SUM(i.cantidad) AS cantidad,

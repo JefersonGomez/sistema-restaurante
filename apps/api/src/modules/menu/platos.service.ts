@@ -127,6 +127,8 @@ export async function duplicar(restauranteId: string, id: string) {
       descripcionEn: p.descripcionEn,
       precio: p.precio,
       alergenos: p.alergenos,
+      cabys: p.cabys,
+      tarifaIva: p.tarifaIva,
       activo: false,
       orden: (ultimo._max.orden ?? 0) + 1,
       grupos: {

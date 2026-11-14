@@ -1,4 +1,4 @@
-import type { CuentaDetalle, ItemDetalle, PedidoDetalle } from '@menu-qr/shared';
+import type { CuentaDetalle, ItemDetalle, LineaCobroDetalle, PedidoDetalle } from '@menu-qr/shared';
 import type { Prisma } from '../../generated/prisma/client';
 
 // Forma única de leer pedidos/cuentas para comensal, mesero, caja y estación.
@@ -36,9 +36,21 @@ export function lugarDe(c: {
 export const incluirCuenta = {
   mesa: { select: { id: true, numero: true, nombre: true } },
   pedidos: { orderBy: { createdAt: 'asc' }, include: incluirPedido },
-  pagos: { orderBy: { createdAt: 'asc' } },
+  pagos: { orderBy: { createdAt: 'asc' }, include: { lineas: { orderBy: { createdAt: 'asc' } } } },
+  lineasCobro: { where: { pagoId: null }, orderBy: { createdAt: 'asc' } },
   repartidor: { select: { id: true, nombre: true } },
 } satisfies Prisma.CuentaInclude;
+
+type LineaDB = Prisma.LineaCobroGetPayload<object>;
+const aLinea = (l: LineaDB): LineaCobroDetalle => ({
+  metodo: l.metodo,
+  monto: l.monto,
+  recibido: l.recibido,
+  vuelto: l.vuelto,
+  ultimos4: l.ultimos4,
+  autorizacion: l.autorizacion,
+  comprobante: l.comprobante,
+});
 
 type ItemDB = Prisma.PedidoItemGetPayload<{ include: typeof incluirItem }>;
 type PedidoDB = Prisma.PedidoGetPayload<{ include: typeof incluirPedido }>;
@@ -53,6 +65,7 @@ export const aItem = (i: ItemDB): ItemDetalle => ({
   cantidad: i.cantidad,
   notas: i.notas,
   precioUnitario: i.precioUnitario,
+  tarifaIva: i.tarifaIva,
   estado: i.estado,
   cancelado: i.cancelado,
   motivoCancelacion: i.motivoCancelacion,
@@ -113,6 +126,7 @@ export const aCuenta = (c: CuentaDB): CuentaDetalle => ({
   montoIva: c.montoIva,
   total: c.total,
   metodoPago: c.metodoPago,
+  lineasCobro: c.lineasCobro.map(aLinea),
   abiertaEn: c.abiertaEn.toISOString(),
   cerradaEn: c.cerradaEn?.toISOString() ?? null,
   personas: c.numeroComensales,
@@ -120,6 +134,7 @@ export const aCuenta = (c: CuentaDB): CuentaDetalle => ({
     id: p.id,
     nombre: p.nombre,
     metodoPago: p.metodoPago,
+    lineas: p.lineas.map(aLinea),
     subtotal: p.subtotal,
     montoServicio: p.montoServicio,
     montoIva: p.montoIva,

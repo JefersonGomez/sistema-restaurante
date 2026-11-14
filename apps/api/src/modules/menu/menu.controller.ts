@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { restauranteDe } from '../../middlewares/tenant';
+import { buscarCabys } from './cabys.service';
 import * as categorias from './categorias.service';
 import * as estaciones from './estaciones.service';
 import * as mods from './modificadores.service';
@@ -55,6 +56,9 @@ export const platosCtrl = {
   },
   ordenar: async (req: Request, res: Response) => {
     res.json(await platos.ordenar(restauranteDe(req), req.body));
+  },
+  cabys: async (req: Request, res: Response) => {
+    res.json(await buscarCabys((req.query as { q: string }).q));
   },
   duplicar: async (req: ConId, res: Response) => {
     res.status(201).json(await platos.duplicar(restauranteDe(req), req.params.id));

@@ -24,7 +24,7 @@ import { CartItem, TotalsSummary } from '../componentes/cuenta';
 import { PuntoEntrega, type Punto } from '../componentes/mapa';
 import { BarraTitulo, ErrorScreen, Main, Toast } from '../componentes/estructura';
 import { avisar } from '../estado/avisos';
-import { useCarrito } from '../estado/carrito';
+import { conTarifas, useCarrito } from '../estado/carrito';
 import { usePerfilCliente } from '../estado/cuentaCliente';
 import { useIdioma, useTextos } from '../estado/idioma';
 import { CuentaCliente, RestablecerCliente } from './CuentaCliente';
@@ -270,7 +270,7 @@ function PedidoEnLinea({ menu, slug }: { menu: MenuPublico; slug: string }) {
     setF((x) => ({ ...x, [k]: v }));
   };
   const envio = tipo === 'DOMICILIO' ? r.enLinea.costoEnvio : 0;
-  const t0 = calcularTotales(lineas, { ...r, porcentajeServicio: 0 });
+  const t0 = calcularTotales(conTarifas(lineas, menu), { ...r, porcentajeServicio: 0 });
   const totales = { ...t0, total: t0.total + envio };
   const subtotalBruto = lineas.reduce((n, l) => n + l.precioUnitario * l.cantidad, 0);
   const faltaMinimo = r.enLinea.pedidoMinimo > 0 && subtotalBruto < r.enLinea.pedidoMinimo;

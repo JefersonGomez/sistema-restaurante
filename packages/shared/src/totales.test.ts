@@ -118,3 +118,38 @@ describe('calcularTotales', () => {
     expect(() => calcularTotales([{ precioUnitario: 12.5, cantidad: 1 }], sinIncluir)).toThrow();
   });
 });
+
+describe('IVA por plato (Fase 13)', () => {
+  it('sin tarifa propia o con la misma del restaurante da igual que antes', () => {
+    const base = [{ precioUnitario: 480000, cantidad: 1 }];
+    expect(calcularTotales([{ ...base[0]!, tarifaIva: 13 }], incluidos)).toEqual(
+      calcularTotales(base, incluidos),
+    );
+    expect(calcularTotales([{ ...base[0]!, tarifaIva: null }], sinIncluir)).toEqual(
+      calcularTotales(base, sinIncluir),
+    );
+  });
+
+  it('suma cada tarifa por separado', () => {
+    // ₡1 000 al 13 % + ₡1 000 exento, precios sin impuestos.
+    expect(
+      calcularTotales(
+        [
+          { precioUnitario: 100000, cantidad: 1 },
+          { precioUnitario: 100000, cantidad: 1, tarifaIva: 0 },
+        ],
+        sinIncluir,
+      ),
+    ).toEqual({ subtotal: 200000, montoServicio: 20000, montoIva: 13000, total: 233000 });
+    // Precios con IVA: ₡1 130 al 13 % (base 1 000) + ₡1 040 al 4 % (base 1 000).
+    const t = calcularTotales(
+      [
+        { precioUnitario: 113000, cantidad: 1 },
+        { precioUnitario: 104000, cantidad: 1, tarifaIva: 4 },
+      ],
+      incluidos,
+    );
+    expect(t).toEqual({ subtotal: 200000, montoServicio: 20000, montoIva: 17000, total: 237000 });
+    expect(t.subtotal + t.montoServicio + t.montoIva).toBe(t.total);
+  });
+});

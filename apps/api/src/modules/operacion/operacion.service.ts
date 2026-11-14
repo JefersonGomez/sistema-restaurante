@@ -1,11 +1,12 @@
 import type {
+  CerrarCuentaInput,
   CobrarParteInput,
   CrearPedidoInput,
   EstadoItem,
   EstadoMesa,
   EstadoPedido,
+  LineaCobroInput,
   MesaOperacion,
-  MetodoPago,
   PedidoEstacion,
 } from '@menu-qr/shared';
 import { calcularTotales } from '@menu-qr/shared';
@@ -336,11 +337,41 @@ export async function cerrarEnTx(
   });
 }
 
+// Detalle del cobro (Fase 13): las líneas deben sumar exactamente lo cobrado.
+async function guardarLineas(
+  tx: Prisma.TransactionClient,
+  cuentaId: string,
+  pagoId: string | null,
+  total: number,
+  lineas: LineaCobroInput[] | undefined,
+) {
+  if (!lineas) return;
+  if (lineas.reduce((n, l) => n + l.monto, 0) !== total)
+    throw new HttpError(
+      422,
+      'COBRO_NO_CUADRA',
+      'El detalle del pago no suma el total: revise los montos',
+    );
+  await tx.lineaCobro.createMany({
+    data: lineas.map((l) => ({
+      cuentaId,
+      pagoId,
+      metodo: l.metodo,
+      monto: l.monto,
+      recibido: l.recibido ?? null,
+      vuelto: l.recibido ? l.recibido - l.monto : 0,
+      ultimos4: l.ultimos4 ?? null,
+      autorizacion: l.autorizacion ?? null,
+      comprobante: l.comprobante ?? null,
+    })),
+  });
+}
+
 export async function cerrarCuenta(
   restauranteId: string,
   usuarioId: string,
   cuentaId: string,
-  metodoPago: MetodoPago,
+  { metodoPago, lineas }: CerrarCuentaInput,
 ) {
   const existe = await prisma.cuenta.findFirst({
     where: { id: cuentaId, restauranteId },
@@ -361,7 +392,8 @@ export async function cerrarCuenta(
         'PAGO_SEPARADO',
         'Esta cuenta se está pagando por separado: cobre lo que falta como otro grupo',
       );
-    await recalcularCuenta(tx, cuentaId);
+    const { total } = await recalcularCuenta(tx, cuentaId);
+    await guardarLineas(tx, cuentaId, null, total, lineas);
     return cerrarEnTx(
       tx,
       { restauranteId, mesaId: existe.mesaId, cuentaId, usuarioId },
@@ -382,7 +414,7 @@ export async function cobrarParte(
   restauranteId: string,
   usuarioId: string,
   cuentaId: string,
-  { nombre, metodoPago, items }: CobrarParteInput,
+  { nombre, metodoPago, lineas, items }: CobrarParteInput,
 ) {
   const existe = await prisma.cuenta.findFirst({
     where: { id: cuentaId, restauranteId },
@@ -403,7 +435,12 @@ export async function cobrarParte(
     if (await tx.pedido.count({ where: { cuentaId, estado: 'PENDIENTE' } }))
       throw new HttpError(409, 'PEDIDOS_PENDIENTES', 'Hay pedidos sin confirmar o cancelar');
 
-    const cobrados: { id: string; precioUnitario: number; cantidad: number }[] = [];
+    const cobrados: {
+      id: string;
+      precioUnitario: number;
+      cantidad: number;
+      tarifaIva: number | null;
+    }[] = [];
     for (const { itemId, cantidad } of items) {
       const item = await tx.pedidoItem.findFirst({
         where: {
@@ -418,7 +455,7 @@ export async function cobrarParte(
       if (cantidad > item.cantidad)
         throw invalida(`De ${item.cantidad} no se pueden cobrar ${cantidad}`);
       if (cantidad === item.cantidad) {
-        cobrados.push({ id: item.id, precioUnitario: item.precioUnitario, cantidad });
+        cobrados.push({ ...item, cantidad });
         continue;
       }
       // Parte de un ítem: la fila original queda con el resto y se crea otra con lo cobrado.
@@ -440,7 +477,7 @@ export async function cobrarParte(
           },
         },
       });
-      cobrados.push({ id: parte.id, precioUnitario: item.precioUnitario, cantidad });
+      cobrados.push({ ...parte, cantidad });
     }
 
     const pago = await tx.pagoCuenta.create({
@@ -452,6 +489,7 @@ export async function cobrarParte(
         ...calcularTotales(cobrados, existe.restaurante),
       },
     });
+    await guardarLineas(tx, cuentaId, pago.id, pago.total, lineas);
     await tx.pedidoItem.updateMany({
       where: { id: { in: cobrados.map((c) => c.id) } },
       data: { pagoId: pago.id },

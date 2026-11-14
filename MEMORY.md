@@ -5,7 +5,7 @@
 
 ## Estado actual
 
-- **Fecha última actualización:** 2026-11-09
+- **Fecha última actualización:** 2026-11-13
 - **Fase 1 completa y subida** (commit `a202fd9`).
 - **Fase 2 completa y subida** (commit `a0317b7`).
 - **Frontend del comensal completo y subido** (commit `5869078`, 2026-10-21).
@@ -20,12 +20,76 @@
 - **Fase 8 completa** (clientes: lista, cuenta, sellos, WhatsApp; commit `d0bf7c1`, 2026-11-01). Pendiente: prueba del usuario.
 - **Fase 9 completa** (superadmin, planes, recuperar contraseña, 2026-11-01): 9.1–9.4 hechos, 205 tests verdes, commit `dcd557d`. Siguiente: despliegue en el VPS del usuario (faltan datos del VPS y el dominio) y la landing de planes (diseño del usuario).
 - **Fase 10 completa** (KDS + pantallas de operación + en línea + seguimiento; commit `07f63cd`, 10.5 sin subir).
-- **Fase 11 completa** (aviso al mesero, vencimiento automático, Wi-Fi, menú PDF, KitchaGo, borradores legales; 2026-11-12). Sin commit: falta validación del usuario.
+- **Fase 11 completa** (commit `6b0dd7b`).
+- **Fase 12 completa** (landing de KitchaGo + logo animado del gorro, 2026-11-13). Subida (commit `e1db2d5`).
+- **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
+- **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.
 - **Despliegue en el VPS: al final** (decisión del usuario, 2026-11-12). Sin dominio se puede usar sslip.io/nip.io para tener HTTPS con la IP; falta aprobar Caddy y los datos del VPS.
 - **Backlog de mejoras:** `docs/mejoras-pendientes.md` (ideas del usuario, 2026-10-26; bloques Diseño, Domicilio
   6–7, Clientes y Superadmin hechos en las Fases 6–9; queda rastreo en vivo y "sin internet"). Cada bloque se convierte en spec de fase y se aprueba antes de empezar.
 - Raíz del monorepo: `C:\Users\gomes\OneDrive\Documentos\sistema-restaurante` (equivale a `menu-qr/` de la spec).
+
+## Plan de la Fase 13 (pedido 2026-11-13) — spec: docs/especificacion-fase13.md
+
+| Paso | Qué                                                      | Estado |
+| ---- | -------------------------------------------------------- | ------ |
+| 13.1 | `LineaCobro`, Zod (`lineas` en cerrar/cobrar grupo), API | ✅     |
+| 13.2 | Caja: panel de cobro (vuelto, tarjeta, SINPE, mixto)     | ✅     |
+| 13.3 | Reportes por método con las líneas                       | ✅     |
+| 13.4 | CABYS y tarifa de IVA por plato, buscador, totales       | ✅     |
+| 13.5 | CABYS general del restaurante; el del plato, excepción   | ✅     |
+
+- Modelo `LineaCobro` (cuentaId, pagoId opcional con cascade, metodo, monto, recibido, vuelto,
+  ultimos4, autorizacion, comprobante). Migración `20261114025008_lineas_cobro`.
+- Shared: `lineaCobroSchema`, `metodoDeLineas`; `cerrarCuentaSchema` y `cobrarParteSchema` aceptan
+  `lineas` opcionales (refine: el método debe coincidir con las líneas; MIXTO las exige).
+  `CuentaDetalle.lineasCobro` (cobro de la cuenta completa) y `PagoDetalle.lineas`.
+- Servicio: `guardarLineas` exige que sumen el total (`422 COBRO_NO_CUADRA`); vuelto = recibido − monto.
+- Caja: `PanelCobro` en CajaPage (billetes rápidos solo en colones, "+ lo que falta" en mixto,
+  vuelto en grande, confirmación con el vuelto). El ticket del grupo lleva el detalle.
+- Reporte por método: suma líneas; si no hay, el grupo o la cuenta en su método (en línea y
+  cuentas viejas). Pedidos en línea siguen sin detalle (fuera de alcance).
+- 13.4 (pedido "adelanta lo del CABYS y el IVA por plato"): `Plato.cabys` / `Plato.tarifaIva` y
+  `PedidoItem.tarifaIva` (copia al pedir; null = la del restaurante). Migración
+  `20261114032827_cabys_tarifa_iva`. `TARIFAS_IVA` = 13, 4, 2, 1, 0. `calcularTotales` agrupa por
+  tarifa (mismo resultado si todos usan la del restaurante; el servicio se redondea por grupo).
+  `GET /platos/cabys?q=` (dueño) consulta la API pública de Hacienda `api.hacienda.go.cr/fe/cabys`
+  con fetch (8 s; si falla `502 CABYS_NO_DISPONIBLE`). Editor: tarjeta "Factura electrónica"
+  (`FacturaPlato.tsx`); al elegir un código sugiere su tarifa. El menú del cliente estima con
+  `conTarifas`. Probado en vivo: "suministro de comida" → 6331000000000 (restaurante con mesero).
+- 13.5 (el usuario trajo info: en CR se usa un CABYS general según la modalidad, no por platillo):
+  `Restaurante.cabysGeneral` (migración `cabys_general`), tarjeta en Ajustes (`AjustesFactura` en
+  `FacturaPlato.tsx`) con modalidades rápidas 6331000000000 con mesero / 6332000000000 sin mesero
+  con mesas / 6339900000000 mostrador, más el buscador. El CABYS del plato queda como excepción
+  (nota "Déjelo vacío para usar el código general"). Al facturar: plato ?? general. Revisado en
+  Chrome (Ajustes y editor). En la BD de desarrollo quedó Soda La Esquina con 6332000000000.
+- Verificado: 225 tests (api 174, shared 35, menu 16), typecheck, lint, prettier, builds. Sin
+  revisar a ojo en el navegador.
+
+## Plan de la Fase 12 (pedido 2026-11-13) — spec: docs/especificacion-fase12.md
+
+Recursos del usuario en `prototipo_front/`: logo "05 · Gorro listo" (gorro coral con check) y
+`ladingPAGE.webp` (referencia de estilo, no se copia: hero oscuro, franjas retro, tarjetas punteadas).
+
+| Paso | Qué                                               | Estado |
+| ---- | ------------------------------------------------- | ------ |
+| 12.1 | Logo en SVG, carga con el gorro que cae, favicons | ✅     |
+| 12.2 | Landing (`apps/landing`, puerto 5182)             | ✅     |
+
+- 12.1: `LogoGorro` en `packages/ui/src/cargando.tsx` (SVG 64×64: tres círculos + rectángulo, check,
+  banda); `Cargando` lo usa animado. CSS `kg-banda` / `kg-cae` / `kg-check` en tokens.css (estado
+  base = logo completo, así "reducir movimiento" lo deja quieto). Tokens `--kg-coral` #ff6f4f y
+  `--kg-tinta`. `icono.svg` del panel, del menú y de la landing = gorro sobre fondo oscuro.
+- 12.2: `apps/landing`: Vite sin React (index.html + src/main.ts + src/estilos.css). Fuentes
+  Fredoka (palabra "kitchago"), Bricolage y Plus Jakarta. Secciones: hero (celular → flecha →
+  pantalla de cocina con comandas que entran cada 2,6 s), franjas que se dibujan, cómo funciona,
+  funciones, 0 % comisión, planes (precios y días de prueba desde `@menu-qr/shared/planes`, nuevo
+  export del paquete), preguntas, llamada final con el gorro que cae al aparecer, pie. Aparecer al
+  bajar con IntersectionObserver (clase `js` en html: sin JS todo visible). `VITE_PANEL_URL`
+  para los botones. Problema: el SVG de la flecha ignoraba `flex-basis` y aplastaba la pantalla de
+  cocina → ancho explícito. Revisada en Chrome (1568 px y iframe de 390 px, sin desborde).
+  Términos y privacidad en el pie: "(pronto)" hasta que el usuario complete los textos.
 
 ## Plan de la Fase 11 (pedido 2026-11-12) — spec: docs/especificacion-fase11.md
 

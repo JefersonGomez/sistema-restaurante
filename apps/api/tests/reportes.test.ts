@@ -269,3 +269,38 @@ describe('reportes por canal', () => {
     expect(r.porMetodo.reduce((s, m) => s + m.cuentas, 0)).toBe(3);
   });
 });
+
+describe('por método con el detalle del cobro (Fase 13)', () => {
+  it('una cuenta mixta suma cada parte en su método; los grupos sin detalle, en el suyo', async () => {
+    const dia = new Date('2026-08-10T18:00:00Z');
+    const base = { restauranteId: restauranteA, mesaId: a.mesa.id, estado: 'CERRADA' as const };
+    // Cuenta completa mixta: ₡3 000 efectivo + ₡7 000 tarjeta.
+    const mixta = await prisma.cuenta.create({
+      data: { ...base, total: 1000000, metodoPago: 'MIXTO', cerradaEn: dia },
+    });
+    await prisma.lineaCobro.createMany({
+      data: [
+        { cuentaId: mixta.id, metodo: 'EFECTIVO', monto: 300000, recibido: 500000, vuelto: 200000 },
+        { cuentaId: mixta.id, metodo: 'TARJETA', monto: 700000 },
+      ],
+    });
+    // Cuenta separada sin detalle: un grupo SINPE de ₡2 000 y otro en efectivo de ₡1 000.
+    const separada = await prisma.cuenta.create({
+      data: { ...base, total: 300000, metodoPago: 'MIXTO', cerradaEn: dia },
+    });
+    const grupo = { cuentaId: separada.id, subtotal: 0, montoServicio: 0, montoIva: 0 };
+    await prisma.pagoCuenta.createMany({
+      data: [
+        { ...grupo, metodoPago: 'SINPE', total: 200000 },
+        { ...grupo, metodoPago: 'EFECTIVO', total: 100000 },
+      ],
+    });
+    const r = (await reporte('2026-08-10', '2026-08-10')).body as Reporte;
+    expect(r.porMetodo).toEqual([
+      { metodo: 'TARJETA', total: 700000, cuentas: 1 },
+      { metodo: 'EFECTIVO', total: 400000, cuentas: 2 },
+      { metodo: 'SINPE', total: 200000, cuentas: 1 },
+    ]);
+    expect(r.porMetodo.reduce((s, m) => s + m.total, 0)).toBe(r.resumen.totalVendido);
+  });
+});

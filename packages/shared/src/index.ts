@@ -39,6 +39,8 @@ export const telefonoSchema = z
 export const normalizarTelefono = (t: string) => t.replace(/\D/g, '').slice(-8);
 
 export const idParamSchema = z.object({ id: z.uuid() });
+// Código del Catálogo de Bienes y Servicios de Hacienda (factura electrónica).
+export const cabysSchema = z.string().regex(/^\d{13}$/, 'El código CABYS tiene 13 dígitos');
 
 // --- Auth ---
 
@@ -130,6 +132,8 @@ export const restauranteConfigSchema = z
     // Wi-Fi del local (Fase 11): QR para conectarse en la tarjeta de la mesa.
     wifiNombre: z.string().trim().min(1).max(32).nullable(),
     wifiClave: z.string().max(63).nullable(),
+    // Factura electrónica (Fase 13): CABYS general del local (los platos sin código propio).
+    cabysGeneral: cabysSchema.nullable(),
   })
   .partial();
 export type RestauranteConfigInput = z.infer<typeof restauranteConfigSchema>;
@@ -205,6 +209,15 @@ export const ordenSchema = z.object({
 });
 export type OrdenInput = z.infer<typeof ordenSchema>;
 
+// Tarifas de IVA de Costa Rica que puede tener un plato (0 = exento o tarifa cero).
+export const TARIFAS_IVA = [13, 4, 2, 1, 0] as const;
+export const tarifaIvaSchema = z
+  .number()
+  .int()
+  .refine((n) => (TARIFAS_IVA as readonly number[]).includes(n), 'Tarifa de IVA no válida');
+export const cabysQuerySchema = z.object({ q: z.string().trim().min(3).max(60) });
+export type ResultadoCabys = { codigo: string; descripcion: string; impuesto: number };
+
 export const platoSchema = z.object({
   categoriaId: z.uuid(),
   estacionId: z.uuid(),
@@ -219,6 +232,8 @@ export const platoSchema = z.object({
   activo: z.boolean().optional(),
   orden: z.number().int().min(0).optional(),
   alergenos: z.array(texto(40)).max(20).optional(),
+  cabys: cabysSchema.nullable().optional(),
+  tarifaIva: tarifaIvaSchema.nullable().optional(),
   // Menú del día: días de la semana (0 = domingo) y/o una fecha puntual "AAAA-MM-DD".
   menuDelDia: z.boolean().optional(),
   diasSemana: z.array(z.number().int().min(0).max(6)).max(7).optional(),
@@ -354,6 +369,7 @@ export type PlatoPublico = {
   agotado: boolean;
   precioAntes: number | null; // precio normal si el plato está en promoción (precio = el de promo)
   alergenos: string[];
+  tarifaIva: number | null; // null = la del restaurante
   grupos: GrupoPublico[];
 };
 export type MenuPublico = {
@@ -492,16 +508,65 @@ export const recibirEfectivoSchema = z.object({ repartidorId: z.uuid() });
 export const cambiarEstadoItemSchema = z.object({
   estado: z.enum(['EN_PREPARACION', 'LISTO', 'ENTREGADO']),
 });
-export const cerrarCuentaSchema = z.object({ metodoPago: metodoPagoSchema });
-// Cuenta separada: cobra un grupo de ítems (de un ítem con cantidad > 1 se puede cobrar una parte).
-export const cobrarParteSchema = z.object({
-  nombre: z.string().trim().max(40).optional(),
+// Detalle del cobro en caja (Fase 13): cuánto en cada método. Mixto = varias líneas.
+export const lineaCobroSchema = z
+  .object({
+    metodo: z.enum(['EFECTIVO', 'TARJETA', 'SINPE']),
+    monto: z.number().int().min(1).max(10_000_000_00),
+    recibido: z.number().int().min(1).max(10_000_000_00).optional(), // efectivo: lo que entregó
+    ultimos4: z
+      .string()
+      .regex(/^\d{4}$/, 'Los últimos 4 dígitos son 4 números')
+      .optional(),
+    autorizacion: z.string().trim().min(1).max(20).optional(),
+    comprobante: z.string().trim().min(1).max(40).optional(),
+  })
+  .refine((l) => l.recibido === undefined || (l.metodo === 'EFECTIVO' && l.recibido >= l.monto), {
+    message: 'Lo entregado en efectivo no alcanza',
+    path: ['recibido'],
+  })
+  .refine(
+    (l) => l.metodo === 'TARJETA' || (l.ultimos4 === undefined && l.autorizacion === undefined),
+    { message: 'Tarjeta y autorización solo van en pagos con tarjeta', path: ['ultimos4'] },
+  )
+  .refine((l) => l.metodo === 'SINPE' || l.comprobante === undefined, {
+    message: 'El comprobante solo va en pagos por SINPE',
+    path: ['comprobante'],
+  });
+export type LineaCobroInput = z.infer<typeof lineaCobroSchema>;
+
+// Método que corresponde a unas líneas: uno solo → ese; varios distintos → MIXTO.
+export function metodoDeLineas(lineas: { metodo: MetodoPago }[]): MetodoPago {
+  const metodos = new Set(lineas.map((l) => l.metodo));
+  return metodos.size === 1 ? lineas[0]!.metodo : 'MIXTO';
+}
+
+// metodoPago + líneas opcionales (la caja siempre las manda; mixto las exige).
+const datosCobro = {
   metodoPago: metodoPagoSchema,
-  items: z
-    .array(z.object({ itemId: z.uuid(), cantidad: z.number().int().min(1).max(999) }))
-    .min(1, 'Elija al menos un plato')
-    .max(200),
-});
+  lineas: z.array(lineaCobroSchema).min(1).max(6).optional(),
+};
+type DatosCobro = { metodoPago: MetodoPago; lineas?: LineaCobroInput[] };
+const lineasCoinciden = (d: DatosCobro) =>
+  d.lineas ? metodoDeLineas(d.lineas) === d.metodoPago : d.metodoPago !== 'MIXTO';
+const errorLineas = {
+  message: 'El detalle del pago no coincide con el método (mixto lleva varias líneas)',
+  path: ['lineas'],
+};
+
+export const cerrarCuentaSchema = z.object(datosCobro).refine(lineasCoinciden, errorLineas);
+// Cuenta separada: cobra un grupo de ítems (de un ítem con cantidad > 1 se puede cobrar una parte).
+export const cobrarParteSchema = z
+  .object({
+    nombre: z.string().trim().max(40).optional(),
+    ...datosCobro,
+    items: z
+      .array(z.object({ itemId: z.uuid(), cantidad: z.number().int().min(1).max(999) }))
+      .min(1, 'Elija al menos un plato')
+      .max(200),
+  })
+  .refine(lineasCoinciden, errorLineas);
+export type CerrarCuentaInput = z.infer<typeof cerrarCuentaSchema>;
 export type CobrarParteInput = z.infer<typeof cobrarParteSchema>;
 export const pagoParamSchema = z.object({ id: z.uuid(), pagoId: z.uuid() });
 export const llamarSchema = z.object({ tipo: z.literal('MESERO') });
@@ -529,6 +594,7 @@ export type ItemDetalle = {
   cantidad: number;
   notas: string | null;
   precioUnitario: number;
+  tarifaIva: number | null;
   estado: EstadoItem;
   cancelado: boolean;
   motivoCancelacion: string | null;
@@ -537,10 +603,20 @@ export type ItemDetalle = {
   listoEn: string | null; // cuándo quedó listo (espera en "Listos" de cocina)
   updatedAt: string;
 };
+export type LineaCobroDetalle = {
+  metodo: MetodoPago;
+  monto: number;
+  recibido: number | null;
+  vuelto: number;
+  ultimos4: string | null;
+  autorizacion: string | null;
+  comprobante: string | null;
+};
 export type PagoDetalle = {
   id: string;
   nombre: string | null;
   metodoPago: MetodoPago;
+  lineas: LineaCobroDetalle[];
   subtotal: number;
   montoServicio: number;
   montoIva: number;
@@ -607,6 +683,7 @@ export type CuentaDetalle = {
   montoIva: number;
   total: number;
   metodoPago: MetodoPago | null;
+  lineasCobro: LineaCobroDetalle[]; // detalle del cobro de la cuenta completa (no de los grupos)
   abiertaEn: string;
   cerradaEn: string | null;
   personas: number | null;
