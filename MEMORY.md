@@ -23,6 +23,28 @@
 - **Fase 11 completa** (commit `6b0dd7b`).
 - **Fase 12 completa** (landing de KitchaGo + logo animado del gorro, 2026-11-13). Subida (commit `e1db2d5`).
 - **Fase 14 completa** (arqueo de caja, 2026-11-13). Subida. Siguiente: Fase 15 (factura electrónica, borrador).
+- **Fase 15 (factura electrónica) arrancando** (2026-11-15, "vamos con facturación electrónica"). El
+  usuario puso en `.env` las variables de su sistema anterior: `HACIENDA_ENV=pruebas`,
+  `HACIENDA_USER`/`HACIENDA_PASSWORD` (usuario `cpf-…@stag…`), `HACIENDA_P12_PATH` (la llave existe,
+  fuera del repo) y `HACIENDA_P12_PIN`, `HACIENDA_TEST_UBICACION`, `HACIENDA_ACTIVITY=6201.0` (CIIU 4
+  "programación informática": concuerda con su actividad de software) y `EINVOICE_SECRET`. Se
+  agregaron vacías `HACIENDA_EMISOR_NOMBRE/CORREO/OTRAS_SENAS`. Pendiente: que las rellene y aprobar
+  las librerías de firma XAdES (la firma necesita leer el .p12; Node no lo hace solo).
+  - Aprobadas (2026-11-15): `node-forge`, `xadesjs` (+ `@xmldom/xmldom`, `@types/node-forge`), solo
+    en la API. El usuario rellenó los datos del emisor. La línea de otras señas venía partida en dos
+    (docker compose no leía el .env); se unió (respaldo en el scratchpad).
+  - **15.1 ✅** módulo `apps/api/src/modules/factura/`: `clave.ts` (consecutivo 20, clave 50,
+    fechaCR), `xml.ts` (TE/FE/NC v4.4 en el orden de los XSD oficiales; montos en 1e-5 colones;
+    CABYS 0–4 bienes "Unid", 5–9 servicios "Sp"; tarifas 13→08, 4→04, 2→03, 1→02, 0→10; 10 % en
+    OtrosCargos 06; MedioPago 01/02/04/06), `firma.ts` (abre el .p12 con node-forge; XAdES-EPES con
+    xadesjs: RSA-SHA256, enveloped, SigningCertificate, política de Hacienda con hash SHA-256
+    `DWxin1xW…h0h8=` verificado contra el PDF oficial, rol Emisor), `hacienda.ts` (token IDP
+    `rut-stag`/`api-stag`, recepción `api-sandbox`, consulta de estado). Script
+    `pnpm --filter api hacienda:probar [ruta.xml]`. **Prueba real: tiquete ACEPTADO por Hacienda en
+    el ambiente de pruebas al primer envío** (CodigoActividadEmisor `6201.0` con punto, aceptado).
+    XSD de referencia tomados de github.com/cstea/factura-electronica (copia en el scratchpad).
+    Tests `tests/factura.test.ts` (clave, XML, firma con llave .p12 generada y verificada).
+    Verificado: 231 tests (api 180), typecheck, lint, prettier, builds.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.
@@ -53,6 +75,11 @@
 - Verificado: 227 tests (api 176), typecheck, lint, prettier, builds; revisado en Chrome (abrir
   y conteo). En la BD de desarrollo quedó una caja abierta con ₡30 000 de fondo.
 - Hacienda: el usuario está inscrito como proveedor de sistemas tecnológicos, régimen general.
+- 2026-11-13 (noche): datos de vitrina para capturas de redes en la BD de desarrollo (sin código en
+  el repo): horario 6:00–23:59 todos los días, categoría Postres (Tres leches, Arroz con leche) y
+  Batido de fresa, 7 mesas en hora pico + llamada en mesa 7, 6 pedidos en línea frescos (#103–#108)
+  y el historial de 30 días corrido 13 días hacia adelante. Capturas y textos en
+  `C:\Users\gomes\OneDrive\Documentos\capturas-kitchago`.
 - Mejora pedida antes de subir ("se ve mal cuando abro el cierre de caja, que ocupe todo el
   espacio y en mobile esté bien"): el cierre es ahora una pantalla completa (diálogo fijo):
   conteo por billetes y monedas a la izquierda, "Compare" fijo a la derecha; en celular apilado

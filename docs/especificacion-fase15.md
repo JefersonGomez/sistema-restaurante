@@ -7,7 +7,9 @@ Pedidos del usuario (2026-11-13):
 - "Sí estoy registrado como proveedor de sistemas" (régimen general). "Ya te paso los datos."
 - 10 % de servicio: "dame la sugerencia más útil".
 
-Estado: **borrador**. Falta que el usuario configure los datos del ambiente de pruebas y que se
+Estado: **en curso** (2026-11-15: "vamos con facturación electrónica"; librerías aprobadas: "sí apruebo node-forge y xadesjs"; el usuario rellenó los datos del emisor).
+
+Estado anterior: borrador. Falta que el usuario configure los datos del ambiente de pruebas y que se
 verifique cada punto marcado (verificar) contra la documentación vigente de Hacienda (v4.4,
 TRIBU-CR) y con su contador antes de programar.
 
@@ -38,12 +40,22 @@ TRIBU-CR) y con su contador antes de programar.
 
 ## Datos que configura el usuario (en `.env` local, nunca en el chat ni en el repo)
 
-Variables ya creadas (vacías) en `.env` y `.env.example` (pedido del usuario: "pon en el .env las
-variables para rellenarlas"): `HACIENDA_AMBIENTE`, `PROVEEDOR_TIPO_ID`, `PROVEEDOR_NUMERO_ID`,
-`HACIENDA_USUARIO`, `HACIENDA_CLAVE`, `HACIENDA_LLAVE_P12` (ruta; la llave va en `secretos/`, que
-git ignora junto con `*.p12`), `HACIENDA_LLAVE_PIN` y los datos del emisor de prueba
-(`EMISOR_*`). Son para el ambiente de pruebas; en producción cada restaurante tendrá los suyos
-guardados cifrados en la base de datos.
+El usuario los puso con los nombres de su sistema anterior (2026-11-15); se adoptan esos nombres:
+`HACIENDA_ENV` (pruebas), `HACIENDA_USER` / `HACIENDA_PASSWORD` (usuario de la API del ambiente de
+pruebas, `cpf-…@stag.comprobanteselectronicos.go.cr`), `HACIENDA_P12_PATH` (ruta a la llave, fuera
+del repo) y `HACIENDA_P12_PIN`, `HACIENDA_TEST_UBICACION` (provincia-cantón-distrito),
+`HACIENDA_ACTIVITY` (código CIIU 4 del emisor, formato `NNNN.N`) y `EINVOICE_SECRET` (cifrar las
+credenciales de cada restaurante en la base). Faltaban y se agregaron vacías:
+`HACIENDA_EMISOR_NOMBRE`, `HACIENDA_EMISOR_CORREO`, `HACIENDA_EMISOR_OTRAS_SENAS`. La
+identificación del emisor y del proveedor de sistemas sale del usuario de la API (cédula física).
+
+**Actividad económica:** desde el 6 de octubre de 2025 (TRIBU-CR) los códigos son CIIU 4 con formato
+`NNNN.N` (la tabla oficial de Hacienda convierte los códigos viejos de ATV de 6 dígitos a este
+formato). `6201.0` es la clase CIIU 4 "Actividades de programación informática": concuerda con
+KitchaGo como proveedor de software y sirve para el emisor de prueba. En producción cada restaurante
+usa **su propio** código (los restaurantes están en la clase CIIU 4 5610, "actividades de
+restaurantes y de servicio móvil de comidas"; la subclase exacta la toma cada uno de su registro en
+TRIBU-CR), así que el código se configura por restaurante, no fijo.
 
 ## Temas relacionados que trajo el usuario (a decidir, no incluidos)
 
@@ -64,3 +76,13 @@ credenciales y la llave en TRIBU-CR.
 
 Factura de exportación, compras (factura electrónica de compra), exoneraciones, recepción de
 comprobantes de proveedores.
+
+## Plan
+
+1. **15.1** Núcleo contra el ambiente de pruebas: clave y consecutivo, XML v4.4 del tiquete, firma
+   XAdES-EPES con la llave .p12, token y envío a Hacienda, consulta del estado. Prueba real con un
+   script. ✅ Hecho: tiquete aceptado por Hacienda (ambiente de pruebas), 2026-11-15.
+2. **15.2** Modelo `Comprobante` (cola) y configuración de Hacienda por restaurante (cifrada); emitir
+   al cobrar en caja y en línea; proceso de envío con reintentos.
+3. **15.3** Caja: factura con datos del cliente y estado del comprobante; Ajustes: datos de Hacienda.
+4. **15.4** Nota de crédito para anular.

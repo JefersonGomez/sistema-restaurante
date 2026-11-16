@@ -32,6 +32,18 @@ const schema = z.object({
   STAFF_PUBLIC_URL: z.url().default('http://localhost:5181'),
   RESEND_API_KEY: z.string().optional(),
   CORREO_REMITENTE: z.string().default('KitchaGo <no-responder@localhost>'),
+  // Fase 15: factura electrónica (ambiente de pruebas de Hacienda y emisor de prueba).
+  HACIENDA_ENV: z.enum(['pruebas', 'produccion']).default('pruebas'),
+  HACIENDA_USER: z.string().optional(),
+  HACIENDA_PASSWORD: z.string().optional(),
+  HACIENDA_P12_PATH: z.string().optional(),
+  HACIENDA_P12_PIN: z.string().optional(),
+  HACIENDA_TEST_UBICACION: z.string().optional(), // "4-10-03"
+  HACIENDA_ACTIVITY: z.string().optional(), // CIIU 4, "6201.0"
+  HACIENDA_EMISOR_NOMBRE: z.string().optional(),
+  HACIENDA_EMISOR_CORREO: z.string().optional(),
+  HACIENDA_EMISOR_OTRAS_SENAS: z.string().optional(),
+  EINVOICE_SECRET: z.string().optional(),
 });
 
 const parsed = schema.parse(process.env);
