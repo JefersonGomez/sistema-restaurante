@@ -8,8 +8,8 @@ KitchaGo: SaaS multi-restaurante de pedidos por QR (Costa Rica). Monorepo pnpm: 
 1. Leer `MEMORY.md` (estado actual, decisiones, pendientes).
 2. Si la tarea toca alcance, leer la spec de la fase en curso (fuente de verdad):
    `docs/especificacion-fase1.md`, `docs/especificacion-fase2.md`, `docs/especificacion-frontend-menu.md`,
-   `docs/especificacion-fase3.md`, `docs/especificacion-fase4.md`, `docs/especificacion-fase5.md`, `docs/especificacion-fase6.md`, `docs/especificacion-fase7.md`, `docs/especificacion-fase8.md`, `docs/especificacion-fase9.md`, `docs/especificacion-fase10.md`, `docs/especificacion-fase11.md`, `docs/especificacion-fase12.md`, `docs/especificacion-fase13.md` (hechas) y
-   `docs/especificacion-fase14.md` (en curso: arqueo de caja). Backlog: `docs/mejoras-pendientes.md`. Anotar en la spec cada pedido nuevo
+   `docs/especificacion-fase3.md`, `docs/especificacion-fase4.md`, `docs/especificacion-fase5.md`, `docs/especificacion-fase6.md`, `docs/especificacion-fase7.md`, `docs/especificacion-fase8.md`, `docs/especificacion-fase9.md`, `docs/especificacion-fase10.md`, `docs/especificacion-fase11.md`, `docs/especificacion-fase12.md`, `docs/especificacion-fase13.md`, `docs/especificacion-fase14.md`, `docs/especificacion-fase15.md` (hechas).
+   Próxima fase: por definir con el usuario. Backlog: `docs/mejoras-pendientes.md`. Anotar en la spec cada pedido nuevo
    del usuario antes de programarlo.
 
 ## Después de cada cambio
