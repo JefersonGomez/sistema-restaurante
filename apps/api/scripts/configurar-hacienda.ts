@@ -51,6 +51,7 @@ async function main() {
     claveCifrada: cifrar(req('HACIENDA_PASSWORD')),
     llaveCifrada: cifrar(p12),
     pinCifrado: cifrar(pin),
+    llaveVence: llave.vence,
   };
   // Consecutivo de prueba alto para no chocar con los números usados por hacienda:probar.
   const inicio = Math.floor((Date.now() - Date.UTC(2026, 0, 1)) / 1000);

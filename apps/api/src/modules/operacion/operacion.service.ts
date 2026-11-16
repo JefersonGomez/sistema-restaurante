@@ -372,7 +372,7 @@ export async function cerrarCuenta(
   restauranteId: string,
   usuarioId: string,
   cuentaId: string,
-  { metodoPago, lineas }: CerrarCuentaInput,
+  { metodoPago, lineas, receptor }: CerrarCuentaInput,
 ) {
   const existe = await prisma.cuenta.findFirst({
     where: { id: cuentaId, restauranteId },
@@ -405,7 +405,7 @@ export async function cerrarCuenta(
     { restauranteId, cuentaId, mesa: existe.mesa, lugar: lugarDe(existe) },
     cuenta.updatedAt,
   );
-  await emitirComprobante({ restauranteId, cuentaId }); // factura electrónica (si está activa)
+  await emitirComprobante({ restauranteId, cuentaId, receptor }); // factura electrónica (si está activa)
   return aCuenta(cuenta);
 }
 
@@ -416,7 +416,7 @@ export async function cobrarParte(
   restauranteId: string,
   usuarioId: string,
   cuentaId: string,
-  { nombre, metodoPago, lineas, items }: CobrarParteInput,
+  { nombre, metodoPago, lineas, receptor, items }: CobrarParteInput,
 ) {
   const existe = await prisma.cuenta.findFirst({
     where: { id: cuentaId, restauranteId },
@@ -526,7 +526,7 @@ export async function cobrarParte(
     return { cuenta: c, cerrada: true, pagoId: pago.id };
   });
 
-  await emitirComprobante({ restauranteId, cuentaId, pagoId }); // un comprobante por grupo
+  await emitirComprobante({ restauranteId, cuentaId, pagoId, receptor }); // uno por grupo
   const ctx = { restauranteId, cuentaId, mesa: existe.mesa, lugar: lugarDe(existe) };
   if (cerrada) avisar.cuentaCerrada(ctx, cuenta.updatedAt);
   else avisar.cuentaActualizada(ctx, cuenta);

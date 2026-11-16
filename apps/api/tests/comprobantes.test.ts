@@ -210,3 +210,137 @@ describe('comprobantes al cobrar (Fase 15.2)', () => {
     expect(c!.xmlFirmado).not.toContain('Refresco');
   });
 });
+
+describe('factura, lista, reintento y configuración (Fase 15.3)', () => {
+  const dueno = () => tokenDe('dueno@resto-a.test');
+
+  it('con datos del cliente emite factura (FE) con el receptor; valida la cédula', async () => {
+    await configurar();
+    const mal = await cerrar({
+      metodoPago: 'EFECTIVO',
+      receptor: { tipoId: '01', numero: '12345678', nombre: 'Ana Solís' },
+    });
+    expect(mal.status).toBe(400);
+    const r = await cerrar({
+      metodoPago: 'EFECTIVO',
+      receptor: { tipoId: '01', numero: '112340567', nombre: 'Ana Solís', correo: 'ana@x.test' },
+    });
+    expect(r.status).toBe(200);
+    const [c] = await comprobantes();
+    expect(c).toMatchObject({
+      tipo: 'FE',
+      receptorNumero: '112340567',
+      receptorNombre: 'Ana Solís',
+    });
+    expect(c!.consecutivo.slice(8, 10)).toBe('01');
+    expect(c!.xmlFirmado).toContain('<FacturaElectronica');
+    expect(c!.xmlFirmado).toContain(
+      '<Receptor><Nombre>Ana Solís</Nombre><Identificacion><Tipo>01</Tipo><Numero>112340567</Numero></Identificacion><CorreoElectronico>ana@x.test</CorreoElectronico></Receptor>',
+    );
+  });
+
+  it('la caja ve los comprobantes y reintenta los que quedaron en error', async () => {
+    await prisma.restaurante.update({ where: { id: restauranteId }, data: { cabysGeneral: null } });
+    await configurar();
+    await cerrar();
+    const lista = await request(app).get('/comprobantes').set('Authorization', `Bearer ${caja}`);
+    expect(lista.body).toMatchObject({
+      activa: true,
+      comprobantes: [{ estado: 'ERROR', lugar: 'Mesa 1' }],
+    });
+    // Ya con el CABYS general, se reemite con otro número.
+    await prisma.restaurante.update({
+      where: { id: restauranteId },
+      data: { cabysGeneral: '6331000000000' },
+    });
+    const id = lista.body.comprobantes[0].id;
+    const r = await request(app)
+      .post(`/comprobantes/${id}/reintentar`)
+      .set('Authorization', `Bearer ${caja}`);
+    expect(r.status).toBe(200);
+    expect(r.body.comprobantes.map((c: { estado: string }) => c.estado)).toEqual([
+      'PENDIENTE',
+      'ERROR',
+    ]);
+    await prisma.comprobante.updateMany({
+      where: { estado: 'PENDIENTE' },
+      data: { estado: 'ACEPTADO' },
+    });
+    const aceptado = (await comprobantes()).find((c) => c.estado === 'ACEPTADO')!;
+    expect(
+      (
+        await request(app)
+          .post(`/comprobantes/${aceptado.id}/reintentar`)
+          .set('Authorization', `Bearer ${caja}`)
+      ).body.error.code,
+    ).toBe('YA_ACEPTADO');
+  });
+
+  it('el dueño guarda su configuración: la llave se valida con el PIN y los secretos no se devuelven', async () => {
+    const t = await dueno();
+    const put = (body: object) =>
+      request(app).put('/hacienda/config').set('Authorization', `Bearer ${t}`).send(body);
+    const datos = {
+      activa: false,
+      ambiente: 'pruebas',
+      tipoId: '01',
+      numeroId: '123456789',
+      nombre: 'Soda de Prueba',
+      nombreComercial: null,
+      correo: 'soda@prueba.test',
+      provincia: 1,
+      canton: 1,
+      distrito: 1,
+      otrasSenas: 'Frente al parque',
+      actividad: '5610.0',
+    };
+    expect((await put(datos)).body.error.code).toBe('CONFIG_INCOMPLETA');
+    const llaveP12 = p12.toString('base64');
+    expect(
+      (await put({ ...datos, usuario: 'cpf-01-2345-6789@stag', clave: 'x', llaveP12, pin: '9999' }))
+        .body.error.code,
+    ).toBe('LLAVE_INVALIDA');
+    const ok = await put({
+      ...datos,
+      usuario: 'cpf-01-2345-6789@stag',
+      clave: 'x',
+      llaveP12,
+      pin: '1234',
+    });
+    expect(ok.status).toBe(200);
+    expect(ok.body).toMatchObject({ tieneCredenciales: true, tieneLlave: true, activa: false });
+    expect(JSON.stringify(ok.body)).not.toMatch(/stag|1234"/);
+    // Activar sin volver a mandar los secretos conserva los guardados.
+    expect((await put({ ...datos, activa: true })).body.activa).toBe(true);
+    expect((await put({ ...datos, actividad: '5610' })).status).toBe(400);
+    // La caja no puede ver ni cambiar la configuración.
+    expect(
+      (await request(app).get('/hacienda/config').set('Authorization', `Bearer ${caja}`)).status,
+    ).toBe(403);
+  });
+
+  it('busca el nombre y las actividades de un contribuyente en Hacienda', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          nombre: 'ANA SOLIS',
+          tipoIdentificacion: '01',
+          actividades: [
+            { estado: 'A', codigo: '5610.0', descripcion: 'Restaurantes' },
+            { estado: 'I', codigo: '4711.0', descripcion: 'Inactiva' },
+          ],
+        }),
+      ),
+    );
+    const r = await request(app)
+      .get('/comprobantes/contribuyente?id=112340567')
+      .set('Authorization', `Bearer ${caja}`);
+    expect(r.body).toEqual({
+      nombre: 'ANA SOLIS',
+      tipoId: '01',
+      actividades: [{ codigo: '5610.0', descripcion: 'Restaurantes' }],
+    });
+    expect(String(fetch.mock.calls[0]![0])).toContain('identificacion=112340567');
+    fetch.mockRestore();
+  });
+});

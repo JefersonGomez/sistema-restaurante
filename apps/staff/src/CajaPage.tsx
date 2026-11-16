@@ -18,6 +18,13 @@ import {
 import { api, obtenerMenu } from './api';
 import { useAuth } from './auth';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
+import {
+  FacturaA,
+  ListaComprobantes,
+  receptorDelCobro,
+  useComprobantes,
+  type FormReceptor,
+} from './FacturaCaja';
 import { TicketCierre, TurnoCaja } from './TurnoCaja';
 import { Conexion, Encabezado, formatoPrecio, hora, TituloColumna } from './ui';
 
@@ -54,12 +61,14 @@ export function CajaPage() {
   const [seleccion, setSeleccion] = useState<string | null>(null);
   const [cuenta, setCuenta] = useState<CuentaDetalle | null>(null);
   const [cobro, setCobro] = useState<Cobro>(COBRO_VACIO);
+  const [receptor, setReceptor] = useState<FormReceptor | null>(null); // factura a nombre de…
   const [modo, setModo] = useState<'junto' | 'separado'>('junto');
   const [eleccion, setEleccion] = useState<Record<string, number>>({}); // itemId → unidades
   const [nombreGrupo, setNombreGrupo] = useState('');
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [cierre, setCierre] = useState<TurnoCajaDetalle | null>(null); // ticket del arqueo
   const [version, setVersion] = useState(0); // ventas nuevas → el turno recalcula el esperado
+  const fe = useComprobantes(version); // factura electrónica: activa y últimos comprobantes
   const [menu, setMenu] = useState<MenuPublico>();
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -96,6 +105,7 @@ export function CajaPage() {
   useEffect(() => {
     cargarCuenta(seleccion);
     setCobro(COBRO_VACIO);
+    setReceptor(null);
     setModo('junto');
     setEleccion({});
     setNombreGrupo('');
@@ -169,9 +179,17 @@ export function CajaPage() {
     return confirm(vuelto ? `${texto}\n\nVuelto: ${precio(vuelto)}` : texto);
   };
 
+  // Factura a nombre de alguien (solo si la factura electrónica está activa).
+  const factura = fe.datos?.activa ? receptorDelCobro(receptor) : { error: null };
+  const reintentar = (id: string) =>
+    accion(async () =>
+      fe.setDatos(await api(`/comprobantes/${id}/reintentar`, { method: 'POST' })),
+    );
+
   const cerrarJunto = () =>
     cuenta &&
     cobroJunto?.datos &&
+    !factura.error &&
     confirmar(
       `¿Cerrar la cuenta (${cuenta.lugar}) por ${precio(cuenta.total)}?`,
       cobroJunto.datos.lineas,
@@ -179,7 +197,7 @@ export function CajaPage() {
     accion(async () => {
       await api(`/operacion/cuentas/${cuenta.id}/cerrar`, {
         method: 'POST',
-        body: cobroJunto.datos,
+        body: { ...cobroJunto.datos, receptor: factura.receptor },
       });
       setSeleccion(null);
       cargar();
@@ -188,6 +206,7 @@ export function CajaPage() {
   const cobrarGrupo = () =>
     cuenta &&
     cobroGrupo?.datos &&
+    !factura.error &&
     totalGrupo &&
     elegidos.length > 0 &&
     confirmar(`¿Cobrar este grupo por ${precio(totalGrupo.total)}?`, cobroGrupo.datos.lineas) &&
@@ -199,6 +218,7 @@ export function CajaPage() {
           body: {
             nombre: nombreGrupo.trim() || undefined,
             ...cobroGrupo.datos,
+            receptor: factura.receptor,
             items: elegidos.map((i) => ({ itemId: i.id, cantidad: eleccion[i.id] })),
           },
         },
@@ -206,6 +226,8 @@ export function CajaPage() {
       setEleccion({});
       setNombreGrupo('');
       setCobro(COBRO_VACIO);
+      setReceptor(null);
+      fe.cargar();
       if (r.cerrada) {
         setSeleccion(null);
         cargar();
@@ -330,6 +352,14 @@ export function CajaPage() {
               ))}
             </>
           )}
+          {fe.datos?.activa && (
+            <ListaComprobantes
+              datos={fe.datos}
+              precio={precio}
+              onReintentar={reintentar}
+              ocupado={ocupado}
+            />
+          )}
         </aside>
 
         <section className="rounded-lg bg-app p-5 shadow-tarjeta md:sticky md:top-20">
@@ -406,6 +436,8 @@ export function CajaPage() {
                     billetes={enColones}
                     error={cobroJunto?.error ?? null}
                   />
+                  {fe.datos?.activa && <FacturaA valor={receptor} onCambio={setReceptor} />}
+                  {factura.error && <p className="mt-2 text-sm text-amber-ink">{factura.error}</p>}
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -417,7 +449,7 @@ export function CajaPage() {
                     <button
                       type="button"
                       onClick={cerrarJunto}
-                      disabled={!cobroJunto?.datos || ocupado || pendientes}
+                      disabled={!cobroJunto?.datos || !!factura.error || ocupado || pendientes}
                       className="min-h-12 flex-1 rounded-md bg-purple font-semibold text-on-accent disabled:opacity-50"
                     >
                       {ocupado ? 'Cerrando…' : `Cobrar todo · ${precio(cuenta.total)}`}
@@ -552,10 +584,22 @@ export function CajaPage() {
                           error={cobroGrupo?.error ?? null}
                         />
                       )}
+                      {fe.datos?.activa && totalGrupo && elegidos.length > 0 && (
+                        <FacturaA valor={receptor} onCambio={setReceptor} />
+                      )}
+                      {factura.error && (
+                        <p className="mt-2 text-sm text-amber-ink">{factura.error}</p>
+                      )}
                       <button
                         type="button"
                         onClick={cobrarGrupo}
-                        disabled={!cobroGrupo?.datos || !elegidos.length || ocupado || pendientes}
+                        disabled={
+                          !cobroGrupo?.datos ||
+                          !!factura.error ||
+                          !elegidos.length ||
+                          ocupado ||
+                          pendientes
+                        }
                         className="mt-4 min-h-12 w-full rounded-md bg-purple font-semibold text-on-accent disabled:opacity-50"
                       >
                         {elegidos.length && totalGrupo

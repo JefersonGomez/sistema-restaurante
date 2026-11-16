@@ -10,6 +10,7 @@ import {
 import { api, type ErrorApi } from '../api';
 import { AjustesEnLinea, type ConfigEnLinea } from './AjustesEnLinea';
 import { AjustesFactura } from './menu/FacturaPlato';
+import { AjustesHacienda } from './AjustesHacienda';
 import {
   Boton,
   Campo,
@@ -421,6 +422,7 @@ export function AjustesPage() {
           <Formulario r={r} />
           <AjustesWifi r={r} />
           <AjustesFactura cabysGeneral={r.cabysGeneral} />
+          <AjustesHacienda />
           {r.plan === 'BASICO' ? (
             <Tarjeta>
               <h2 className="font-semibold">Pedidos en línea</h2>

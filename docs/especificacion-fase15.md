@@ -101,4 +101,14 @@ comprobantes de proveedores.
      (la pantalla de Ajustes llega en la 15.3).
      ✅ Hecho (2026-11-15): cobro en caja y entrega a domicilio aceptados por Hacienda en pruebas.
 3. **15.3** Caja: factura con datos del cliente y estado del comprobante; Ajustes: datos de Hacienda.
+   Decisiones de la 15.3 (2026-11-15, "sí súbelo y pasa con la siguiente"):
+   - Caja: "Factura a nombre de…" opcional al cobrar (tipo y número de identificación, nombre y
+     correo); con identificación se emite **factura**, si no **tiquete**. Botón para buscar el
+     nombre en el registro público de Hacienda (`api.hacienda.go.cr/fe/ae`, consultado desde la API).
+   - Caja: lista de comprobantes recientes con su estado y "Reintentar" (los que quedaron en error
+     o rechazados se vuelven a emitir con un número nuevo; los que esperan se envían ya).
+   - Ajustes (dueño): datos de Hacienda del restaurante, subir la llave .p12 (se valida con el PIN),
+     usuario y clave de la API (se guardan cifrados y nunca se vuelven a mostrar), "Probar conexión"
+     y activar/desactivar.
+     ✅ Hecho (2026-11-15): factura a nombre de un cliente aceptada por Hacienda en pruebas.
 4. **15.4** Nota de crédito para anular.

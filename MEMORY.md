@@ -60,6 +60,20 @@
     domicilio #108 entregado → ambos tiquetes ACEPTADOS por Hacienda (el envío en OtrosCargos 99
     también pasó). En la BD de desarrollo la factura electrónica quedó activa en Soda La Esquina
     (desactivar con `--desactivar`).
+  - 15.2 subida (commit `db591cc`).
+  - **15.3 ✅** API: `receptorSchema` (física 9, jurídica 10, DIMEX 11–12, NITE 10 dígitos) en
+    cerrar cuenta y cobrar grupo → con receptor se emite FE; `/comprobantes` (DUENO, CAJA): lista
+    `{activa, comprobantes}`, `POST /:id/reintentar` (ERROR/RECHAZADO se reemiten con número nuevo;
+    PENDIENTE/ENVIADO se envían ya; ACEPTADO → 409), `GET /contribuyente?id=` (registro público
+    `api.hacienda.go.cr/fe/ae`: nombre, tipo y actividades CIIU 4 activas); `/hacienda` (DUENO):
+    `GET/PUT /config` (secretos opcionales al editar, la llave se valida con el PIN, no se
+    devuelven nunca; activar exige credenciales y llave) y `POST /probar` (pide token). Columna
+    `llaveVence` (migración `llave_vence`). Staff: `FacturaCaja.tsx` ("Factura a nombre de…" con
+    Buscar, lista de comprobantes con estado y Reintentar; se refresca cada 10 s mientras alguno
+    espera) en CajaPage; `panel/AjustesHacienda.tsx` en Ajustes (traer nombre y actividades de
+    Hacienda, subir .p12, probar conexión, activar). **Prueba real en Chrome**: "Probar conexión"
+    OK y **factura (FE) a nombre de una cédula jurídica pública, pagada con tarjeta, ACEPTADA**.
+    Verificado: 241 tests (api 190), typecheck, lint, prettier, builds.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

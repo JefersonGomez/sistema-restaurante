@@ -541,12 +541,38 @@ export function metodoDeLineas(lineas: { metodo: MetodoPago }[]): MetodoPago {
   return metodos.size === 1 ? lineas[0]!.metodo : 'MIXTO';
 }
 
+// Factura electrónica (Fase 15): a nombre de quién. Física 9 dígitos, jurídica 10, DIMEX 11–12,
+// NITE 10 (sin guiones).
+export const TIPOS_IDENTIFICACION = [
+  { id: '01', texto: 'Cédula física', digitos: [9] },
+  { id: '02', texto: 'Cédula jurídica', digitos: [10] },
+  { id: '03', texto: 'DIMEX', digitos: [11, 12] },
+  { id: '04', texto: 'NITE', digitos: [10] },
+] as const;
+export const tipoIdentificacionSchema = z.enum(['01', '02', '03', '04']);
+export const receptorSchema = z
+  .object({
+    tipoId: tipoIdentificacionSchema,
+    numero: z.string().trim().regex(/^\d+$/, 'Solo números, sin guiones'),
+    nombre: z.string().trim().min(3, 'Escriba el nombre').max(100),
+    correo: z.email('Correo no válido').max(160).optional(),
+  })
+  .refine(
+    (r) =>
+      (TIPOS_IDENTIFICACION.find((t) => t.id === r.tipoId)!.digitos as readonly number[]).includes(
+        r.numero.length,
+      ),
+    { message: 'La identificación no tiene la cantidad de dígitos correcta', path: ['numero'] },
+  );
+export type ReceptorInput = z.infer<typeof receptorSchema>;
+
 // metodoPago + líneas opcionales (la caja siempre las manda; mixto las exige).
 const datosCobro = {
   metodoPago: metodoPagoSchema,
   lineas: z.array(lineaCobroSchema).min(1).max(6).optional(),
+  receptor: receptorSchema.optional(), // factura electrónica a nombre de alguien
 };
-type DatosCobro = { metodoPago: MetodoPago; lineas?: LineaCobroInput[] };
+type DatosCobro = { metodoPago: MetodoPago; lineas?: LineaCobroInput[]; receptor?: ReceptorInput };
 const lineasCoinciden = (d: DatosCobro) =>
   d.lineas ? metodoDeLineas(d.lineas) === d.metodoPago : d.metodoPago !== 'MIXTO';
 const errorLineas = {
@@ -950,6 +976,68 @@ export type TurnoCajaDetalle = {
   nota: string | null;
   resumen: ResumenTurno;
   movimientos: MovimientoCajaDetalle[];
+};
+
+// --- Factura electrónica (Fase 15) ---
+export type EstadoComprobante = 'PENDIENTE' | 'ENVIADO' | 'ACEPTADO' | 'RECHAZADO' | 'ERROR';
+export type ComprobanteResumen = {
+  id: string;
+  tipo: 'TE' | 'FE' | 'NC';
+  consecutivo: string;
+  clave: string;
+  estado: EstadoComprobante;
+  mensaje: string | null;
+  total: number;
+  receptorNombre: string | null;
+  lugar: string; // "Mesa 3", "Domicilio #12 · Ana"
+  createdAt: string;
+};
+export type ComprobantesCaja = { activa: boolean; comprobantes: ComprobanteResumen[] };
+
+// Datos de Hacienda del restaurante. Los secretos son opcionales al editar (si faltan se conservan).
+export const configHaciendaSchema = z.object({
+  activa: z.boolean(),
+  ambiente: z.enum(['pruebas', 'produccion']),
+  tipoId: tipoIdentificacionSchema,
+  numeroId: z
+    .string()
+    .trim()
+    .regex(/^\d{9,12}$/, 'Identificación de 9 a 12 dígitos, sin guiones'),
+  nombre: z.string().trim().min(5, 'Nombre legal de 5 caracteres o más').max(100),
+  nombreComercial: z.string().trim().min(3).max(80).nullable(),
+  correo: z.email('Correo no válido').max(160),
+  provincia: z.number().int().min(1).max(7),
+  canton: z.number().int().min(1).max(99),
+  distrito: z.number().int().min(1).max(99),
+  otrasSenas: z.string().trim().min(5, 'Escriba las otras señas').max(250),
+  actividad: z
+    .string()
+    .trim()
+    .regex(/^\d{4}\.\d$/, 'Código CIIU 4 con el formato 5610.0'),
+  usuario: z.string().trim().min(5).max(120).optional(),
+  clave: z.string().min(1).max(120).optional(),
+  llaveP12: z.string().max(60_000).optional(), // base64 del archivo .p12
+  pin: z.string().min(1).max(20).optional(),
+});
+export type ConfigHaciendaInput = z.infer<typeof configHaciendaSchema>;
+export type ConfigHaciendaVista = Omit<
+  ConfigHaciendaInput,
+  'usuario' | 'clave' | 'llaveP12' | 'pin'
+> & {
+  tieneCredenciales: boolean;
+  tieneLlave: boolean;
+  llaveVence: string | null;
+};
+export const contribuyenteQuerySchema = z.object({
+  id: z
+    .string()
+    .trim()
+    .regex(/^\d{9,12}$/),
+});
+export type Contribuyente = {
+  nombre: string;
+  tipoId: string;
+  actividades: { codigo: string; descripcion: string }[];
 };
 
 export * from './tiempo';

@@ -790,10 +790,10 @@ model MovimientoCaja {
 
 // Datos de Hacienda de un restaurante. Credenciales, llave y PIN van cifrados (AES-256-GCM).
 model ConfigHacienda {
-  id               String   @id @default(uuid()) @db.Uuid
-  restauranteId    String   @unique @db.Uuid
-  activa           Boolean  @default(false)
-  ambiente         String   @default("pruebas") // pruebas | produccion
+  id               String    @id @default(uuid()) @db.Uuid
+  restauranteId    String    @unique @db.Uuid
+  activa           Boolean   @default(false)
+  ambiente         String    @default("pruebas") // pruebas | produccion
   tipoId           String // 01 física, 02 jurídica, 03 DIMEX, 04 NITE
   numeroId         String
   nombre           String
@@ -808,13 +808,14 @@ model ConfigHacienda {
   claveCifrada     String
   llaveCifrada     String // .p12 en base64, cifrado
   pinCifrado       String
-  sucursal         Int      @default(1)
-  terminal         Int      @default(1)
-  siguienteTiquete Int      @default(1)
-  siguienteFactura Int      @default(1)
-  siguienteNota    Int      @default(1)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  llaveVence       DateTime? // vencimiento del certificado de la llave
+  sucursal         Int       @default(1)
+  terminal         Int       @default(1)
+  siguienteTiquete Int       @default(1)
+  siguienteFactura Int       @default(1)
+  siguienteNota    Int       @default(1)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
 }
