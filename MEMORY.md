@@ -45,6 +45,21 @@
     XSD de referencia tomados de github.com/cstea/factura-electronica (copia en el scratchpad).
     Tests `tests/factura.test.ts` (clave, XML, firma con llave .p12 generada y verificada).
     Verificado: 231 tests (api 180), typecheck, lint, prettier, builds.
+  - 15.1 subida (commit `6cc0e2d`).
+  - **15.2 ✅** modelos `ConfigHacienda` (1 a 1, credenciales/.p12/PIN cifrados AES-256-GCM con
+    `src/lib/cifrado.ts` y `EINVOICE_SECRET`; consecutivos por tipo) y `Comprobante` (cola
+    PENDIENTE → ENVIADO → ACEPTADO/RECHAZADO, o ERROR), migración `factura_electronica`.
+    `factura.service.ts`: `emitirComprobante` tras cerrar cuenta, cada grupo de cuenta separada y
+    cada entrega en línea (nunca hace fallar el cobro; si falta CABYS queda ERROR con motivo);
+    líneas con CABYS del plato o el general, tarifa por ítem, 10 % (OtrosCargos 06), envío
+    (OtrosCargos 99) y medios de pago del detalle del cobro. `procesarCola` cada 30 s desde
+    server.ts: envía, consulta, reintenta con espera creciente (máx. 1 h); 400 al enviar → ERROR.
+    `identificacion.ts` (cédula desde el usuario de Hacienda, `HACIENDA_PROVEEDOR_ID`). Script
+    `hacienda:configurar <slug>`. Tests `tests/comprobantes.test.ts` (Hacienda simulada).
+    **Prueba real**: Soda La Esquina configurada en pruebas; Mesa 2 cobrada en caja y el pedido a
+    domicilio #108 entregado → ambos tiquetes ACEPTADOS por Hacienda (el envío en OtrosCargos 99
+    también pasó). En la BD de desarrollo la factura electrónica quedó activa en Soda La Esquina
+    (desactivar con `--desactivar`).
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

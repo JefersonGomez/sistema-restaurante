@@ -11,6 +11,7 @@ import { prisma } from '../../lib/prisma';
 import { generarTokenQr } from '../../lib/tokens';
 import { HttpError, noExiste } from '../../middlewares/errorHandler';
 import { emitToRestaurant } from '../../realtime';
+import { emitirComprobante } from '../factura/factura.service';
 import { cancelarPedido, cerrarEnTx, confirmarPedido } from '../operacion/operacion.service';
 import { aCuenta, incluirCuenta, lugarDe } from '../pedidos/detalle';
 import { bloquearCuenta, crearPedido, recalcularCuenta } from '../pedidos/pedidos.service';
@@ -314,6 +315,7 @@ export async function entregar(
       { metodoPago, etapa: 'ENTREGADO' },
     );
   });
+  await emitirComprobante({ restauranteId, cuentaId: id });
   avisar(restauranteId, 'enlinea:actualizado', { cuentaId: id });
   return detalle(id);
 }

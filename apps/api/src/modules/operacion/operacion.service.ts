@@ -24,6 +24,7 @@ import {
   incluirPedido,
   lugarDe,
 } from '../pedidos/detalle';
+import { emitirComprobante } from '../factura/factura.service';
 import * as avisar from '../pedidos/eventos';
 import {
   bloquearCuenta,
@@ -404,6 +405,7 @@ export async function cerrarCuenta(
     { restauranteId, cuentaId, mesa: existe.mesa, lugar: lugarDe(existe) },
     cuenta.updatedAt,
   );
+  await emitirComprobante({ restauranteId, cuentaId }); // factura electrónica (si está activa)
   return aCuenta(cuenta);
 }
 
@@ -524,6 +526,7 @@ export async function cobrarParte(
     return { cuenta: c, cerrada: true, pagoId: pago.id };
   });
 
+  await emitirComprobante({ restauranteId, cuentaId, pagoId }); // un comprobante por grupo
   const ctx = { restauranteId, cuentaId, mesa: existe.mesa, lugar: lugarDe(existe) };
   if (cerrada) avisar.cuentaCerrada(ctx, cuenta.updatedAt);
   else avisar.cuentaActualizada(ctx, cuenta);

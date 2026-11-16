@@ -139,6 +139,8 @@ model Restaurante {
   canjes         CanjeSello[]
   pagosPlan      PagoSuscripcion[]
   turnosCaja     TurnoCaja[]
+  configHacienda ConfigHacienda?
+  comprobantes   Comprobante[]
 }
 
 model Usuario {
@@ -363,16 +365,17 @@ model Cuenta {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
-  restaurante Restaurante        @relation(fields: [restauranteId], references: [id])
-  mesa        Mesa?              @relation(fields: [mesaId], references: [id], onDelete: Restrict)
-  cerradaPor  Usuario?           @relation("CuentaCerradaPor", fields: [cerradaPorId], references: [id])
-  repartidor  Usuario?           @relation("CuentaRepartidor", fields: [repartidorId], references: [id])
-  cliente     ClienteRegistrado? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
-  pedidos     Pedido[]
-  solicitudes SolicitudIngreso[]
-  pagos       PagoCuenta[]
-  lineasCobro LineaCobro[]
-  sesiones    SesionCliente[]
+  restaurante  Restaurante        @relation(fields: [restauranteId], references: [id])
+  mesa         Mesa?              @relation(fields: [mesaId], references: [id], onDelete: Restrict)
+  cerradaPor   Usuario?           @relation("CuentaCerradaPor", fields: [cerradaPorId], references: [id])
+  repartidor   Usuario?           @relation("CuentaRepartidor", fields: [repartidorId], references: [id])
+  cliente      ClienteRegistrado? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  pedidos      Pedido[]
+  solicitudes  SolicitudIngreso[]
+  pagos        PagoCuenta[]
+  lineasCobro  LineaCobro[]
+  comprobantes Comprobante[]
+  sesiones     SesionCliente[]
 
   @@index([restauranteId])
   @@index([mesaId])
@@ -589,9 +592,10 @@ model PagoCuenta {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
-  cuenta Cuenta       @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
-  items  PedidoItem[]
-  lineas LineaCobro[]
+  cuenta       Cuenta        @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
+  items        PedidoItem[]
+  lineas       LineaCobro[]
+  comprobantes Comprobante[]
 
   @@index([cuentaId])
 }
@@ -780,4 +784,87 @@ model MovimientoCaja {
   turno TurnoCaja @relation(fields: [turnoId], references: [id], onDelete: Cascade)
 
   @@index([turnoId])
+}
+
+// --- Factura electrónica (Fase 15) ---
+
+// Datos de Hacienda de un restaurante. Credenciales, llave y PIN van cifrados (AES-256-GCM).
+model ConfigHacienda {
+  id               String   @id @default(uuid()) @db.Uuid
+  restauranteId    String   @unique @db.Uuid
+  activa           Boolean  @default(false)
+  ambiente         String   @default("pruebas") // pruebas | produccion
+  tipoId           String // 01 física, 02 jurídica, 03 DIMEX, 04 NITE
+  numeroId         String
+  nombre           String
+  nombreComercial  String?
+  correo           String
+  provincia        Int
+  canton           Int
+  distrito         Int
+  otrasSenas       String
+  actividad        String // CIIU 4, "5610.0"
+  usuarioCifrado   String
+  claveCifrada     String
+  llaveCifrada     String // .p12 en base64, cifrado
+  pinCifrado       String
+  sucursal         Int      @default(1)
+  terminal         Int      @default(1)
+  siguienteTiquete Int      @default(1)
+  siguienteFactura Int      @default(1)
+  siguienteNota    Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+}
+
+enum TipoComprobante {
+  TE
+  FE
+  NC
+}
+
+enum EstadoComprobante {
+  PENDIENTE // firmado, falta enviarlo
+  ENVIADO // Hacienda lo recibió; falta la respuesta
+  ACEPTADO
+  RECHAZADO
+  ERROR // no se pudo armar (falta CABYS, llave vencida…)
+}
+
+// Cola de comprobantes: uno por cobro. El proceso de envío los manda y consulta su estado.
+model Comprobante {
+  id             String            @id @default(uuid()) @db.Uuid
+  restauranteId  String            @db.Uuid
+  cuentaId       String            @db.Uuid
+  pagoId         String?           @db.Uuid
+  tipo           TipoComprobante
+  numero         Int
+  consecutivo    String
+  clave          String            @unique
+  fechaEmision   DateTime
+  total          Int // céntimos
+  ambiente       String
+  estado         EstadoComprobante @default(PENDIENTE)
+  mensaje        String? // respuesta de Hacienda o motivo del error
+  xmlFirmado     String?
+  respuestaXml   String?
+  intentos       Int               @default(0)
+  proximoIntento DateTime          @default(now())
+  receptorNombre String?
+  receptorTipoId String?
+  receptorNumero String?
+  receptorCorreo String?
+  referenciaId   String?           @db.Uuid // nota de crédito: comprobante que anula
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id])
+  cuenta      Cuenta      @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
+  pago        PagoCuenta? @relation(fields: [pagoId], references: [id], onDelete: SetNull)
+
+  @@unique([restauranteId, tipo, numero])
+  @@index([estado, proximoIntento])
+  @@index([cuentaId])
 }

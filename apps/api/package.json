@@ -11,7 +11,8 @@
     "postinstall": "prisma generate",
     "simular": "tsx scripts/simular-hora-pico.ts",
     "superadmin": "tsx scripts/superadmin.ts",
-    "hacienda:probar": "tsx scripts/probar-hacienda.ts"
+    "hacienda:probar": "tsx scripts/probar-hacienda.ts",
+    "hacienda:configurar": "tsx scripts/configurar-hacienda.ts"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",

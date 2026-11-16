@@ -41,6 +41,7 @@ export type DatosComprobante = {
   lineas: LineaComprobante[];
   preciosIncluyenIva: boolean;
   servicio: number; // céntimos del 10 % (0 si no aplica)
+  envio?: number; // céntimos del costo de envío a domicilio (otros cargos, código 99)
   medios: { tipo: '01' | '02' | '04' | '06' | '99'; monto: number }[]; // céntimos
   moneda: 'CRC' | 'USD';
   tipoCambio?: number;
@@ -123,10 +124,11 @@ export function construirXml(d: DatosComprobante) {
   });
 
   const servicio = d.servicio * U;
+  const envio = (d.envio ?? 0) * U;
   const totalGravado = t.servGravados + t.mercGravadas;
   const totalExento = t.servExentos + t.mercExentas;
   const totalVenta = totalGravado + totalExento;
-  const totalComprobante = totalVenta + t.impuesto + servicio;
+  const totalComprobante = totalVenta + t.impuesto + servicio + envio;
   const opcional = (n: string, u: number) => (u ? nodo(n, dec5(u)) : '');
 
   const xml =
@@ -163,6 +165,14 @@ export function construirXml(d: DatosComprobante) {
         nodo('MontoCargo', dec5(servicio)) +
         '</OtrosCargos>'
       : '') +
+    (envio
+      ? '<OtrosCargos>' +
+        nodo('TipoDocumentoOC', '99') +
+        nodo('TipoDocumentoOTROS', 'Costo de envío') +
+        nodo('Detalle', 'Costo de envío a domicilio') +
+        nodo('MontoCargo', dec5(envio)) +
+        '</OtrosCargos>'
+      : '') +
     '<ResumenFactura>' +
     `<CodigoTipoMoneda>${nodo('CodigoMoneda', d.moneda)}${nodo('TipoCambio', (d.tipoCambio ?? 1).toFixed(5))}</CodigoTipoMoneda>` +
     opcional('TotalServGravados', t.servGravados) +
@@ -180,7 +190,7 @@ export function construirXml(d: DatosComprobante) {
       )
       .join('') +
     nodo('TotalImpuesto', dec5(t.impuesto)) +
-    opcional('TotalOtrosCargos', servicio) +
+    opcional('TotalOtrosCargos', servicio + envio) +
     d.medios
       .slice(0, 4)
       .map(

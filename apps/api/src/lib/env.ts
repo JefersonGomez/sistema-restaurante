@@ -43,6 +43,7 @@ const schema = z.object({
   HACIENDA_EMISOR_NOMBRE: z.string().optional(),
   HACIENDA_EMISOR_CORREO: z.string().optional(),
   HACIENDA_EMISOR_OTRAS_SENAS: z.string().optional(),
+  HACIENDA_PROVEEDOR_ID: z.string().optional(), // cédula de KitchaGo como proveedor de sistemas
   EINVOICE_SECRET: z.string().optional(),
 });
 

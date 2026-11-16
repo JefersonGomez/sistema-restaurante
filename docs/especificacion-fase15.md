@@ -84,5 +84,21 @@ comprobantes de proveedores.
    script. ✅ Hecho: tiquete aceptado por Hacienda (ambiente de pruebas), 2026-11-15.
 2. **15.2** Modelo `Comprobante` (cola) y configuración de Hacienda por restaurante (cifrada); emitir
    al cobrar en caja y en línea; proceso de envío con reintentos.
+   Decisiones de la 15.2 (2026-11-15, "sí súbelo y sigue con la 15.2"):
+   - `ConfigHacienda` por restaurante (1 a 1): datos del emisor, actividad, credenciales de la API,
+     llave .p12 y PIN **cifrados con AES-256-GCM** (llave derivada de `EINVOICE_SECRET`) y los
+     siguientes números de consecutivo por tipo. Solo emite si está activa.
+   - Se emite un comprobante por cobro: cuenta completa (cerrar), cada grupo de una cuenta
+     separada y cada pedido en línea al entregarse. Se arma y firma justo después del cobro (el
+     cobro nunca falla por Hacienda) y queda en la cola `Comprobante` (PENDIENTE → ENVIADO →
+     ACEPTADO / RECHAZADO, o ERROR si no se pudo armar, p. ej. sin CABYS).
+   - Proceso de envío cada 30 s: envía los pendientes y consulta los enviados; si Hacienda o la red
+     fallan, reintenta con espera creciente (hasta 1 h entre intentos).
+   - Costo de envío de domicilio: en OtrosCargos código 99 "Costo de envío" (verificar con el
+     contador si debe ir como línea de servicio con IVA).
+   - Proveedor de sistemas: `HACIENDA_PROVEEDOR_ID` (si falta, la cédula del usuario de pruebas).
+   - Script `hacienda:configurar <slug>` carga la configuración de prueba del .env en un restaurante
+     (la pantalla de Ajustes llega en la 15.3).
+     ✅ Hecho (2026-11-15): cobro en caja y entrega a domicilio aceptados por Hacienda en pruebas.
 3. **15.3** Caja: factura con datos del cliente y estado del comprobante; Ajustes: datos de Hacienda.
 4. **15.4** Nota de crédito para anular.

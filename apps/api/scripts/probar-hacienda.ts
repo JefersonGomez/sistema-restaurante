@@ -5,16 +5,8 @@ import { env } from '../src/lib/env';
 import { clave, consecutivo, fechaCR, TIPO_DOC } from '../src/modules/factura/clave';
 import { abrirLlave, firmar } from '../src/modules/factura/firma';
 import { consultar, enviar, type Credenciales } from '../src/modules/factura/hacienda';
-import { construirXml, type Identificacion } from '../src/modules/factura/xml';
-
-// "cpf-01-2345-6789" → física 123456789; "cpj-3-101-123456" → jurídica 3101123456.
-function identificacionDeUsuario(usuario: string): Identificacion {
-  const [prefijo, ...resto] = usuario.split('@')[0]!.split('-');
-  const numero = resto.join('');
-  if (prefijo === 'cpf') return { tipo: '01', numero: numero.replace(/^0(?=\d{9}$)/, '') };
-  if (prefijo === 'cpj') return { tipo: '02', numero };
-  throw new Error('No se reconoce la identificación en HACIENDA_USER');
-}
+import { identificacionDeUsuario } from '../src/modules/factura/identificacion';
+import { construirXml } from '../src/modules/factura/xml';
 
 async function main() {
   const faltan = (
