@@ -112,3 +112,14 @@ comprobantes de proveedores.
      y activar/desactivar.
      ✅ Hecho (2026-11-15): factura a nombre de un cliente aceptada por Hacienda en pruebas.
 4. **15.4** Nota de crédito para anular.
+   Decisiones (2026-11-15, "súbelo y sigue con lo que falta; al final hacemos una revisión de todo
+   con un flujo"):
+   - "Anular" en un tiquete o factura **aceptado** (caja y dueño), con motivo obligatorio: emite
+     una nota de crédito por el total (código de referencia 01 "Anula documento de referencia",
+     con la clave y fecha del original) y el mismo cliente si era factura.
+   - Opción "Emitir de nuevo": tras la nota, emite otro comprobante del mismo cobro (por ejemplo,
+     con los datos correctos del cliente, o como tiquete).
+   - La nota de crédito solo afecta lo fiscal: la venta sigue en reportes y caja. Notas parciales
+     (devolución de un plato) quedan fuera de esta fase.
+   - Al final: revisión completa con un flujo de punta a punta (pedido del usuario).
+     ✅ Hecho (2026-11-15): factura anulada con nota de crédito y reemitida, ambas aceptadas en pruebas.

@@ -344,3 +344,67 @@ describe('factura, lista, reintento y configuración (Fase 15.3)', () => {
     fetch.mockRestore();
   });
 });
+
+describe('nota de crédito (Fase 15.4)', () => {
+  const anular = (id: string, body: object) =>
+    request(app)
+      .post(`/comprobantes/${id}/anular`)
+      .set('Authorization', `Bearer ${caja}`)
+      .send(body);
+
+  it('anula una factura aceptada con nota de crédito y reemite con el cliente correcto', async () => {
+    await configurar();
+    await cerrar({
+      metodoPago: 'TARJETA',
+      receptor: { tipoId: '01', numero: '112340567', nombre: 'Ana Solís' },
+    });
+    const [fe] = await comprobantes();
+    expect((await anular(fe!.id, { razon: 'Cliente equivocado' })).body.error.code).toBe(
+      'NO_ACEPTADO',
+    );
+    await prisma.comprobante.update({ where: { id: fe!.id }, data: { estado: 'ACEPTADO' } });
+    expect((await anular(fe!.id, { razon: 'x' })).status).toBe(400);
+
+    const r = await anular(fe!.id, {
+      razon: 'Cliente equivocado',
+      reemitir: true,
+      receptor: { tipoId: '02', numero: '3101123456', nombre: 'Empresa Correcta S.A.' },
+    });
+    expect(r.status).toBe(200);
+    const [, nc, nueva] = await comprobantes();
+    expect(nc).toMatchObject({ tipo: 'NC', referenciaId: fe!.id, razon: 'Cliente equivocado' });
+    expect(nc!.consecutivo.slice(8, 10)).toBe('03');
+    expect(nc!.xmlFirmado).toContain('<NotaCreditoElectronica');
+    expect(nc!.xmlFirmado).toContain(
+      `<InformacionReferencia><TipoDocIR>01</TipoDocIR><Numero>${fe!.clave}</Numero>`,
+    );
+    expect(nc!.xmlFirmado).toContain('<Codigo>01</Codigo><Razon>Cliente equivocado</Razon>');
+    expect(nc!.xmlFirmado).toContain('<Numero>112340567</Numero>'); // mismo cliente que la factura
+    expect(nueva).toMatchObject({ tipo: 'FE', receptorNumero: '3101123456' });
+    expect(r.body.comprobantes.find((c: { id: string }) => c.id === fe!.id).anulado).toBe(true);
+
+    expect((await anular(fe!.id, { razon: 'Otra vez' })).body.error.code).toBe('YA_ANULADO');
+    expect((await anular(nc!.id, { razon: 'Anular la nota' })).body.error.code).toBe('ES_NOTA');
+  });
+
+  it('una nota de crédito con error se vuelve a emitir como nota sobre el mismo original', async () => {
+    await configurar();
+    await cerrar();
+    const [te] = await comprobantes();
+    await prisma.comprobante.update({ where: { id: te!.id }, data: { estado: 'ACEPTADO' } });
+    await anular(te!.id, { razon: 'Cobro duplicado' });
+    const nc = (await comprobantes()).find((c) => c.tipo === 'NC')!;
+    expect(nc.xmlFirmado).toContain('<TipoDocIR>04</TipoDocIR>'); // referencia a un tiquete
+    await prisma.comprobante.update({ where: { id: nc.id }, data: { estado: 'ERROR' } });
+    await request(app)
+      .post(`/comprobantes/${nc.id}/reintentar`)
+      .set('Authorization', `Bearer ${caja}`);
+    const notas = (await comprobantes()).filter((c) => c.tipo === 'NC');
+    expect(notas).toHaveLength(2);
+    expect(notas[1]).toMatchObject({
+      referenciaId: te!.id,
+      razon: 'Cobro duplicado',
+      estado: 'PENDIENTE',
+    });
+  });
+});

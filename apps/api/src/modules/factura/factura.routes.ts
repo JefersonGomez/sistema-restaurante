@@ -1,5 +1,10 @@
 import { Router } from 'express';
-import { configHaciendaSchema, contribuyenteQuerySchema, idParamSchema } from '@menu-qr/shared';
+import {
+  anularComprobanteSchema,
+  configHaciendaSchema,
+  contribuyenteQuerySchema,
+  idParamSchema,
+} from '@menu-qr/shared';
 import { autenticar } from '../../middlewares/auth';
 import { requireRole } from '../../middlewares/roles';
 import { tenant } from '../../middlewares/tenant';
@@ -16,6 +21,11 @@ comprobantesRouter.get(
   c.contribuyente,
 );
 comprobantesRouter.post('/:id/reintentar', validate({ params: idParamSchema }), c.reintentar);
+comprobantesRouter.post(
+  '/:id/anular',
+  validate({ params: idParamSchema, body: anularComprobanteSchema }),
+  c.anular,
+);
 
 // /hacienda — dueño: datos de Hacienda del restaurante.
 export const haciendaRouter = Router();

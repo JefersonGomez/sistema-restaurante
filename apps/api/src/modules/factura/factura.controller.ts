@@ -8,6 +8,9 @@ export const listar = async (req: Request, res: Response) => {
 export const reintentar = async (req: Request<{ id: string }>, res: Response) => {
   res.json(await s.reintentar(restauranteDe(req), req.params.id));
 };
+export const anular = async (req: Request<{ id: string }>, res: Response) => {
+  res.json(await s.anular(restauranteDe(req), req.params.id, req.body));
+};
 export const contribuyente = async (req: Request, res: Response) => {
   res.json(await s.contribuyente((req.query as { id: string }).id));
 };

@@ -45,12 +45,26 @@ export async function emitirComprobante(o: {
   cuentaId: string;
   pagoId?: string;
   receptor?: Receptor;
+  // Nota de crédito: anula por completo este comprobante (mismo cobro y mismo cliente).
+  anula?: { comprobante: Comprobante; razon: string };
 }) {
   const cfg = await prisma.configHacienda.findUnique({ where: { restauranteId: o.restauranteId } });
   if (!cfg?.activa) return null;
 
+  const original = o.anula?.comprobante;
+  if (original)
+    o.receptor = original.receptorNombre
+      ? {
+          nombre: original.receptorNombre,
+          tipoId: (original.receptorTipoId ?? undefined) as Receptor['tipoId'],
+          numero: original.receptorNumero ?? undefined,
+          correo: original.receptorCorreo ?? undefined,
+        }
+      : undefined;
   const esFactura = !!o.receptor?.numero && !!o.receptor.tipoId;
-  const campo = esFactura ? 'siguienteFactura' : 'siguienteTiquete';
+  const tipo = original ? ('NC' as const) : esFactura ? ('FE' as const) : ('TE' as const);
+  const campo =
+    tipo === 'NC' ? 'siguienteNota' : tipo === 'FE' ? 'siguienteFactura' : 'siguienteTiquete';
   const { [campo]: siguiente } = await prisma.configHacienda.update({
     where: { id: cfg.id },
     data: { [campo]: { increment: 1 } },
@@ -58,7 +72,7 @@ export async function emitirComprobante(o: {
   const numero = siguiente - 1;
   const ahora = new Date();
   const consec = consecutivo(
-    esFactura ? TIPO_DOC.FACTURA : TIPO_DOC.TIQUETE,
+    tipo === 'NC' ? TIPO_DOC.NOTA_CREDITO : esFactura ? TIPO_DOC.FACTURA : TIPO_DOC.TIQUETE,
     numero,
     cfg.sucursal,
     cfg.terminal,
@@ -68,7 +82,7 @@ export async function emitirComprobante(o: {
     restauranteId: o.restauranteId,
     cuentaId: o.cuentaId,
     pagoId: o.pagoId ?? null,
-    tipo: esFactura ? ('FE' as const) : ('TE' as const),
+    tipo,
     numero,
     consecutivo: consec,
     clave: laClave,
@@ -78,6 +92,8 @@ export async function emitirComprobante(o: {
     receptorTipoId: esFactura ? o.receptor!.tipoId! : null,
     receptorNumero: esFactura ? o.receptor!.numero! : null,
     receptorCorreo: o.receptor?.correo ?? null,
+    referenciaId: original?.id ?? null,
+    razon: o.anula?.razon ?? null,
   };
 
   try {
@@ -109,6 +125,15 @@ export async function emitirComprobante(o: {
               ? { tipo: o.receptor.tipoId!, numero: o.receptor.numero! }
               : undefined,
             correo: o.receptor.correo,
+          }
+        : undefined,
+      referencia: original
+        ? {
+            tipoDoc: original.tipo === 'FE' ? '01' : '04',
+            numero: original.clave,
+            fecha: fechaCR(original.fechaEmision).iso,
+            codigo: '01', // anula el documento de referencia
+            razon: o.anula!.razon.slice(0, 180),
           }
         : undefined,
     });

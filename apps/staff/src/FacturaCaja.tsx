@@ -1,6 +1,7 @@
-import { FileText, RotateCw, Search } from 'lucide-react';
+import { Ban, FileText, RotateCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import {
+  type AnularComprobanteInput,
   receptorSchema,
   TIPOS_IDENTIFICACION,
   type ComprobanteResumen,
@@ -190,13 +191,16 @@ export function ListaComprobantes({
   datos,
   precio,
   onReintentar,
+  onAnular,
   ocupado,
 }: {
   datos: ComprobantesCaja;
   precio: (c: number) => string;
   onReintentar: (id: string) => void;
+  onAnular: (id: string, datos: AnularComprobanteInput) => Promise<boolean>;
   ocupado: boolean;
 }) {
+  const [anulando, setAnulando] = useState<string | null>(null);
   const lista = datos.comprobantes.slice(0, 8);
   const conProblema = datos.comprobantes.filter(
     (c) => c.estado === 'ERROR' || c.estado === 'RECHAZADO',
@@ -234,6 +238,30 @@ export function ListaComprobantes({
             {problema && c.mensaje && (
               <p className="mt-1 line-clamp-3 text-xs text-danger">{c.mensaje}</p>
             )}
+            {c.anulado && (
+              <p className="mt-1 text-xs font-semibold text-amber-ink">
+                Anulado con nota de crédito
+              </p>
+            )}
+            {c.estado === 'ACEPTADO' && c.tipo !== 'NC' && !c.anulado && anulando !== c.id && (
+              <button
+                type="button"
+                disabled={ocupado}
+                onClick={() => setAnulando(c.id)}
+                className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 font-medium text-muted hover:bg-surface disabled:opacity-50"
+              >
+                <Ban className="size-4" aria-hidden /> Anular
+              </button>
+            )}
+            {anulando === c.id && (
+              <FormAnular
+                ocupado={ocupado}
+                onCancelar={() => setAnulando(null)}
+                onAnular={async (d) => {
+                  if (await onAnular(c.id, d)) setAnulando(null);
+                }}
+              />
+            )}
             {c.estado !== 'ACEPTADO' && (
               <button
                 type="button"
@@ -248,6 +276,76 @@ export function ListaComprobantes({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// Anular con nota de crédito: motivo y, si se quiere, emitir otro comprobante del mismo cobro.
+function FormAnular({
+  ocupado,
+  onCancelar,
+  onAnular,
+}: {
+  ocupado: boolean;
+  onCancelar: () => void;
+  onAnular: (d: AnularComprobanteInput) => void;
+}) {
+  const [razon, setRazon] = useState('');
+  const [reemitir, setReemitir] = useState(false);
+  const [receptor, setReceptor] = useState<FormReceptor | null>(null);
+  const factura = receptorDelCobro(receptor);
+  const error =
+    razon.trim().length < 5
+      ? 'Escriba el motivo (5 caracteres o más)'
+      : reemitir
+        ? factura.error
+        : null;
+  return (
+    <div className="mt-2 space-y-2 rounded-md bg-surface/60 p-2">
+      <label className="block">
+        <span className="text-xs font-medium">Motivo de la anulación</span>
+        <input
+          value={razon}
+          maxLength={180}
+          placeholder="Ej.: datos del cliente equivocados"
+          onChange={(e) => setRazon(e.target.value)}
+          className={`${campo} h-10`}
+        />
+      </label>
+      <label className="flex min-h-11 items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          checked={reemitir}
+          onChange={(e) => setReemitir(e.target.checked)}
+          className="size-5 accent-purple"
+        />
+        Emitir de nuevo (por ejemplo, con los datos correctos)
+      </label>
+      {reemitir && <FacturaA valor={receptor} onCambio={setReceptor} />}
+      {error && razon && <p className="text-xs text-amber-ink">{error}</p>}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onCancelar}
+          className="min-h-11 rounded-md px-3 text-xs font-medium hover:bg-surface"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          disabled={ocupado || !!error}
+          onClick={() =>
+            onAnular({
+              razon: razon.trim(),
+              reemitir,
+              receptor: reemitir ? factura.receptor : undefined,
+            })
+          }
+          className="min-h-11 flex-1 rounded-md bg-danger px-3 text-xs font-semibold text-on-accent disabled:opacity-50"
+        >
+          Emitir nota de crédito
+        </button>
+      </div>
     </div>
   );
 }

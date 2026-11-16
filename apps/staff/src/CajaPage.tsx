@@ -14,6 +14,7 @@ import {
   metodoDeLineas,
   type Totales,
   type TurnoCajaDetalle,
+  type AnularComprobanteInput,
 } from '@menu-qr/shared';
 import { api, obtenerMenu } from './api';
 import { useAuth } from './auth';
@@ -181,6 +182,14 @@ export function CajaPage() {
 
   // Factura a nombre de alguien (solo si la factura electrónica está activa).
   const factura = fe.datos?.activa ? receptorDelCobro(receptor) : { error: null };
+  const anularComprobante = async (id: string, datos: AnularComprobanteInput) => {
+    let ok = false;
+    await accion(async () => {
+      fe.setDatos(await api(`/comprobantes/${id}/anular`, { method: 'POST', body: datos }));
+      ok = true;
+    });
+    return ok;
+  };
   const reintentar = (id: string) =>
     accion(async () =>
       fe.setDatos(await api(`/comprobantes/${id}/reintentar`, { method: 'POST' })),
@@ -357,6 +366,7 @@ export function CajaPage() {
               datos={fe.datos}
               precio={precio}
               onReintentar={reintentar}
+              onAnular={anularComprobante}
               ocupado={ocupado}
             />
           )}

@@ -1,4 +1,5 @@
 import type {
+  AnularComprobanteInput,
   ComprobantesCaja,
   ConfigHaciendaInput,
   ConfigHaciendaVista,
@@ -23,6 +24,17 @@ export async function listar(restauranteId: string): Promise<ComprobantesCaja> {
       include: { cuenta: { select: datosLugar } },
     }),
   ]);
+  // Anulados: los que tienen una nota de crédito que no falló.
+  const notas = await prisma.comprobante.findMany({
+    where: {
+      restauranteId,
+      tipo: 'NC',
+      referenciaId: { in: lista.map((c) => c.id) },
+      estado: { notIn: ['ERROR', 'RECHAZADO'] },
+    },
+    select: { referenciaId: true },
+  });
+  const anulados = new Set(notas.map((n) => n.referenciaId));
   return {
     activa: !!cfg?.activa,
     comprobantes: lista.map((c) => ({
@@ -35,6 +47,8 @@ export async function listar(restauranteId: string): Promise<ComprobantesCaja> {
       total: c.total,
       receptorNombre: c.receptorNombre,
       lugar: lugarDe(c.cuenta),
+      referenciaId: c.referenciaId,
+      anulado: anulados.has(c.id),
       createdAt: c.createdAt.toISOString(),
     })),
   };
@@ -62,11 +76,17 @@ export async function reintentar(restauranteId: string, id: string) {
           correo: c.receptorCorreo ?? undefined,
         }
       : undefined;
+    // Una nota de crédito fallida se vuelve a emitir como nota sobre el mismo original.
+    const original =
+      c.tipo === 'NC' && c.referenciaId
+        ? await prisma.comprobante.findUnique({ where: { id: c.referenciaId } })
+        : null;
     const nuevo = await emitirComprobante({
       restauranteId,
       cuentaId: c.cuentaId,
       pagoId: c.pagoId ?? undefined,
       receptor,
+      anula: original ? { comprobante: original, razon: c.razon ?? 'Anulación' } : undefined,
     });
     if (!nuevo) throw new HttpError(409, 'FE_INACTIVA', 'La factura electrónica no está activa');
     await prisma.comprobante.update({
@@ -74,6 +94,41 @@ export async function reintentar(restauranteId: string, id: string) {
       data: { mensaje: `${c.mensaje ?? ''} · Reemitido como ${nuevo.consecutivo}`.slice(0, 500) },
     });
   }
+  return listar(restauranteId);
+}
+
+// Anula un tiquete o factura aceptado con una nota de crédito por el total. Con "reemitir" emite
+// después otro comprobante del mismo cobro (p. ej. con los datos correctos del cliente).
+export async function anular(restauranteId: string, id: string, input: AnularComprobanteInput) {
+  const c = await prisma.comprobante.findFirst({ where: { id, restauranteId } });
+  if (!c) throw noExiste('Comprobante');
+  if (c.tipo === 'NC') throw new HttpError(409, 'ES_NOTA', 'Una nota de crédito no se anula');
+  if (c.estado !== 'ACEPTADO')
+    throw new HttpError(
+      409,
+      'NO_ACEPTADO',
+      'Solo se anula un comprobante aceptado por Hacienda; si tiene error, vuelva a emitirlo',
+    );
+  const previa = await prisma.comprobante.findFirst({
+    where: { referenciaId: id, tipo: 'NC', estado: { notIn: ['ERROR', 'RECHAZADO'] } },
+  });
+  if (previa)
+    throw new HttpError(409, 'YA_ANULADO', 'Este comprobante ya tiene una nota de crédito');
+
+  const nota = await emitirComprobante({
+    restauranteId,
+    cuentaId: c.cuentaId,
+    pagoId: c.pagoId ?? undefined,
+    anula: { comprobante: c, razon: input.razon },
+  });
+  if (!nota) throw new HttpError(409, 'FE_INACTIVA', 'La factura electrónica no está activa');
+  if (nota.estado !== 'ERROR' && input.reemitir)
+    await emitirComprobante({
+      restauranteId,
+      cuentaId: c.cuentaId,
+      pagoId: c.pagoId ?? undefined,
+      receptor: input.receptor,
+    });
   return listar(restauranteId);
 }
 

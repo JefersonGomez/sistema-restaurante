@@ -74,6 +74,29 @@
     Hacienda, subir .p12, probar conexión, activar). **Prueba real en Chrome**: "Probar conexión"
     OK y **factura (FE) a nombre de una cédula jurídica pública, pagada con tarjeta, ACEPTADA**.
     Verificado: 241 tests (api 190), typecheck, lint, prettier, builds.
+  - 15.3 subida (commit `65b037d`).
+  - **15.4 ✅** nota de crédito: `emitirComprobante({ anula: { comprobante, razon } })` emite NC
+    (consecutivo tipo 03, `siguienteNota`, mismo cliente del original, InformacionReferencia
+    TipoDocIR 01/04 + clave + fecha + código 01 + razón); columna `razon` (migración
+    `razon_nota`; se borró una migración vacía creada por error). `POST /comprobantes/:id/anular`
+    {razon, reemitir, receptor?} solo para TE/FE ACEPTADO sin nota vigente (ES_NOTA, NO_ACEPTADO,
+    YA_ANULADO); con reemitir emite otro comprobante del cobro. Reintentar una NC con error la
+    vuelve a emitir como NC sobre el mismo original. Lista: `anulado` y `referenciaId`. Caja:
+    "Anular" → motivo + "Emitir de nuevo" (con FacturaA opcional). **Prueba real en Chrome**:
+    factura anulada con NC + tiquete de reemplazo, ambos ACEPTADOS; Hacienda dio un 502 temporal
+    al consultar la NC y la cola reintentó sola hasta aceptarla.
+  - Verificado 15.4: 243 tests (api 192), typecheck, lint, prettier, builds.
+  - **Revisión de punta a punta** (2026-11-15, pedido del usuario; script en el scratchpad
+    `flujo.mjs`, por la API real): 36 de 37 pasos OK — login de roles, caja abierta, cliente pide
+    por QR, mesero confirma, cocina prepara y avisa, mesero entrega, cliente pide la cuenta, caja
+    cobra mixto (efectivo con vuelto + tarjeta) con factura a una empresa, pedido en línea a
+    domicilio con SINPE (aceptar, verificar, cocina, repartidor sale y entrega), Hacienda acepta
+    la factura y el tiquete, nota de crédito aceptada, salida de efectivo, cierre de caja que
+    cuadra exacto, reporte del día y cierre en Reportes. **Falla solo el login de cocina**
+    (`cocina@sodalaesquina.test`): no es error del código; en la BD de desarrollo alguien usó
+    "Restablecer contraseña" (queda `debeCambiarPassword=true` con una clave temporal). Arreglo
+    sugerido al usuario: Panel → Personal → cocina → cambiar la contraseña a `Cocina123!`, o
+    `pnpm db:seed` (no se cambió a mano en la BD).
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

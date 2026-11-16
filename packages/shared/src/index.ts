@@ -990,8 +990,17 @@ export type ComprobanteResumen = {
   total: number;
   receptorNombre: string | null;
   lugar: string; // "Mesa 3", "Domicilio #12 · Ana"
+  referenciaId: string | null; // nota de crédito: el comprobante que anula
+  anulado: boolean; // tiene una nota de crédito vigente
   createdAt: string;
 };
+// Anular un comprobante aceptado con una nota de crédito; opcionalmente emitir otro del mismo cobro.
+export const anularComprobanteSchema = z.object({
+  razon: z.string().trim().min(5, 'Escriba el motivo (5 caracteres o más)').max(180),
+  reemitir: z.boolean().default(false),
+  receptor: receptorSchema.optional(),
+});
+export type AnularComprobanteInput = z.infer<typeof anularComprobanteSchema>;
 export type ComprobantesCaja = { activa: boolean; comprobantes: ComprobanteResumen[] };
 
 // Datos de Hacienda del restaurante. Los secretos son opcionales al editar (si faltan se conservan).
