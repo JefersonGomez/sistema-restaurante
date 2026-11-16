@@ -3,6 +3,7 @@ import { env } from '../../lib/env';
 import { prisma } from '../../lib/prisma';
 import type { ConfigHacienda, Comprobante } from '../../generated/prisma/client';
 import { clave, consecutivo, fechaCR, TIPO_DOC } from './clave';
+import { enviarComprobantePorCorreo } from './correo-comprobante';
 import { abrirLlave, firmar, type Llave } from './firma';
 import { consultar, enviar, ErrorHacienda, type Ambiente, type Credenciales } from './hacienda';
 import { proveedorSistemas } from './identificacion';
@@ -291,12 +292,17 @@ async function procesarUno(c: Comprobante, cfg: ConfigHacienda | null) {
       });
     }
     const e = await consultar(cred, c.clave);
-    if (e.estado === 'aceptado' || e.estado === 'rechazado')
-      return guardar({
+    if (e.estado === 'aceptado' || e.estado === 'rechazado') {
+      const final = await guardar({
         estado: e.estado === 'aceptado' ? 'ACEPTADO' : 'RECHAZADO',
         mensaje: e.mensaje?.slice(0, 2000) ?? null,
         respuestaXml: e.respuestaXml ?? null,
       });
+      // Aceptado y con correo del cliente: se le envía su comprobante (PDF + XML).
+      if (final.estado === 'ACEPTADO' && final.receptorCorreo && !final.correoEnviadoEn)
+        await enviarComprobantePorCorreo(final, final.receptorCorreo);
+      return final;
+    }
     // Si Hacienda no lo tiene, se vuelve a enviar.
     if (e.estado === 'no-encontrado')
       return guardar({ estado: 'PENDIENTE', proximoIntento: new Date() });

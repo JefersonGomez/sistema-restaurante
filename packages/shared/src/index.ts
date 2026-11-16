@@ -992,8 +992,16 @@ export type ComprobanteResumen = {
   lugar: string; // "Mesa 3", "Domicilio #12 · Ana"
   referenciaId: string | null; // nota de crédito: el comprobante que anula
   anulado: boolean; // tiene una nota de crédito vigente
+  receptorCorreo: string | null;
+  correoPara: string | null; // último envío por correo
+  correoEnviadoEn: string | null;
+  correoError: string | null;
   createdAt: string;
 };
+// Enviar (o reenviar) el comprobante al cliente; sin correo usa el que dio al cobrar.
+export const enviarComprobanteSchema = z.object({
+  correo: z.email('Correo no válido').max(160).optional(),
+});
 // Anular un comprobante aceptado con una nota de crédito; opcionalmente emitir otro del mismo cobro.
 export const anularComprobanteSchema = z.object({
   razon: z.string().trim().min(5, 'Escriba el motivo (5 caracteres o más)').max(180),

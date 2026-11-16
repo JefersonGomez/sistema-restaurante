@@ -1,5 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2 } from 'lucide-react';
+import {
+  Clock,
+  Globe,
+  Plus,
+  Receipt,
+  SlidersHorizontal,
+  Trash2,
+  Wifi,
+  type LucideIcon,
+} from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useState, type ReactNode } from 'react';
 import {
   restauranteConfigSchema,
@@ -154,12 +164,12 @@ function Horarios({ inicial }: { inicial: Turno[] }) {
       titulo="Horario de atención"
       detalle="Puede poner varios turnos por día (ej. almuerzo y cena). Fuera de horario el menú se ve, pero no recibe pedidos."
     >
-      <ul className="divide-y divide-line">
+      <ul className="grid xl:grid-cols-2 xl:gap-x-10">
         {DIAS.map((nombre, i) => {
           const dia = diaDe(i);
           const delDia = turnos.filter((t) => t.diaSemana === dia);
           return (
-            <li key={dia} className="flex flex-wrap items-center gap-2 py-2">
+            <li key={dia} className="flex flex-wrap items-center gap-2 border-b border-line py-2">
               <span className="w-24 font-medium">{nombre}</span>
               <div className="flex flex-1 flex-col gap-2">
                 {delDia.length === 0 && <span className="text-sm text-muted">Cerrado</span>}
@@ -265,91 +275,93 @@ function Formulario({ r }: { r: Restaurante }) {
   // Contenedor propio: así la barra fija de "Guardar cambios" no tapa otras secciones.
   return (
     <div className="space-y-4">
-      <Seccion titulo="Idiomas y moneda">
-        <fieldset className="flex flex-wrap gap-4 text-sm">
-          <legend className="mb-1 font-medium">Idiomas del menú</legend>
-          {(['es', 'en'] as const).map((i) => (
-            <label key={i} className="inline-flex min-h-11 items-center gap-2">
-              <input
-                type="checkbox"
-                className="size-5 accent-purple"
-                checked={f.idiomas.includes(i)}
-                onChange={() =>
-                  poner(
-                    'idiomas',
-                    f.idiomas.includes(i) ? f.idiomas.filter((x) => x !== i) : [...f.idiomas, i],
-                  )
-                }
-              />
-              {i === 'es' ? 'Español' : 'Inglés'}
-            </label>
-          ))}
-        </fieldset>
-        {errores.idiomas && <p className="text-sm text-danger">Elija al menos un idioma</p>}
-        <label className="block max-w-xs text-sm">
-          <span className="font-medium">Moneda</span>
-          <select
-            value={f.moneda}
-            onChange={(e) => poner('moneda', e.target.value as Moneda)}
-            className={select}
-          >
-            <option value="CRC">Colones (₡)</option>
-            <option value="USD">Dólares ($)</option>
-          </select>
-        </label>
-      </Seccion>
+      <div className="grid items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+        <Seccion titulo="Idiomas y moneda">
+          <fieldset className="flex flex-wrap gap-4 text-sm">
+            <legend className="mb-1 font-medium">Idiomas del menú</legend>
+            {(['es', 'en'] as const).map((i) => (
+              <label key={i} className="inline-flex min-h-11 items-center gap-2">
+                <input
+                  type="checkbox"
+                  className="size-5 accent-purple"
+                  checked={f.idiomas.includes(i)}
+                  onChange={() =>
+                    poner(
+                      'idiomas',
+                      f.idiomas.includes(i) ? f.idiomas.filter((x) => x !== i) : [...f.idiomas, i],
+                    )
+                  }
+                />
+                {i === 'es' ? 'Español' : 'Inglés'}
+              </label>
+            ))}
+          </fieldset>
+          {errores.idiomas && <p className="text-sm text-danger">Elija al menos un idioma</p>}
+          <label className="block max-w-xs text-sm">
+            <span className="font-medium">Moneda</span>
+            <select
+              value={f.moneda}
+              onChange={(e) => poner('moneda', e.target.value as Moneda)}
+              className={select}
+            >
+              <option value="CRC">Colones (₡)</option>
+              <option value="USD">Dólares ($)</option>
+            </select>
+          </label>
+        </Seccion>
 
-      <Seccion titulo="Impuestos" detalle="El servicio se calcula sobre el precio sin IVA.">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Campo
-            etiqueta="IVA (%)"
-            type="number"
-            min={0}
-            max={100}
-            value={f.porcentajeIva}
-            onChange={(e) => poner('porcentajeIva', e.target.value)}
-            error={errores.porcentajeIva}
-          />
-          <Campo
-            etiqueta="Servicio (%)"
-            type="number"
-            min={0}
-            max={100}
-            value={f.porcentajeServicio}
-            onChange={(e) => poner('porcentajeServicio', e.target.value)}
-            error={errores.porcentajeServicio}
-          />
-        </div>
-        <label className="flex min-h-11 items-center justify-between gap-3 text-sm">
-          <span>Los precios del menú ya incluyen el IVA</span>
-          <Interruptor
-            activo={f.preciosIncluyenImpuestos}
-            etiqueta="Los precios incluyen IVA"
-            onCambio={(v) => poner('preciosIncluyenImpuestos', v)}
-          />
-        </label>
-      </Seccion>
+        <Seccion titulo="Impuestos" detalle="El servicio se calcula sobre el precio sin IVA.">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Campo
+              etiqueta="IVA (%)"
+              type="number"
+              min={0}
+              max={100}
+              value={f.porcentajeIva}
+              onChange={(e) => poner('porcentajeIva', e.target.value)}
+              error={errores.porcentajeIva}
+            />
+            <Campo
+              etiqueta="Servicio (%)"
+              type="number"
+              min={0}
+              max={100}
+              value={f.porcentajeServicio}
+              onChange={(e) => poner('porcentajeServicio', e.target.value)}
+              error={errores.porcentajeServicio}
+            />
+          </div>
+          <label className="flex min-h-11 items-center justify-between gap-3 text-sm">
+            <span>Los precios del menú ya incluyen el IVA</span>
+            <Interruptor
+              activo={f.preciosIncluyenImpuestos}
+              etiqueta="Los precios incluyen IVA"
+              onCambio={(v) => poner('preciosIncluyenImpuestos', v)}
+            />
+          </label>
+        </Seccion>
 
-      <Seccion
-        titulo="Confirmación de pedidos"
-        detalle="Cuándo tiene que aprobar un mesero lo que pide el cliente desde el QR."
-      >
-        <fieldset className="space-y-1 text-sm">
-          <legend className="sr-only">Confirmación de pedidos</legend>
-          {MODOS.map((m) => (
-            <label key={m.id} className="flex min-h-11 items-center gap-2">
-              <input
-                type="radio"
-                name="modo"
-                className="size-5 accent-purple"
-                checked={f.modoConfirmacion === m.id}
-                onChange={() => poner('modoConfirmacion', m.id)}
-              />
-              {m.texto}
-            </label>
-          ))}
-        </fieldset>
-      </Seccion>
+        <Seccion
+          titulo="Confirmación de pedidos"
+          detalle="Cuándo tiene que aprobar un mesero lo que pide el cliente desde el QR."
+        >
+          <fieldset className="space-y-1 text-sm">
+            <legend className="sr-only">Confirmación de pedidos</legend>
+            {MODOS.map((m) => (
+              <label key={m.id} className="flex min-h-11 items-center gap-2">
+                <input
+                  type="radio"
+                  name="modo"
+                  className="size-5 accent-purple"
+                  checked={f.modoConfirmacion === m.id}
+                  onChange={() => poner('modoConfirmacion', m.id)}
+                />
+                {m.texto}
+              </label>
+            ))}
+          </fieldset>
+        </Seccion>
+      </div>
 
       <div className="sticky bottom-4 z-10 flex items-center gap-3 rounded-lg bg-app p-3 shadow-tarjeta">
         <Boton onClick={enviar} disabled={guardar.isPending}>
@@ -370,8 +382,40 @@ function Formulario({ r }: { r: Restaurante }) {
   );
 }
 
+type IdSeccion = 'horario' | 'general' | 'en-linea' | 'wifi' | 'factura';
+const SECCIONES: { id: IdSeccion; texto: string; detalle: string; icono: LucideIcon }[] = [
+  {
+    id: 'horario',
+    texto: 'Horario',
+    detalle: 'Turnos de atención y cerrar temporalmente',
+    icono: Clock,
+  },
+  {
+    id: 'general',
+    texto: 'General',
+    detalle: 'Idiomas, moneda, impuestos y confirmación',
+    icono: SlidersHorizontal,
+  },
+  {
+    id: 'en-linea',
+    texto: 'Pedidos en línea',
+    detalle: 'Recoger, domicilio, SINPE y sellos',
+    icono: Globe,
+  },
+  { id: 'wifi', texto: 'Wi-Fi', detalle: 'QR para conectarse desde la mesa', icono: Wifi },
+  {
+    id: 'factura',
+    texto: 'Factura electrónica',
+    detalle: 'CABYS y datos de Hacienda',
+    icono: Receipt,
+  },
+];
+
 export function AjustesPage() {
   const qc = useQueryClient();
+  // La sección elegida queda en la dirección (?seccion=…) para volver directo.
+  const [params, setParams] = useSearchParams();
+  const seccion = SECCIONES.find((x) => x.id === params.get('seccion')) ?? SECCIONES[0]!;
   const restaurante = useQuery({
     queryKey: ['restaurante'],
     queryFn: () => api<Restaurante>('/restaurante'),
@@ -390,52 +434,81 @@ export function AjustesPage() {
       />
     );
   const r = restaurante.data;
+
+  const contenido = !r ? (
+    <Esqueleto className="h-96" />
+  ) : seccion.id === 'horario' ? (
+    <>
+      <Tarjeta
+        className={`flex items-center justify-between gap-3 ${r.cerradoManual ? 'bg-amber-soft text-amber-ink' : ''}`}
+      >
+        <div>
+          <p className="font-semibold">Cerrar temporalmente</p>
+          <p className="text-sm">
+            {r.cerradoManual
+              ? 'El menú no recibe pedidos hasta que lo vuelva a abrir.'
+              : 'Deja de recibir pedidos por el QR sin cambiar el horario.'}
+          </p>
+        </div>
+        <Interruptor
+          activo={r.cerradoManual}
+          etiqueta="Cerrar temporalmente"
+          disabled={cerrar.isPending}
+          onCambio={(v) => cerrar.mutate(v)}
+        />
+      </Tarjeta>
+      <Horarios inicial={r.horarios} />
+    </>
+  ) : seccion.id === 'general' ? (
+    <Formulario r={r} />
+  ) : seccion.id === 'wifi' ? (
+    <AjustesWifi r={r} />
+  ) : seccion.id === 'factura' ? (
+    <>
+      <AjustesFactura cabysGeneral={r.cabysGeneral} />
+      <AjustesHacienda />
+    </>
+  ) : r.plan === 'BASICO' ? (
+    <Tarjeta>
+      <h2 className="font-semibold">Pedidos en línea</h2>
+      <p className="mt-1 text-sm text-muted">
+        Los pedidos en línea, el domicilio con repartidores, los clientes y la tarjeta de sellos
+        vienen con el plan Completo. Escríbanos para cambiar de plan.
+      </p>
+    </Tarjeta>
+  ) : (
+    <AjustesEnLinea r={r} />
+  );
+
   return (
     <>
-      <TituloPagina
-        titulo="Ajustes"
-        detalle="Horario, idiomas, moneda, impuestos, confirmación de pedidos y pedidos en línea."
-      />
-      {!r ? (
-        <Esqueleto className="h-96" />
-      ) : (
-        <div className="max-w-3xl space-y-4">
-          <Tarjeta
-            className={`flex items-center justify-between gap-3 ${r.cerradoManual ? 'bg-amber-soft text-amber-ink' : ''}`}
-          >
-            <div>
-              <p className="font-semibold">Cerrar temporalmente</p>
-              <p className="text-sm">
-                {r.cerradoManual
-                  ? 'El menú no recibe pedidos hasta que lo vuelva a abrir.'
-                  : 'Deja de recibir pedidos por el QR sin cambiar el horario.'}
-              </p>
-            </div>
-            <Interruptor
-              activo={r.cerradoManual}
-              etiqueta="Cerrar temporalmente"
-              disabled={cerrar.isPending}
-              onCambio={(v) => cerrar.mutate(v)}
-            />
-          </Tarjeta>
-          <Horarios inicial={r.horarios} />
-          <Formulario r={r} />
-          <AjustesWifi r={r} />
-          <AjustesFactura cabysGeneral={r.cabysGeneral} />
-          <AjustesHacienda />
-          {r.plan === 'BASICO' ? (
-            <Tarjeta>
-              <h2 className="font-semibold">Pedidos en línea</h2>
-              <p className="mt-1 text-sm text-muted">
-                Los pedidos en línea, el domicilio con repartidores, los clientes y la tarjeta de
-                sellos vienen con el plan Completo. Escríbanos para cambiar de plan.
-              </p>
-            </Tarjeta>
-          ) : (
-            <AjustesEnLinea r={r} />
-          )}
+      <TituloPagina titulo="Ajustes" detalle={seccion.detalle} />
+      <div className="grid items-start gap-6 lg:grid-cols-[230px_minmax(0,1fr)]">
+        <nav
+          aria-label="Secciones de ajustes"
+          className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:sticky lg:top-6 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0"
+        >
+          {SECCIONES.map(({ id, texto, icono: Icono }) => {
+            const activa = id === seccion.id;
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-current={activa ? 'page' : undefined}
+                onClick={() => setParams({ seccion: id }, { replace: true })}
+                className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-3 text-left text-sm font-medium whitespace-nowrap ${
+                  activa ? 'bg-purple text-on-accent' : 'text-muted hover:bg-surface hover:text-fg'
+                }`}
+              >
+                <Icono className="size-4 shrink-0" aria-hidden /> {texto}
+              </button>
+            );
+          })}
+        </nav>
+        <div key={seccion.id} className="anim-entrar min-w-0 space-y-4">
+          {contenido}
         </div>
-      )}
+      </div>
     </>
   );
 }

@@ -129,7 +129,7 @@ export function PanelLayout() {
       </header>
 
       <main className="md:pl-[72px]">
-        <div className="mx-auto w-full max-w-6xl px-4 pt-4 pb-10 md:px-8 md:pt-3">
+        <div className="mx-auto w-full max-w-[1600px] px-4 pt-4 pb-10 md:px-8 md:pt-3">
           <div className="mb-2 hidden justify-end gap-2 md:flex">
             <BotonSonido />
             <Campana />

@@ -1,4 +1,13 @@
-import { Bike, Plus, Printer, Undo2, Users, X } from 'lucide-react';
+import {
+  Bike,
+  PanelRightClose,
+  PanelRightOpen,
+  Plus,
+  Printer,
+  Undo2,
+  Users,
+  X,
+} from 'lucide-react';
 import { IconoMesa, QuantityStepper } from '@menu-qr/ui';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -73,6 +82,23 @@ export function CajaPage() {
   const [menu, setMenu] = useState<MenuPublico>();
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [filtro, setFiltro] = useState<'todas' | 'cuenta'>('todas');
+  // Panel de caja a la derecha: se puede ocultar y se recuerda en esta computadora.
+  const [lateral, setLateral] = useState(() => {
+    try {
+      return localStorage.getItem('caja:lateral') !== 'oculto';
+    } catch {
+      return true;
+    }
+  });
+  const cambiarLateral = (v: boolean) => {
+    setLateral(v);
+    try {
+      localStorage.setItem('caja:lateral', v ? 'visible' : 'oculto');
+    } catch {
+      // sin almacenamiento: solo dura esta visita
+    }
+  };
   const [efectivo, setEfectivo] = useState<EfectivoRepartidor[]>([]);
 
   useEffect(() => {
@@ -142,6 +168,10 @@ export function CajaPage() {
         a.cuenta!.abiertaEn.localeCompare(b.cuenta!.abiertaEn),
     );
 
+  const pidieron = abiertas.filter((m) => m.cuenta!.estado === 'PIDIO_CUENTA').length;
+  const visibles =
+    filtro === 'cuenta' ? abiertas.filter((m) => m.cuenta!.estado === 'PIDIO_CUENTA') : abiertas;
+
   const items =
     cuenta?.pedidos
       .filter((p) => p.estado === 'CONFIRMADO')
@@ -186,6 +216,14 @@ export function CajaPage() {
     let ok = false;
     await accion(async () => {
       fe.setDatos(await api(`/comprobantes/${id}/anular`, { method: 'POST', body: datos }));
+      ok = true;
+    });
+    return ok;
+  };
+  const enviarCorreoComprobante = async (id: string, correo: string) => {
+    let ok = false;
+    await accion(async () => {
+      fe.setDatos(await api(`/comprobantes/${id}/enviar`, { method: 'POST', body: { correo } }));
       ok = true;
     });
     return ok;
@@ -254,6 +292,24 @@ export function CajaPage() {
       ),
     );
 
+  const nombreGrupoCampo = (
+    <>
+      <label className="mt-3 block text-sm">
+        <span className="font-medium">Nombre del grupo (opcional)</span>
+        <input
+          value={nombreGrupo}
+          maxLength={40}
+          placeholder="Ej.: Ana"
+          onChange={(e) => setNombreGrupo(e.target.value)}
+          className="mt-1 h-11 w-full rounded-xl border border-line bg-surface px-3"
+        />
+      </label>
+      {totalGrupo && elegidos.length > 0 && (
+        <Desglose totales={totalGrupo} precio={precio} iva={iva} servicio={servicio} />
+      )}
+    </>
+  );
+
   const ticketCuenta = (c: CuentaDetalle): Ticket => ({
     titulo: `PRE-CUENTA · ${c.lugar}`,
     lineas: lineasDe(items),
@@ -263,6 +319,15 @@ export function CajaPage() {
   return (
     <div className="tema-operacion min-h-dvh">
       <Encabezado titulo="Caja">
+        {!lateral && (
+          <button
+            type="button"
+            onClick={() => cambiarLateral(true)}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-surface px-3 text-sm font-medium hover:bg-surface-2"
+          >
+            <PanelRightOpen className="size-4" aria-hidden /> Panel de caja
+          </button>
+        )}
         <Conexion conectado={conectado} />
       </Encabezado>
       {error && (
@@ -271,112 +336,83 @@ export function CajaPage() {
         </p>
       )}
 
-      <div className="mx-auto grid max-w-6xl items-start gap-4 p-4 md:grid-cols-[320px_1fr] print:hidden">
-        <aside className="space-y-2">
-          <TurnoCaja
-            precio={precio}
-            billetes={enColones}
-            version={version}
-            onImprimir={(t) => {
-              setTicket(null);
-              setCierre(t);
-              setTimeout(() => window.print(), 50);
-            }}
-          />
-          <div className="h-2" />
+      <div
+        className={`grid items-start gap-4 p-4 print:hidden lg:grid-cols-[290px_minmax(0,1fr)] ${lateral ? 'xl:grid-cols-[290px_minmax(0,1fr)_350px]' : ''}`}
+      >
+        {/* Cuentas abiertas: columna fija con su propio scroll (en celular, cuadrícula). */}
+        <aside className="space-y-2 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:pr-1">
           <TituloColumna titulo="Cuentas abiertas" punto="bg-amber" cantidad={abiertas.length} />
-          {abiertas.length === 0 && (
+          <div
+            role="group"
+            aria-label="Filtrar cuentas"
+            className="flex gap-1 rounded-md bg-surface p-1"
+          >
+            <button
+              type="button"
+              aria-pressed={filtro === 'todas'}
+              onClick={() => setFiltro('todas')}
+              className={`${claseBoton(filtro === 'todas')} min-h-10 min-w-0 flex-1 px-2 text-xs sm:text-sm`}
+            >
+              Todas ({abiertas.length})
+            </button>
+            <button
+              type="button"
+              aria-pressed={filtro === 'cuenta'}
+              onClick={() => setFiltro('cuenta')}
+              className={`${claseBoton(filtro === 'cuenta')} min-h-10 min-w-0 flex-1 px-2 text-xs sm:text-sm`}
+            >
+              Pidieron cuenta ({pidieron})
+            </button>
+          </div>
+          {visibles.length === 0 && (
             <p className="rounded-lg border border-dashed border-line p-6 text-center text-sm text-muted">
-              No hay cuentas abiertas.
+              {filtro === 'cuenta' ? 'Nadie ha pedido la cuenta.' : 'No hay cuentas abiertas.'}
             </p>
           )}
-          {abiertas.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setSeleccion(m.cuenta!.id)}
-              aria-pressed={seleccion === m.cuenta!.id}
-              className={`anim-entrar flex min-h-16 w-full items-center justify-between gap-3 rounded-lg border-2 bg-app p-3 text-left shadow-tarjeta hover:-translate-y-0.5 hover:shadow-app ${
-                seleccion === m.cuenta!.id
-                  ? 'border-purple'
-                  : m.cuenta!.estado === 'PIDIO_CUENTA'
-                    ? 'border-amber'
-                    : 'border-transparent'
-              }`}
-            >
-              <IconoMesa className="size-7 shrink-0 text-purple" />
-              <span className="flex-1">
-                <span className="font-semibold">Mesa {m.numero}</span>
-                {m.cuenta!.estado === 'PIDIO_CUENTA' && (
-                  <span className="ml-2 rounded-full bg-amber px-2 py-0.5 text-xs font-semibold text-on-amber">
-                    pidió cuenta
-                  </span>
-                )}
-                <span className="block text-xs text-muted">
-                  desde {hora(m.cuenta!.abiertaEn)}
-                  {m.cuenta!.personas ? ` · ${m.cuenta!.personas} personas` : ''}
-                </span>
-              </span>
-              <span className="font-semibold tabular-nums">{precio(m.cuenta!.total)}</span>
-            </button>
-          ))}
-
-          {efectivo.length > 0 && (
-            <>
-              <div className="pt-4">
-                <TituloColumna titulo="Efectivo de repartidores" punto="bg-info" />
-              </div>
-              {efectivo.map((e) => (
-                <div
-                  key={e.repartidor.id}
-                  className="flex items-center gap-3 rounded-lg bg-app p-3 shadow-tarjeta"
-                >
-                  <Bike className="size-6 shrink-0 text-info" aria-hidden />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">{e.repartidor.nombre}</span>
-                    <span className="block text-xs text-muted">
-                      {e.pedidos === 1 ? '1 entrega' : `${e.pedidos} entregas`} · {precio(e.total)}
+          <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-1">
+            {visibles.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setSeleccion(m.cuenta!.id)}
+                aria-pressed={seleccion === m.cuenta!.id}
+                className={`anim-entrar flex min-h-16 w-full min-w-0 items-center justify-between gap-3 rounded-lg border-2 bg-app p-3 text-left shadow-tarjeta hover:-translate-y-0.5 hover:shadow-app ${
+                  seleccion === m.cuenta!.id
+                    ? 'border-purple'
+                    : m.cuenta!.estado === 'PIDIO_CUENTA'
+                      ? 'border-amber'
+                      : 'border-transparent'
+                }`}
+              >
+                <IconoMesa className="size-7 shrink-0 text-purple" />
+                <span className="flex-1">
+                  <span className="font-semibold">Mesa {m.numero}</span>
+                  {m.cuenta!.estado === 'PIDIO_CUENTA' && (
+                    <span className="ml-2 rounded-full bg-amber px-2 py-0.5 text-xs font-semibold text-on-amber">
+                      pidió cuenta
                     </span>
+                  )}
+                  <span className="block text-xs text-muted">
+                    desde {hora(m.cuenta!.abiertaEn)}
+                    {m.cuenta!.personas ? ` · ${m.cuenta!.personas} personas` : ''}
                   </span>
-                  <button
-                    type="button"
-                    disabled={ocupado}
-                    onClick={() =>
-                      confirm(
-                        `¿Recibió ${precio(e.total)} en efectivo de ${e.repartidor.nombre}?`,
-                      ) &&
-                      accion(async () => {
-                        await api('/enlinea/efectivo/recibir', {
-                          method: 'POST',
-                          body: { repartidorId: e.repartidor.id },
-                        });
-                        cargar();
-                      })
-                    }
-                    className="min-h-11 rounded-md bg-ok px-3 text-sm font-semibold text-on-accent disabled:opacity-50"
-                  >
-                    Recibido
-                  </button>
-                </div>
-              ))}
-            </>
-          )}
-          {fe.datos?.activa && (
-            <ListaComprobantes
-              datos={fe.datos}
-              precio={precio}
-              onReintentar={reintentar}
-              onAnular={anularComprobante}
-              ocupado={ocupado}
-            />
-          )}
+                </span>
+                <span className="font-semibold tabular-nums">{precio(m.cuenta!.total)}</span>
+              </button>
+            ))}
+          </div>
         </aside>
 
-        <section className="rounded-lg bg-app p-5 shadow-tarjeta md:sticky md:top-20">
+        {/* Cobro: lo que se consumió a la izquierda y cómo pagan a la derecha. */}
+        <section className="min-w-0 rounded-lg bg-app p-5 shadow-tarjeta">
           {!cuenta ? (
-            <p className="py-10 text-center text-muted">
-              Elija una cuenta de la lista para ver el detalle y cobrarla.
-            </p>
+            <div className="grid min-h-64 place-items-center text-center text-muted">
+              <p>
+                {abiertas.length
+                  ? 'Elija una cuenta de la izquierda para ver el detalle y cobrarla.'
+                  : 'No hay cuentas abiertas por ahora.'}
+              </p>
+            </div>
           ) : (
             <>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -415,214 +451,293 @@ export function CajaPage() {
               )}
 
               {modo === 'junto' ? (
-                <>
-                  <table className="w-full text-sm">
-                    <tbody className="divide-y divide-line">
-                      {items.map((i) => (
-                        <tr key={i.id}>
-                          <td className="w-10 py-1.5 pr-2 align-top tabular-nums">{i.cantidad}×</td>
-                          <td className="py-1.5">
-                            {i.nombreEs}
-                            {i.modificadores.length > 0 && (
-                              <span className="text-muted">
-                                {' '}
-                                ({i.modificadores.map((m) => m.nombre).join(', ')})
-                              </span>
-                            )}
-                          </td>
-                          <td className="w-28 py-1.5 text-right align-top tabular-nums">
-                            {precio(i.precioUnitario * i.cantidad)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <Desglose totales={cuenta} precio={precio} iva={iva} servicio={servicio} />
-                  <PanelCobro
-                    cobro={cobro}
-                    onCambio={setCobro}
-                    total={cuenta.total}
-                    precio={precio}
-                    billetes={enColones}
-                    error={cobroJunto?.error ?? null}
-                  />
-                  {fe.datos?.activa && <FacturaA valor={receptor} onCambio={setReceptor} />}
-                  {factura.error && <p className="mt-2 text-sm text-amber-ink">{factura.error}</p>}
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => imprimir(ticketCuenta(cuenta))}
-                      className="inline-flex min-h-12 items-center gap-2 rounded-md bg-surface px-4 text-sm font-medium hover:bg-surface-2"
-                    >
-                      <Printer className="size-4" aria-hidden /> Imprimir pre-cuenta
-                    </button>
-                    <button
-                      type="button"
-                      onClick={cerrarJunto}
-                      disabled={!cobroJunto?.datos || !!factura.error || ocupado || pendientes}
-                      className="min-h-12 flex-1 rounded-md bg-purple font-semibold text-on-accent disabled:opacity-50"
-                    >
-                      {ocupado ? 'Cerrando…' : `Cobrar todo · ${precio(cuenta.total)}`}
-                    </button>
+                <div className="grid gap-6 xl:grid-cols-2">
+                  <div className="min-w-0">
+                    <table className="w-full text-sm">
+                      <tbody className="divide-y divide-line">
+                        {items.map((i) => (
+                          <tr key={i.id}>
+                            <td className="w-10 py-1.5 pr-2 align-top tabular-nums">
+                              {i.cantidad}×
+                            </td>
+                            <td className="py-1.5">
+                              {i.nombreEs}
+                              {i.modificadores.length > 0 && (
+                                <span className="text-muted">
+                                  {' '}
+                                  ({i.modificadores.map((m) => m.nombre).join(', ')})
+                                </span>
+                              )}
+                            </td>
+                            <td className="w-28 py-1.5 text-right align-top tabular-nums">
+                              {precio(i.precioUnitario * i.cantidad)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <Desglose totales={cuenta} precio={precio} iva={iva} servicio={servicio} />
                   </div>
-                </>
-              ) : (
-                <>
-                  {cuenta.pagos.length > 0 && (
-                    <div className="mb-4 space-y-2">
-                      <h3 className="text-sm font-semibold tracking-wide text-muted uppercase">
-                        Ya cobrado
-                      </h3>
-                      {cuenta.pagos.map((p, n) => {
-                        const suyos = items.filter((i) => i.pagoId === p.id);
-                        const titulo = p.nombre || `Grupo ${n + 1}`;
-                        return (
-                          <div key={p.id} className="anim-entrar rounded-md bg-ok-soft p-3 text-sm">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="flex-1 font-semibold text-ok">
-                                {titulo} · {NOMBRE_METODO[p.metodoPago]}
-                              </span>
-                              <span className="font-semibold tabular-nums">{precio(p.total)}</span>
-                            </div>
-                            <p className="mt-0.5 text-muted">
-                              {suyos.map((i) => `${i.cantidad}× ${i.nombreEs}`).join(', ')}
-                            </p>
-                            {p.lineas.length > 0 && (
-                              <p className="mt-0.5 text-xs">
-                                {p.lineas.map((l) => textoLinea(l, precio)).join(' + ')}
-                              </p>
-                            )}
-                            <div className="mt-2 flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  imprimir({
-                                    titulo: `COMPROBANTE · ${cuenta.lugar} · ${titulo}`,
-                                    lineas: lineasDe(suyos),
-                                    totales: p,
-                                    metodo: NOMBRE_METODO[p.metodoPago],
-                                    pago: p.lineas.map((l) => textoLinea(l, precio)),
-                                  })
-                                }
-                                className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-app px-3 font-medium hover:bg-surface"
-                              >
-                                <Printer className="size-4" aria-hidden /> Imprimir
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => deshacer(p.id)}
-                                disabled={ocupado}
-                                className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-muted hover:bg-app"
-                              >
-                                <Undo2 className="size-4" aria-hidden /> Deshacer
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <h3 className="text-sm font-semibold tracking-wide text-muted uppercase">
-                    Elija lo que paga este grupo ({sinPagar.length} por cobrar)
-                  </h3>
-                  <ul className="mt-2 divide-y divide-line text-sm">
-                    {sinPagar.map((i) => {
-                      const n = eleccion[i.id] ?? 0;
-                      return (
-                        <li key={i.id} className="flex min-h-12 items-center gap-3 py-1.5">
-                          <input
-                            type="checkbox"
-                            aria-label={`Incluir ${i.nombreEs}`}
-                            checked={n > 0}
-                            onChange={() =>
-                              setEleccion((e) => ({ ...e, [i.id]: n > 0 ? 0 : i.cantidad }))
-                            }
-                            className="size-5 accent-purple"
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span className="tabular-nums">{i.cantidad}×</span> {i.nombreEs}
-                            {i.modificadores.length > 0 && (
-                              <span className="text-muted">
-                                {' '}
-                                ({i.modificadores.map((m) => m.nombre).join(', ')})
-                              </span>
-                            )}
-                          </span>
-                          {n > 0 && i.cantidad > 1 && (
-                            <QuantityStepper
-                              valor={n}
-                              min={1}
-                              max={i.cantidad}
-                              onCambio={(v) => setEleccion((e) => ({ ...e, [i.id]: v }))}
-                            />
-                          )}
-                          <span className="w-24 text-right tabular-nums">
-                            {precio(i.precioUnitario * (n || i.cantidad))}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  {sinPagar.length > 0 && (
-                    <>
-                      <label className="mt-3 block text-sm">
-                        <span className="font-medium">Nombre del grupo (opcional)</span>
-                        <input
-                          value={nombreGrupo}
-                          maxLength={40}
-                          placeholder="Ej.: Ana"
-                          onChange={(e) => setNombreGrupo(e.target.value)}
-                          className="mt-1 h-11 w-full rounded-xl border border-line bg-surface px-3"
-                        />
-                      </label>
-                      {totalGrupo && elegidos.length > 0 && (
-                        <Desglose
-                          totales={totalGrupo}
-                          precio={precio}
-                          iva={iva}
-                          servicio={servicio}
-                        />
-                      )}
-                      {totalGrupo && elegidos.length > 0 && (
-                        <PanelCobro
-                          cobro={cobro}
-                          onCambio={setCobro}
-                          total={totalGrupo.total}
-                          precio={precio}
-                          billetes={enColones}
-                          error={cobroGrupo?.error ?? null}
-                        />
-                      )}
-                      {fe.datos?.activa && totalGrupo && elegidos.length > 0 && (
-                        <FacturaA valor={receptor} onCambio={setReceptor} />
-                      )}
-                      {factura.error && (
-                        <p className="mt-2 text-sm text-amber-ink">{factura.error}</p>
-                      )}
+                  <div className="min-w-0 xl:border-l xl:border-line xl:pl-6">
+                    <PanelCobro
+                      cobro={cobro}
+                      onCambio={setCobro}
+                      total={cuenta.total}
+                      precio={precio}
+                      billetes={enColones}
+                      error={cobroJunto?.error ?? null}
+                    />
+                    {fe.datos?.activa && <FacturaA valor={receptor} onCambio={setReceptor} />}
+                    {factura.error && (
+                      <p className="mt-2 text-sm text-amber-ink">{factura.error}</p>
+                    )}
+                    <div className="mt-4 flex flex-wrap gap-2">
                       <button
                         type="button"
-                        onClick={cobrarGrupo}
-                        disabled={
-                          !cobroGrupo?.datos ||
-                          !!factura.error ||
-                          !elegidos.length ||
-                          ocupado ||
-                          pendientes
-                        }
-                        className="mt-4 min-h-12 w-full rounded-md bg-purple font-semibold text-on-accent disabled:opacity-50"
+                        onClick={() => imprimir(ticketCuenta(cuenta))}
+                        className="inline-flex min-h-12 items-center gap-2 rounded-md bg-surface px-4 text-sm font-medium hover:bg-surface-2"
                       >
-                        {elegidos.length && totalGrupo
-                          ? `Cobrar este grupo · ${precio(totalGrupo.total)}`
-                          : 'Elija los platos de este grupo'}
+                        <Printer className="size-4" aria-hidden /> Imprimir pre-cuenta
                       </button>
-                    </>
-                  )}
-                </>
+                      <button
+                        type="button"
+                        onClick={cerrarJunto}
+                        disabled={!cobroJunto?.datos || !!factura.error || ocupado || pendientes}
+                        className="min-h-12 flex-1 rounded-md bg-purple font-semibold text-on-accent disabled:opacity-50"
+                      >
+                        {ocupado ? 'Cerrando…' : `Cobrar todo · ${precio(cuenta.total)}`}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-6 xl:grid-cols-2">
+                  <div className="min-w-0">
+                    {cuenta.pagos.length > 0 && (
+                      <div className="mb-4 space-y-2">
+                        <h3 className="text-sm font-semibold tracking-wide text-muted uppercase">
+                          Ya cobrado
+                        </h3>
+                        {cuenta.pagos.map((p, n) => {
+                          const suyos = items.filter((i) => i.pagoId === p.id);
+                          const titulo = p.nombre || `Grupo ${n + 1}`;
+                          return (
+                            <div
+                              key={p.id}
+                              className="anim-entrar rounded-md bg-ok-soft p-3 text-sm"
+                            >
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="flex-1 font-semibold text-ok">
+                                  {titulo} · {NOMBRE_METODO[p.metodoPago]}
+                                </span>
+                                <span className="font-semibold tabular-nums">
+                                  {precio(p.total)}
+                                </span>
+                              </div>
+                              <p className="mt-0.5 text-muted">
+                                {suyos.map((i) => `${i.cantidad}× ${i.nombreEs}`).join(', ')}
+                              </p>
+                              {p.lineas.length > 0 && (
+                                <p className="mt-0.5 text-xs">
+                                  {p.lineas.map((l) => textoLinea(l, precio)).join(' + ')}
+                                </p>
+                              )}
+                              <div className="mt-2 flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    imprimir({
+                                      titulo: `COMPROBANTE · ${cuenta.lugar} · ${titulo}`,
+                                      lineas: lineasDe(suyos),
+                                      totales: p,
+                                      metodo: NOMBRE_METODO[p.metodoPago],
+                                      pago: p.lineas.map((l) => textoLinea(l, precio)),
+                                    })
+                                  }
+                                  className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-app px-3 font-medium hover:bg-surface"
+                                >
+                                  <Printer className="size-4" aria-hidden /> Imprimir
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => deshacer(p.id)}
+                                  disabled={ocupado}
+                                  className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-muted hover:bg-app"
+                                >
+                                  <Undo2 className="size-4" aria-hidden /> Deshacer
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <h3 className="text-sm font-semibold tracking-wide text-muted uppercase">
+                      Elija lo que paga este grupo ({sinPagar.length} por cobrar)
+                    </h3>
+                    <ul className="mt-2 divide-y divide-line text-sm">
+                      {sinPagar.map((i) => {
+                        const n = eleccion[i.id] ?? 0;
+                        return (
+                          <li key={i.id} className="flex min-h-12 items-center gap-3 py-1.5">
+                            <input
+                              type="checkbox"
+                              aria-label={`Incluir ${i.nombreEs}`}
+                              checked={n > 0}
+                              onChange={() =>
+                                setEleccion((e) => ({ ...e, [i.id]: n > 0 ? 0 : i.cantidad }))
+                              }
+                              className="size-5 accent-purple"
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="tabular-nums">{i.cantidad}×</span> {i.nombreEs}
+                              {i.modificadores.length > 0 && (
+                                <span className="text-muted">
+                                  {' '}
+                                  ({i.modificadores.map((m) => m.nombre).join(', ')})
+                                </span>
+                              )}
+                            </span>
+                            {n > 0 && i.cantidad > 1 && (
+                              <QuantityStepper
+                                valor={n}
+                                min={1}
+                                max={i.cantidad}
+                                onCambio={(v) => setEleccion((e) => ({ ...e, [i.id]: v }))}
+                              />
+                            )}
+                            <span className="w-24 text-right tabular-nums">
+                              {precio(i.precioUnitario * (n || i.cantidad))}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {sinPagar.length > 0 && nombreGrupoCampo}
+                  </div>
+                  <div className="min-w-0 xl:border-l xl:border-line xl:pl-6">
+                    {sinPagar.length > 0 ? (
+                      <>
+                        {totalGrupo && elegidos.length > 0 && (
+                          <PanelCobro
+                            cobro={cobro}
+                            onCambio={setCobro}
+                            total={totalGrupo.total}
+                            precio={precio}
+                            billetes={enColones}
+                            error={cobroGrupo?.error ?? null}
+                          />
+                        )}
+                        {fe.datos?.activa && totalGrupo && elegidos.length > 0 && (
+                          <FacturaA valor={receptor} onCambio={setReceptor} />
+                        )}
+                        {factura.error && (
+                          <p className="mt-2 text-sm text-amber-ink">{factura.error}</p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={cobrarGrupo}
+                          disabled={
+                            !cobroGrupo?.datos ||
+                            !!factura.error ||
+                            !elegidos.length ||
+                            ocupado ||
+                            pendientes
+                          }
+                          className="mt-4 min-h-12 w-full rounded-md bg-purple font-semibold text-on-accent disabled:opacity-50"
+                        >
+                          {elegidos.length && totalGrupo
+                            ? `Cobrar este grupo · ${precio(totalGrupo.total)}`
+                            : 'Elija los platos de este grupo'}
+                        </button>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted">Todo está cobrado.</p>
+                    )}
+                  </div>
+                </div>
               )}
             </>
           )}
         </section>
+
+        {/* Panel de caja: turno, efectivo de repartidores y factura electrónica (se puede ocultar). */}
+        {lateral && (
+          <aside className="space-y-2 lg:col-start-1 xl:sticky xl:top-20 xl:col-start-auto xl:max-h-[calc(100dvh-6rem)] xl:overflow-y-auto xl:pr-1">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-sm font-semibold tracking-wide text-muted uppercase">Caja</h2>
+              <button
+                type="button"
+                onClick={() => cambiarLateral(false)}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm text-muted hover:bg-surface"
+              >
+                <PanelRightClose className="size-4" aria-hidden /> Ocultar
+              </button>
+            </div>
+            <TurnoCaja
+              precio={precio}
+              billetes={enColones}
+              version={version}
+              onImprimir={(t) => {
+                setTicket(null);
+                setCierre(t);
+                setTimeout(() => window.print(), 50);
+              }}
+            />
+            {efectivo.length > 0 && (
+              <>
+                <div className="pt-4">
+                  <TituloColumna titulo="Efectivo de repartidores" punto="bg-info" />
+                </div>
+                {efectivo.map((e) => (
+                  <div
+                    key={e.repartidor.id}
+                    className="flex items-center gap-3 rounded-lg bg-app p-3 shadow-tarjeta"
+                  >
+                    <Bike className="size-6 shrink-0 text-info" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-semibold">{e.repartidor.nombre}</span>
+                      <span className="block text-xs text-muted">
+                        {e.pedidos === 1 ? '1 entrega' : `${e.pedidos} entregas`} ·{' '}
+                        {precio(e.total)}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      disabled={ocupado}
+                      onClick={() =>
+                        confirm(
+                          `¿Recibió ${precio(e.total)} en efectivo de ${e.repartidor.nombre}?`,
+                        ) &&
+                        accion(async () => {
+                          await api('/enlinea/efectivo/recibir', {
+                            method: 'POST',
+                            body: { repartidorId: e.repartidor.id },
+                          });
+                          cargar();
+                        })
+                      }
+                      className="min-h-11 rounded-md bg-ok px-3 text-sm font-semibold text-on-accent disabled:opacity-50"
+                    >
+                      Recibido
+                    </button>
+                  </div>
+                ))}
+              </>
+            )}
+            {fe.datos?.activa && (
+              <ListaComprobantes
+                datos={fe.datos}
+                precio={precio}
+                onReintentar={reintentar}
+                onAnular={anularComprobante}
+                onEnviarCorreo={enviarCorreoComprobante}
+                ocupado={ocupado}
+              />
+            )}
+          </aside>
+        )}
       </div>
 
       {/* Ticket de 80 mm: solo visible al imprimir (ver index.css). */}

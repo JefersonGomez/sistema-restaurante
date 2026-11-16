@@ -3,6 +3,7 @@ import request from 'supertest';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { app } from '../src/app';
 import { cifrar } from '../src/lib/cifrado';
+import { correosEnviados } from '../src/lib/correo';
 import { env } from '../src/lib/env';
 import { prisma } from '../src/lib/prisma';
 import { procesarCola } from '../src/modules/factura/factura.service';
@@ -406,5 +407,79 @@ describe('nota de crédito (Fase 15.4)', () => {
       razon: 'Cobro duplicado',
       estado: 'PENDIENTE',
     });
+  });
+});
+
+describe('envío por correo y PDF (Fase 15.5)', () => {
+  const aceptar = async () => {
+    vi.mocked(enviar).mockResolvedValue();
+    await procesarCola();
+    vi.mocked(consultar).mockResolvedValue({
+      estado: 'aceptado',
+      mensaje: 'Aceptado',
+      respuestaXml: '<MensajeHacienda>aceptado</MensajeHacienda>',
+    });
+    await yaToca();
+    await procesarCola();
+  };
+
+  it('al aceptarse, le llega al cliente el PDF, el XML y la respuesta de Hacienda', async () => {
+    correosEnviados.length = 0;
+    await configurar();
+    await cerrar({
+      metodoPago: 'EFECTIVO',
+      receptor: { tipoId: '01', numero: '112340567', nombre: 'Ana Solís', correo: 'ana@x.test' },
+    });
+    await aceptar();
+    expect(correosEnviados).toHaveLength(1);
+    const correo = correosEnviados[0]!;
+    expect(correo).toMatchObject({ para: 'ana@x.test' });
+    expect(correo.asunto).toMatch(/^Factura electrónica N\.º \d+ · /);
+    expect(correo.adjuntos!.map((a) => a.nombre.split('.').pop())).toEqual(['pdf', 'xml', 'xml']);
+    expect(correo.adjuntos![0]!.contenido.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(correo.adjuntos![2]!.nombre).toMatch(/respuesta-hacienda\.xml$/);
+    const [c] = await comprobantes();
+    expect(c!.correoEnviadoEn).not.toBeNull();
+    // No se vuelve a mandar en la siguiente vuelta de la cola.
+    await yaToca();
+    await procesarCola();
+    expect(correosEnviados).toHaveLength(1);
+  });
+
+  it('sin correo no se envía; la caja puede enviarlo a otro correo y descargar el PDF', async () => {
+    correosEnviados.length = 0;
+    await configurar();
+    await cerrar();
+    const [te] = await comprobantes();
+    const enviarA = (body: object) =>
+      request(app)
+        .post(`/comprobantes/${te!.id}/enviar`)
+        .set('Authorization', `Bearer ${caja}`)
+        .send(body);
+    expect((await enviarA({ correo: 'x@y.test' })).body.error.code).toBe('NO_ACEPTADO');
+    await aceptar();
+    expect(correosEnviados).toHaveLength(0);
+    expect((await enviarA({})).body.error.code).toBe('SIN_CORREO');
+    const r = await enviarA({ correo: 'cliente@correo.test' });
+    expect(r.status).toBe(200);
+    expect(correosEnviados[0]).toMatchObject({ para: 'cliente@correo.test' });
+    expect(r.body.comprobantes[0]).toMatchObject({ correoPara: 'cliente@correo.test' });
+
+    const pdf = await request(app)
+      .get(`/comprobantes/${te!.id}/pdf`)
+      .set('Authorization', `Bearer ${caja}`)
+      .buffer(true)
+      .parse((res, cb) => {
+        const partes: Buffer[] = [];
+        res.on('data', (b: Buffer) => partes.push(b));
+        res.on('end', () => cb(null, Buffer.concat(partes)));
+      });
+    expect(pdf.status).toBe(200);
+    expect(pdf.headers['content-type']).toContain('application/pdf');
+    expect((pdf.body as Buffer).subarray(0, 5).toString()).toBe('%PDF-');
+    const xml = await request(app)
+      .get(`/comprobantes/${te!.id}/xml`)
+      .set('Authorization', `Bearer ${caja}`);
+    expect(xml.text).toContain('<TiqueteElectronico');
   });
 });

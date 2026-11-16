@@ -11,6 +11,19 @@ export const reintentar = async (req: Request<{ id: string }>, res: Response) =>
 export const anular = async (req: Request<{ id: string }>, res: Response) => {
   res.json(await s.anular(restauranteDe(req), req.params.id, req.body));
 };
+export const enviar = async (req: Request<{ id: string }>, res: Response) => {
+  res.json(await s.enviarPorCorreo(restauranteDe(req), req.params.id, req.body.correo));
+};
+export const descargar = async (
+  req: Request<{ id: string; tipo: 'pdf' | 'xml' }>,
+  res: Response,
+) => {
+  const a = await s.archivo(restauranteDe(req), req.params.id, req.params.tipo);
+  res
+    .type(req.params.tipo === 'pdf' ? 'application/pdf' : 'application/xml')
+    .attachment(a.nombre)
+    .send(a.contenido);
+};
 export const contribuyente = async (req: Request, res: Response) => {
   res.json(await s.contribuyente((req.query as { id: string }).id));
 };

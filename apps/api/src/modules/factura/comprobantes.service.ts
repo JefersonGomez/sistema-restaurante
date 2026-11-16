@@ -9,6 +9,7 @@ import { cifrar, descifrar } from '../../lib/cifrado';
 import { prisma } from '../../lib/prisma';
 import { HttpError, noExiste } from '../../middlewares/errorHandler';
 import { datosLugar, lugarDe } from '../pedidos/detalle';
+import { archivosComprobante, enviarComprobantePorCorreo } from './correo-comprobante';
 import { emitirComprobante, procesarCola, type Receptor } from './factura.service';
 import { abrirLlave } from './firma';
 import { ErrorHacienda, token, type Ambiente } from './hacienda';
@@ -49,6 +50,10 @@ export async function listar(restauranteId: string): Promise<ComprobantesCaja> {
       lugar: lugarDe(c.cuenta),
       referenciaId: c.referenciaId,
       anulado: anulados.has(c.id),
+      receptorCorreo: c.receptorCorreo,
+      correoPara: c.correoPara,
+      correoEnviadoEn: c.correoEnviadoEn?.toISOString() ?? null,
+      correoError: c.correoError,
       createdAt: c.createdAt.toISOString(),
     })),
   };
@@ -130,6 +135,27 @@ export async function anular(restauranteId: string, id: string, input: AnularCom
       receptor: input.receptor,
     });
   return listar(restauranteId);
+}
+
+// Envía (o reenvía) un comprobante aceptado al correo del cliente o a otro.
+export async function enviarPorCorreo(restauranteId: string, id: string, correo?: string) {
+  const c = await prisma.comprobante.findFirst({ where: { id, restauranteId } });
+  if (!c) throw noExiste('Comprobante');
+  if (c.estado !== 'ACEPTADO')
+    throw new HttpError(409, 'NO_ACEPTADO', 'Se envía cuando Hacienda lo haya aceptado');
+  const para = correo ?? c.receptorCorreo;
+  if (!para) throw new HttpError(400, 'SIN_CORREO', 'Escriba el correo del cliente');
+  const r = await enviarComprobantePorCorreo(c, para);
+  if (!r.enviado) throw new HttpError(502, 'CORREO_NO_ENVIADO', r.error ?? 'No se pudo enviar');
+  return listar(restauranteId);
+}
+
+// PDF o XML firmado para descargar.
+export async function archivo(restauranteId: string, id: string, tipo: 'pdf' | 'xml') {
+  const c = await prisma.comprobante.findFirst({ where: { id, restauranteId } });
+  if (!c?.xmlFirmado) throw noExiste('Comprobante');
+  const [pdf, xml] = await archivosComprobante(c);
+  return tipo === 'pdf' ? pdf! : xml!;
 }
 
 // Registro público de contribuyentes de Hacienda (nombre y actividades por cédula).

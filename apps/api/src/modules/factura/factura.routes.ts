@@ -3,8 +3,10 @@ import {
   anularComprobanteSchema,
   configHaciendaSchema,
   contribuyenteQuerySchema,
+  enviarComprobanteSchema,
   idParamSchema,
 } from '@menu-qr/shared';
+import { z } from 'zod';
 import { autenticar } from '../../middlewares/auth';
 import { requireRole } from '../../middlewares/roles';
 import { tenant } from '../../middlewares/tenant';
@@ -21,6 +23,16 @@ comprobantesRouter.get(
   c.contribuyente,
 );
 comprobantesRouter.post('/:id/reintentar', validate({ params: idParamSchema }), c.reintentar);
+comprobantesRouter.post(
+  '/:id/enviar',
+  validate({ params: idParamSchema, body: enviarComprobanteSchema }),
+  c.enviar,
+);
+comprobantesRouter.get(
+  '/:id/:tipo',
+  validate({ params: z.object({ id: z.uuid(), tipo: z.enum(['pdf', 'xml']) }) }),
+  c.descargar,
+);
 comprobantesRouter.post(
   '/:id/anular',
   validate({ params: idParamSchema, body: anularComprobanteSchema }),

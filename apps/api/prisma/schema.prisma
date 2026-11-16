@@ -836,31 +836,34 @@ enum EstadoComprobante {
 
 // Cola de comprobantes: uno por cobro. El proceso de envío los manda y consulta su estado.
 model Comprobante {
-  id             String            @id @default(uuid()) @db.Uuid
-  restauranteId  String            @db.Uuid
-  cuentaId       String            @db.Uuid
-  pagoId         String?           @db.Uuid
-  tipo           TipoComprobante
-  numero         Int
-  consecutivo    String
-  clave          String            @unique
-  fechaEmision   DateTime
-  total          Int // céntimos
-  ambiente       String
-  estado         EstadoComprobante @default(PENDIENTE)
-  mensaje        String? // respuesta de Hacienda o motivo del error
-  xmlFirmado     String?
-  respuestaXml   String?
-  intentos       Int               @default(0)
-  proximoIntento DateTime          @default(now())
-  receptorNombre String?
-  receptorTipoId String?
-  receptorNumero String?
-  receptorCorreo String?
-  referenciaId   String?           @db.Uuid // nota de crédito: comprobante que anula
-  razon          String? // nota de crédito: motivo de la anulación
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id              String            @id @default(uuid()) @db.Uuid
+  restauranteId   String            @db.Uuid
+  cuentaId        String            @db.Uuid
+  pagoId          String?           @db.Uuid
+  tipo            TipoComprobante
+  numero          Int
+  consecutivo     String
+  clave           String            @unique
+  fechaEmision    DateTime
+  total           Int // céntimos
+  ambiente        String
+  estado          EstadoComprobante @default(PENDIENTE)
+  mensaje         String? // respuesta de Hacienda o motivo del error
+  xmlFirmado      String?
+  respuestaXml    String?
+  intentos        Int               @default(0)
+  proximoIntento  DateTime          @default(now())
+  receptorNombre  String?
+  receptorTipoId  String?
+  receptorNumero  String?
+  receptorCorreo  String?
+  referenciaId    String?           @db.Uuid // nota de crédito: comprobante que anula
+  razon           String? // nota de crédito: motivo de la anulación
+  correoEnviadoEn DateTime? // envío al cliente del PDF y los XML (Fase 15.5)
+  correoPara      String?
+  correoError     String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   restaurante Restaurante @relation(fields: [restauranteId], references: [id])
   cuenta      Cuenta      @relation(fields: [cuentaId], references: [id], onDelete: Cascade)

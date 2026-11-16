@@ -123,3 +123,17 @@ comprobantes de proveedores.
      (devolución de un plato) quedan fuera de esta fase.
    - Al final: revisión completa con un flujo de punta a punta (pedido del usuario).
      ✅ Hecho (2026-11-15): factura anulada con nota de crédito y reemitida, ambas aceptadas en pruebas.
+5. **15.5** Envío de la factura por correo (pedido 2026-11-15: "sigue con el envío de la factura
+   por correo").
+   - Cuando Hacienda **acepta** un comprobante con correo del cliente, se le envía solo un correo
+     con la **representación gráfica en PDF**, el **XML firmado** y el **XML de respuesta de
+     Hacienda** (lo que el cliente necesita para su contabilidad). También a la nota de crédito.
+   - La caja puede **reenviarlo** o enviarlo a otro correo (también un tiquete), y **descargar el
+     PDF** de cualquier comprobante.
+   - PDF hecho con pdfkit (ya en el stack) a partir del XML firmado: emisor, cliente, tipo, clave,
+     consecutivo, fecha, líneas, IVA por tarifa, servicio, envío, medios de pago y total. La
+     leyenda legal exacta de la representación gráfica se confirma con el contador.
+   - Correos con Resend (ya usado en la Fase 9) con adjuntos. Sin `RESEND_API_KEY` (desarrollo) no
+     sale nada: se registra en la consola y se guarda una copia del correo y sus adjuntos en una
+     carpeta local para revisarlos.
+     ✅ Hecho (2026-11-15): PDF + XML + respuesta de Hacienda por correo; descarga del PDF en caja.

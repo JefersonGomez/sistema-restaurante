@@ -97,6 +97,33 @@
     "Restablecer contraseña" (queda `debeCambiarPassword=true` con una clave temporal). Arreglo
     sugerido al usuario: Panel → Personal → cocina → cambiar la contraseña a `Cocina123!`, o
     `pnpm db:seed` (no se cambió a mano en la BD).
+  - 15.4 subida (commit `ead86da`).
+  - **15.5 ✅ factura por correo** (pedido "sigue con el envío de la factura por correo"):
+    `lib/correo.ts` con adjuntos (Resend `attachments`), devuelve `{enviado, error}`; sin
+    `RESEND_API_KEY` guarda copia en `%TEMP%/kitchago-correos/<fecha>-<correo>/` (correo.txt +
+    adjuntos). `factura/pdf.ts`: representación gráfica con pdfkit desde el XML firmado (emisor,
+    cliente, referencia de NC, líneas, IVA por tarifa, otros cargos, medios de pago, total, leyenda
+    - "AMBIENTE DE PRUEBAS" si aplica; "¢" y espacios normales en montos). `correo-comprobante.ts`:
+      adjunta PDF + XML firmado + respuesta de Hacienda; la cola lo manda sola al ACEPTAR si hay
+      `receptorCorreo` (una vez). Columnas `correoEnviadoEn/correoPara/correoError` (migración
+      `correo_comprobante`). API: `POST /comprobantes/:id/enviar {correo?}` (solo ACEPTADO; 502 si el
+      correo no salió), `GET /comprobantes/:id/pdf|xml`. Caja: "PDF" y "Enviar por correo /
+      Reenviar" con el estado del envío. Probado: PDF de la factura real con texto correcto; envío
+      sin Resend → aviso claro y copia con 3 adjuntos. **Para enviar de verdad falta
+      `RESEND_API_KEY` y un dominio verificado en Resend** (sin dominio solo se puede enviar al
+      correo de la cuenta de Resend). Leyenda legal del PDF: confirmar con el contador.
+  - 15.5 verificada tras un reinicio de la computadora (Docker y servidores relevantados): lint
+    pedía quitar espacios invisibles en `pdf.ts` (quedan como `\u00a0\u202f`). 245 tests.
+- **Fase 16 (rediseño de Caja y Ajustes, 2026-11-16)** — spec `docs/especificacion-fase16.md`.
+  - 16.1 Caja a ancho completo: cuentas abiertas a la izquierda (columna fija con scroll, filtro
+    Todas/Pidieron cuenta; en celular 1 columna, tableta 2–3), cobro al centro dividido en
+    consumo | pago desde xl, panel de caja a la derecha (turno, efectivo de repartidores,
+    comprobantes) ocultable con `localStorage` `caja:lateral`; botón "Panel de caja" en el
+    encabezado para volver a mostrarlo. Solo diseño (la lógica del cobro no cambió).
+  - 16.2 Ajustes con menú de secciones (Horario, General, Pedidos en línea, Wi-Fi, Factura
+    electrónica) en `?seccion=`; General en 3 columnas; Horario en 2 columnas. `PanelLayout`
+    pasa de `max-w-6xl` a `max-w-[1600px]` (afecta a todo el panel).
+  - Revisado en Chrome a 1568 px y en marco de 390 px (sin desborde).
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

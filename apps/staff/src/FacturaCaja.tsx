@@ -1,4 +1,4 @@
-import { Ban, FileText, RotateCw, Search } from 'lucide-react';
+import { Ban, Download, FileText, Mail, RotateCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import {
   type AnularComprobanteInput,
@@ -9,7 +9,7 @@ import {
   type Contribuyente,
   type ReceptorInput,
 } from '@menu-qr/shared';
-import { api } from './api';
+import { api, descargar } from './api';
 import { hora, TituloColumna } from './ui';
 
 // --- Factura electrónica en la caja (Fase 15.3) ---
@@ -192,15 +192,18 @@ export function ListaComprobantes({
   precio,
   onReintentar,
   onAnular,
+  onEnviarCorreo,
   ocupado,
 }: {
   datos: ComprobantesCaja;
   precio: (c: number) => string;
   onReintentar: (id: string) => void;
   onAnular: (id: string, datos: AnularComprobanteInput) => Promise<boolean>;
+  onEnviarCorreo: (id: string, correo: string) => Promise<boolean>;
   ocupado: boolean;
 }) {
   const [anulando, setAnulando] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState<{ id: string; correo: string } | null>(null);
   const lista = datos.comprobantes.slice(0, 8);
   const conProblema = datos.comprobantes.filter(
     (c) => c.estado === 'ERROR' || c.estado === 'RECHAZADO',
@@ -237,6 +240,66 @@ export function ListaComprobantes({
             </p>
             {problema && c.mensaje && (
               <p className="mt-1 line-clamp-3 text-xs text-danger">{c.mensaje}</p>
+            )}
+            {c.estado === 'ACEPTADO' && (
+              <>
+                {c.correoEnviadoEn ? (
+                  <p className="mt-1 text-xs text-ok">Enviado por correo a {c.correoPara}</p>
+                ) : (
+                  c.correoError && (
+                    <p className="mt-1 text-xs text-amber-ink">
+                      Correo a {c.correoPara} sin enviar: {c.correoError}
+                    </p>
+                  )
+                )}
+                <div className="mt-2 flex flex-wrap gap-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      descargar(`/comprobantes/${c.id}/pdf`, `${TIPO[c.tipo]}-${c.consecutivo}.pdf`)
+                    }
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-surface px-3 font-medium hover:bg-surface-2"
+                  >
+                    <Download className="size-4" aria-hidden /> PDF
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEnviando({ id: c.id, correo: c.correoPara ?? c.receptorCorreo ?? '' })
+                    }
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-surface px-3 font-medium hover:bg-surface-2"
+                  >
+                    <Mail className="size-4" aria-hidden />
+                    {c.correoEnviadoEn ? 'Reenviar' : 'Enviar por correo'}
+                  </button>
+                </div>
+                {enviando?.id === c.id && (
+                  <form
+                    className="mt-2 flex gap-2"
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (await onEnviarCorreo(c.id, enviando.correo.trim())) setEnviando(null);
+                    }}
+                  >
+                    <input
+                      type="email"
+                      required
+                      value={enviando.correo}
+                      placeholder="correo@cliente.com"
+                      aria-label="Correo del cliente"
+                      onChange={(e) => setEnviando({ id: c.id, correo: e.target.value })}
+                      className={`${campo} mt-0 h-11 min-w-0 flex-1`}
+                    />
+                    <button
+                      type="submit"
+                      disabled={ocupado}
+                      className="min-h-11 rounded-md bg-purple px-3 text-xs font-semibold text-on-accent disabled:opacity-50"
+                    >
+                      Enviar
+                    </button>
+                  </form>
+                )}
+              </>
             )}
             {c.anulado && (
               <p className="mt-1 text-xs font-semibold text-amber-ink">
