@@ -7,7 +7,7 @@ import {
   type AccionEnCola,
   type ResultadoEnvio,
 } from '@menu-qr/shared/cola';
-import { api, ErrorApi } from './api';
+import { api, ErrorApi, FOTO, guardarFoto, leerFoto } from './api';
 
 // Aguantar cortes cortos (Fase 18): las acciones de cocina y mesero que no llegan por falta de
 // internet se guardan en este equipo y se envían solas, en orden, al volver la conexión.
@@ -18,6 +18,7 @@ type Estado = {
   cola: AccionEnCola[];
   enviando: boolean;
   descartadas: AccionEnCola[];
+  fotoEn: number | null; // si la pantalla muestra datos guardados: de cuándo son
 };
 
 function leerCola(): AccionEnCola[] {
@@ -33,6 +34,7 @@ let estado: Estado = {
   cola: leerCola(),
   enviando: false,
   descartadas: [],
+  fotoEn: null,
 };
 const oyentes = new Set<() => void>();
 function cambiar(parcial: Partial<Estado>) {
@@ -55,6 +57,36 @@ export const useConexion = () =>
     },
     () => estado,
   );
+
+export const esSinRed = (e: unknown) => e instanceof ErrorApi && e.status === 0;
+
+// Lectura que guarda una foto de cada respuesta. Sin internet y con `usarFoto` (la primera carga de
+// la pantalla) devuelve la última foto; si no, falla y la pantalla se queda con lo que ya tenía
+// (así no se pierde lo que se marcó sin conexión).
+export async function leerConFoto<T>(ruta: string, usarFoto: boolean): Promise<T> {
+  try {
+    const d = await api<T>(ruta);
+    guardarFoto(ruta, d);
+    if (estado.sinRed || estado.fotoEn) cambiar({ sinRed: false, fotoEn: null });
+    return d;
+  } catch (e) {
+    if (!esSinRed(e)) throw e;
+    const f = usarFoto ? leerFoto<T>(ruta) : null;
+    cambiar({ sinRed: true, ...(f && { fotoEn: Math.min(f.en, estado.fotoEn ?? f.en) }) });
+    if (f) return f.d;
+    throw e;
+  }
+}
+
+// Al cerrar sesión se borran las fotos (no la cola: son acciones ya hechas por el personal).
+export function borrarFotos() {
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith(FOTO)) localStorage.removeItem(k);
+  } catch {
+    // Sin almacenamiento: no hay nada que borrar.
+  }
+  cambiar({ fotoEn: null });
+}
 
 const sinRed = (e: unknown) => e instanceof ErrorApi && (e.status === 0 || e.status >= 500);
 
@@ -120,7 +152,7 @@ export async function enviarPendientes() {
 
 // Aviso abajo de la pantalla y reintentos: al volver la red y cada 10 s mientras haya pendientes.
 export function AvisoConexion() {
-  const { sinRed, cola, enviando, descartadas } = useConexion();
+  const { sinRed, cola, enviando, descartadas, fotoEn } = useConexion();
   useEffect(() => {
     const online = () => {
       cambiar({ sinRed: false });
@@ -185,6 +217,17 @@ export function AvisoConexion() {
                 <strong>Sin conexión.</strong> Lo de cocina y mesero se guarda en este equipo y se
                 envía solo al volver{n > 0 && <> ({acciones(n)} esperando)</>}. Cobrar y la caja
                 necesitan internet.
+                {fotoEn && (
+                  <>
+                    {' '}
+                    Lo que ve es de las{' '}
+                    {new Date(fotoEn).toLocaleTimeString('es-CR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                    .
+                  </>
+                )}
               </>
             ) : (
               <>Conexión de vuelta: enviando {acciones(n)}…</>

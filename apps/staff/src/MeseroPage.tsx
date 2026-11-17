@@ -11,8 +11,8 @@ import type {
 import { avisoAgrupado } from '@menu-qr/shared';
 import { IconoMesa, Modal } from '@menu-qr/ui';
 import { avisar } from './avisos';
-import { apiOEncolar } from './sinConexion';
-import { api, obtenerMenu } from './api';
+import { apiOEncolar, esSinRed, leerConFoto } from './sinConexion';
+import { obtenerMenu } from './api';
 import { useAuth } from './auth';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
 import { TomarPedido } from './TomarPedido';
@@ -93,14 +93,17 @@ export function MeseroPage() {
   }, [slug]);
   const precio = formatoPrecio(menu?.restaurante.moneda ?? 'CRC');
 
+  const conDatos = useRef(false);
   const cargar = useCallback(async () => {
     try {
+      const foto = !conDatos.current;
       const [m, p, l, i] = await Promise.all([
-        api<MesaOperacion[]>('/operacion/mesas'),
-        api<PedidoPendiente[]>('/operacion/pedidos?estado=PENDIENTE'),
-        api<Llamada[]>('/operacion/llamadas?atendida=false'),
-        api<ItemListo[]>('/operacion/items?estado=LISTO'),
+        leerConFoto<MesaOperacion[]>('/operacion/mesas', foto),
+        leerConFoto<PedidoPendiente[]>('/operacion/pedidos?estado=PENDIENTE', foto),
+        leerConFoto<Llamada[]>('/operacion/llamadas?atendida=false', foto),
+        leerConFoto<ItemListo[]>('/operacion/items?estado=LISTO', foto),
       ]);
+      conDatos.current = true;
       setMesas(m);
       setPendientes(p);
       setLlamadas(l);
@@ -108,7 +111,8 @@ export function MeseroPage() {
       setError(null);
       setCargado(true);
     } catch (e) {
-      setError((e as Error).message);
+      // Sin internet lo dice el aviso de abajo; la pantalla sigue con lo que tenía.
+      if (!esSinRed(e)) setError((e as Error).message);
     }
   }, []);
   useEffect(() => {
@@ -118,7 +122,12 @@ export function MeseroPage() {
   }, [cargar]);
 
   const cargarCuenta = useCallback(async (id: string | undefined) => {
-    setCuenta(id ? await api<CuentaDetalle>(`/operacion/cuentas/${id}`).catch(() => null) : null);
+    if (!id) return setCuenta(null);
+    try {
+      setCuenta(await leerConFoto<CuentaDetalle>(`/operacion/cuentas/${id}`, true));
+    } catch (e) {
+      if (!esSinRed(e)) setCuenta(null);
+    }
   }, []);
 
   const refrescar = useRefrescoAgrupado(() => {
@@ -143,7 +152,9 @@ export function MeseroPage() {
   );
 
   const accion = async (ruta: string, body?: unknown, method = 'PATCH') => {
-    await apiOEncolar(ruta, { method, body }).catch((e: Error) => setError(e.message));
+    await apiOEncolar(ruta, { method, body }).catch(
+      (e: Error) => !esSinRed(e) && setError(e.message),
+    );
     refrescar();
   };
 

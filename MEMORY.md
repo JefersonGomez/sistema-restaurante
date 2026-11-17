@@ -197,6 +197,14 @@
     a `useTiempoReal`, `AvisoConexion` abajo (sin conexión / enviando / N no se aplicaron).
     Conectado en EstacionPage (avanzar, avisar, deshacer), MeseroPage (`accion`) y TomarPedido.
     Cobros, caja, en línea y panel no se encolan. No probado en el navegador.
+  - 18.1 subida (commit `80b0865`).
+  - **18.2 ✅ Última foto:** `api.ts` `guardarFoto`/`leerFoto` (`localStorage kitchago:foto:<ruta>`);
+    `obtenerMenu` guarda el menú y sin red devuelve la foto. `sinConexion.tsx` `leerConFoto(ruta,
+usarFoto)` (foto solo en la primera carga de la pantalla; después, sin red, falla y la pantalla
+    se queda con su estado para no perder lo optimista), `esSinRed`, `fotoEn` en el aviso ("Lo que
+    ve es de las HH:MM"), `borrarFotos()` en el logout de `auth.tsx`. EstacionPage y MeseroPage
+    (mesas, pendientes, llamadas, listos, cuenta de la mesa, platos) usan `leerConFoto` y no
+    muestran error rojo sin red. No probado en el navegador.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

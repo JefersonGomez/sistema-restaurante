@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { borrarFotos } from './sinConexion';
 import type { Rol } from '@menu-qr/shared';
 import * as api from './api';
 
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
   const logout = async () => {
     await api.logout();
+    borrarFotos();
     setUsuario(null);
   };
 

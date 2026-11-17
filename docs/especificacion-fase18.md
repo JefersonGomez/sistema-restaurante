@@ -28,8 +28,11 @@ Caídas de internet de minutos en el restaurante. KitchaGo sigue en la nube; no 
 
 1. **18.1** Estado de conexión, aviso global y cola de acciones de cocina y mesero (con su lógica
    probada en `shared`). ✅
-2. **18.2** Última foto de los datos: las pantallas de operación muestran lo último que tenían
-   (guardado en el equipo) y las acciones en cola se ven aplicadas.
+2. **18.2** Última foto de los datos: cocina y mesero guardan en el equipo lo último que leyeron
+   (también el menú, para tomar pedidos). Sin internet la pantalla sigue con lo que tenía, sin
+   mensajes de error y con lo marcado sin conexión a la vista; si se abre de cero sin internet,
+   muestra la última foto y el aviso dice de qué hora es. Las fotos se borran al cerrar sesión.
+   Límite: al abrir de cero sin internet, la foto no incluye lo hecho después sin conexión. ✅
 3. **18.3** Que el panel abra aunque se recargue sin internet (service worker escrito a mano, sin
    librerías: guarda la aplicación y la abre desde el equipo).
 

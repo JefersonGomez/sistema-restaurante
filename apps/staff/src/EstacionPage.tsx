@@ -8,7 +8,7 @@ import {
   type PedidoEstacion,
   type TipoCuenta,
 } from '@menu-qr/shared';
-import { apiOEncolar } from './sinConexion';
+import { apiOEncolar, esSinRed, leerConFoto } from './sinConexion';
 import { api } from './api';
 import { avisar } from './avisos';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
@@ -300,7 +300,9 @@ export function EstacionPage() {
   useWakeLock();
 
   useEffect(() => {
-    api<Estacion[]>('/operacion/estaciones').then(setEstaciones, (e: Error) => setError(e.message));
+    leerConFoto<Estacion[]>('/operacion/estaciones', true).then(setEstaciones, (e: Error) =>
+      setError(e.message),
+    );
     const reloj = setInterval(() => setAhora(Date.now()), 1000);
     return () => clearInterval(reloj);
   }, []);
@@ -309,12 +311,16 @@ export function EstacionPage() {
   useEffect(() => guardar('kds-limite', String(limiteMin)), [limiteMin]);
 
   // Se cargan todas las estaciones visibles (para los contadores) y se filtra en pantalla.
+  const conDatos = useRef(false);
   const cargar = useCallback(async () => {
     if (estaciones.length === 0) return;
     try {
       const listas = await Promise.all(
-        estaciones.map((e) => api<PedidoEstacion[]>(`/operacion/estaciones/${e.id}/items`)),
+        estaciones.map((e) =>
+          leerConFoto<PedidoEstacion[]>(`/operacion/estaciones/${e.id}/items`, !conDatos.current),
+        ),
       );
+      conDatos.current = true;
       // Un pedido con platos de cocina y de bar llega dos veces: se junta en una tarjeta.
       const porPedido = new Map<string, PedidoEstacion>();
       for (const p of listas.flat()) {
@@ -324,7 +330,8 @@ export function EstacionPage() {
       setPedidos([...porPedido.values()]);
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      // Sin internet lo dice el aviso de abajo; la pantalla sigue con lo que tenía.
+      if (!esSinRed(e)) setError((e as Error).message);
     }
   }, [estaciones]);
   useEffect(() => {
@@ -332,7 +339,7 @@ export function EstacionPage() {
   }, [cargar]);
 
   const cargarPlatos = useCallback(async () => {
-    setPlatos(await api<Plato[]>('/platos').catch(() => []));
+    setPlatos(await leerConFoto<Plato[]>('/platos', true).catch(() => []));
   }, []);
   const refrescar = useRefrescoAgrupado(cargar);
   const conectado = useTiempoReal(
@@ -448,7 +455,7 @@ export function EstacionPage() {
       })),
     );
   const llamar = async (fn: () => Promise<unknown>) => {
-    await fn().catch((e: Error) => setError(e.message));
+    await fn().catch((e: Error) => !esSinRed(e) && setError(e.message));
     refrescar();
   };
 

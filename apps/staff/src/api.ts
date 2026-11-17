@@ -176,16 +176,43 @@ export async function api<T>(
   return datos as T;
 }
 
+// "Última foto" (Fase 18): copia en el equipo de lo último que se leyó, para mostrarla sin internet.
+export const FOTO = 'kitchago:foto:';
+export function guardarFoto(clave: string, d: unknown) {
+  try {
+    localStorage.setItem(FOTO + clave, JSON.stringify({ en: Date.now(), d }));
+  } catch {
+    // Sin espacio o modo privado: no hay foto, nada más.
+  }
+}
+export function leerFoto<T>(clave: string): { en: number; d: T } | null {
+  try {
+    return JSON.parse(localStorage.getItem(FOTO + clave) ?? 'null') as { en: number; d: T } | null;
+  } catch {
+    return null;
+  }
+}
+
 // Catálogo y configuración del restaurante (moneda, impuestos), del endpoint público.
 let menuCache: { slug: string; menu: Promise<MenuPublico> } | null = null;
 export function obtenerMenu(slug: string, recargar = false) {
   if (!menuCache || menuCache.slug !== slug || recargar)
     menuCache = {
       slug,
-      menu: fetch(`${API}/public/${encodeURIComponent(slug)}/menu`).then((r) => {
-        if (!r.ok) throw new ErrorApi(r.status, 'ERROR', 'No se pudo cargar el menú');
-        return r.json();
-      }),
+      menu: fetch(`${API}/public/${encodeURIComponent(slug)}/menu`).then(
+        async (r) => {
+          if (!r.ok) throw new ErrorApi(r.status, 'ERROR', 'No se pudo cargar el menú');
+          const menu = (await r.json()) as MenuPublico;
+          guardarFoto(`menu:${slug}`, menu);
+          return menu;
+        },
+        () => {
+          // Sin internet: el último menú guardado en este equipo (Fase 18).
+          const f = leerFoto<MenuPublico>(`menu:${slug}`);
+          if (f) return f.d;
+          throw new ErrorApi(0, 'RED', 'Sin conexión');
+        },
+      ),
     };
   return menuCache.menu;
 }
