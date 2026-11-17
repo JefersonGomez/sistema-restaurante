@@ -30,6 +30,11 @@ const CANALES: Record<string, string> = {
   RECOGER: 'Para recoger',
   DOMICILIO: 'A domicilio',
 };
+// Plazo para entregar el servicio a los saloneros (según la información del usuario; a confirmar).
+const PLAZO_SERVICIO: Record<string, string> = {
+  EFECTIVO: 'En 1 semana',
+  TARJETA: 'En 1 mes',
+};
 const METODOS: Record<string, string> = {
   EFECTIVO: 'Efectivo',
   TARJETA: 'Tarjeta',
@@ -72,6 +77,14 @@ function csv(r: Reporte, moneda: Moneda) {
     [],
     ['Método de pago', 'Ventas', 'Cuentas'],
     ...r.porMetodo.map((x) => [METODOS[x.metodo] ?? x.metodo, m(x.total), x.cuentas]),
+    [],
+    ['Servicio a repartir (10 %)', 'Monto', 'Entregar'],
+    ...r.servicio.porMetodo.map((x) => [
+      METODOS[x.metodo] ?? x.metodo,
+      m(x.total),
+      PLAZO_SERVICIO[x.metodo] ?? '',
+    ]),
+    ['Total servicio', m(r.servicio.total)],
     [],
     ['Canal', 'Ventas', 'Cuentas'],
     ...r.porCanal.map((c) => [CANALES[c.canal] ?? c.canal, m(c.total), c.cuentas]),
@@ -347,6 +360,36 @@ export function ReportesPage() {
                     proporcion: x.total / maximo(r.porMetodo.map((y) => y.total)),
                   }))}
                 />
+              </Seccion>
+              <Seccion
+                titulo="Servicio a repartir (10 %)"
+                detalle="Es de los saloneros (Ley 9116). Plazo de entrega según cómo se cobró; confírmelo con su contador."
+              >
+                <p className="font-display text-3xl font-extrabold tabular-nums">
+                  {precio(r.servicio.total)}
+                </p>
+                <TablaBarras
+                  columnas={['Método', 'Entregar', 'Servicio']}
+                  filas={r.servicio.porMetodo.map((x) => ({
+                    clave: x.metodo,
+                    nombre: METODOS[x.metodo] ?? x.metodo,
+                    valores: [PLAZO_SERVICIO[x.metodo] ?? '—', precio(x.total)],
+                    proporcion: x.total / maximo(r.servicio.porMetodo.map((y) => y.total)),
+                  }))}
+                />
+                {r.servicio.porDia.length > 1 && (
+                  <details className="mt-3 text-sm">
+                    <summary className="cursor-pointer text-muted">Por día</summary>
+                    <ul className="mt-2 divide-y divide-line">
+                      {r.servicio.porDia.map((d) => (
+                        <li key={d.dia} className="flex justify-between py-1.5">
+                          <span>{d.dia}</span>
+                          <span className="tabular-nums">{precio(d.total)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
               </Seccion>
               <Seccion
                 titulo="Vistos vs. pedidos"

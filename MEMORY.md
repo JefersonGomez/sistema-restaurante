@@ -152,6 +152,14 @@
     ya (entra al turno); si lo entrega el repartidor (`entregarReparto`) queda pendiente hasta
     «Recibido». Migración de datos `efectivo_domicilio_sin_repartidor` (corrigió #103 y #94).
     2 tests nuevos en `enlinea.test.ts`.
+  - Subido (commit `c3c6c7c`).
+- **Fase 17 (mejoras sin despliegue, 2026-11-16)** — spec `docs/especificacion-fase17.md`.
+  - **17.1 ✅ Servicio a repartir**: `Reporte.servicio = { total, porMetodo, porDia }`
+    (`servicioARepartir` en reportes.service: cuentas cerradas con servicio; por grupo si es
+    separada; con detalle del cobro se reparte proporcional entre métodos, redondeo a la parte
+    mayor). Reportes: sección "Servicio a repartir (10 %)" con plazo Efectivo 1 semana / Tarjeta
+    1 mes (según la info del usuario, a confirmar) y por día; también en el CSV. Test en
+    `reportes.test.ts`.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

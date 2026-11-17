@@ -252,6 +252,78 @@ export async function rango(
       total: n(c.total),
       cuentas: n(c.cuentas),
     })),
+    servicio: await servicioARepartir(restauranteId, ini, fin, tz),
+  };
+}
+
+// Reparte un monto entero en proporción a las partes; el redondeo queda en la parte más grande.
+function proporcional(monto: number, partes: { metodo: string; monto: number }[]) {
+  const suma = partes.reduce((s, p) => s + p.monto, 0);
+  if (!suma) return [{ metodo: partes[0]?.metodo ?? 'SIN_DATO', monto }];
+  const r = partes.map((p) => ({ metodo: p.metodo, monto: Math.floor((monto * p.monto) / suma) }));
+  const mayor = r.reduce((a, b) => (b.monto > a.monto ? b : a));
+  mayor.monto += monto - r.reduce((s, p) => s + p.monto, 0);
+  return r;
+}
+
+// 10 % de servicio del rango (Ley 9116: es de los saloneros), por método de pago y por día. Con el
+// detalle del cobro una cuenta mixta se reparte en proporción a lo pagado con cada método.
+async function servicioARepartir(restauranteId: string, ini: Date, fin: Date, tz: string) {
+  const cuentas = await prisma.cuenta.findMany({
+    where: {
+      restauranteId,
+      estado: 'CERRADA',
+      montoServicio: { gt: 0 },
+      cerradaEn: { gte: ini, lt: fin },
+    },
+    select: {
+      montoServicio: true,
+      total: true,
+      metodoPago: true,
+      cerradaEn: true,
+      lineasCobro: { select: { metodo: true, monto: true, pagoId: true } },
+      pagos: { select: { id: true, montoServicio: true, total: true, metodoPago: true } },
+    },
+  });
+  const diaLocal = new Intl.DateTimeFormat('en-CA', { timeZone: tz });
+  const porMetodo = new Map<string, number>();
+  const porDia = new Map<string, number>();
+  const sumar = (m: Map<string, number>, k: string, v: number) => m.set(k, (m.get(k) ?? 0) + v);
+  for (const c of cuentas) {
+    // Cuenta separada: cada grupo con su servicio; si no, la cuenta completa.
+    const grupos = c.pagos.length
+      ? c.pagos.map((p) => ({
+          id: p.id,
+          servicio: p.montoServicio,
+          total: p.total,
+          metodo: p.metodoPago,
+        }))
+      : [
+          {
+            id: null,
+            servicio: c.montoServicio,
+            total: c.total,
+            metodo: c.metodoPago ?? 'SIN_DATO',
+          },
+        ];
+    for (const g of grupos) {
+      const lineas = c.lineasCobro.filter((l) => l.pagoId === g.id);
+      const partes = lineas.length
+        ? lineas.map((l) => ({ metodo: l.metodo as string, monto: l.monto }))
+        : [{ metodo: g.metodo, monto: g.total }];
+      for (const p of proporcional(g.servicio, partes)) sumar(porMetodo, p.metodo, p.monto);
+    }
+    sumar(porDia, diaLocal.format(c.cerradaEn!), c.montoServicio);
+  }
+  return {
+    total: cuentas.reduce((s, c) => s + c.montoServicio, 0),
+    porMetodo: [...porMetodo]
+      .map(([metodo, total]) => ({ metodo, total }))
+      .filter((m) => m.total > 0)
+      .sort((a, b) => b.total - a.total),
+    porDia: [...porDia]
+      .map(([dia, total]) => ({ dia, total }))
+      .sort((a, b) => a.dia.localeCompare(b.dia)),
   };
 }
 

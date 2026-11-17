@@ -304,3 +304,56 @@ describe('por método con el detalle del cobro (Fase 13)', () => {
     expect(r.porMetodo.reduce((s, m) => s + m.total, 0)).toBe(r.resumen.totalVendido);
   });
 });
+
+describe('servicio a repartir (Fase 17)', () => {
+  it('suma el 10 % del rango y lo reparte por método según lo pagado', async () => {
+    const dia = new Date('2026-07-10T18:00:00Z');
+    const base = { restauranteId: restauranteA, mesaId: a.mesa.id, estado: 'CERRADA' as const };
+    // Mixta: servicio ₡1 000 de una cuenta de ₡11 000 pagada ₡3 300 efectivo + ₡7 700 tarjeta.
+    const mixta = await prisma.cuenta.create({
+      data: { ...base, total: 1100000, montoServicio: 100000, metodoPago: 'MIXTO', cerradaEn: dia },
+    });
+    await prisma.lineaCobro.createMany({
+      data: [
+        { cuentaId: mixta.id, metodo: 'EFECTIVO', monto: 330000 },
+        { cuentaId: mixta.id, metodo: 'TARJETA', monto: 770000 },
+      ],
+    });
+    // Separada: un grupo por SINPE (₡200 de servicio) y otro en efectivo con detalle (₡100).
+    const separada = await prisma.cuenta.create({
+      data: { ...base, total: 330000, montoServicio: 30000, metodoPago: 'MIXTO', cerradaEn: dia },
+    });
+    const g = { cuentaId: separada.id, subtotal: 0, montoIva: 0 };
+    await prisma.pagoCuenta.create({
+      data: { ...g, metodoPago: 'SINPE', montoServicio: 20000, total: 220000 },
+    });
+    const efectivo = await prisma.pagoCuenta.create({
+      data: { ...g, metodoPago: 'EFECTIVO', montoServicio: 10000, total: 110000 },
+    });
+    await prisma.lineaCobro.create({
+      data: { cuentaId: separada.id, pagoId: efectivo.id, metodo: 'EFECTIVO', monto: 110000 },
+    });
+    // En línea (sin servicio): no cuenta.
+    await prisma.cuenta.create({
+      data: {
+        restauranteId: restauranteA,
+        tipo: 'RECOGER',
+        estado: 'CERRADA',
+        total: 500000,
+        metodoPago: 'EFECTIVO',
+        cerradaEn: dia,
+      },
+    });
+
+    const r = (await reporte('2026-07-10', '2026-07-10')).body as Reporte;
+    expect(r.servicio).toEqual({
+      total: 130000,
+      porMetodo: [
+        { metodo: 'TARJETA', total: 70000 },
+        { metodo: 'EFECTIVO', total: 40000 },
+        { metodo: 'SINPE', total: 20000 },
+      ],
+      porDia: [{ dia: '2026-07-10', total: 130000 }],
+    });
+  });
+});

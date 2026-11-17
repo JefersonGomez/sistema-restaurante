@@ -801,6 +801,12 @@ export type Reporte = {
   preparacion: { estacion: string; items: number; promedioSeg: number; demorados: number }[];
   cancelaciones: { motivo: string; items: number }[];
   porCanal: { canal: TipoCuenta; total: number; cuentas: number }[];
+  // 10 % de servicio cobrado (es de los saloneros), por método de pago y por día local.
+  servicio: {
+    total: number;
+    porMetodo: { metodo: string; total: number }[];
+    porDia: { dia: string; total: number }[];
+  };
 };
 
 export type ReporteHoy = {
