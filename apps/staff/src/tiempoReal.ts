@@ -43,10 +43,14 @@ export function useTiempoReal(manejadores: Manejadores, alConectar: () => void) 
     const resincronizar = () => document.visibilityState === 'visible' && ref.current.alConectar();
     window.addEventListener('online', resincronizar);
     document.addEventListener('visibilitychange', resincronizar);
+    // Las acciones guardadas sin conexión ya llegaron: recargar para ver el estado real.
+    const recargar = () => ref.current.alConectar();
+    window.addEventListener('kitchago:cola-enviada', recargar);
     return () => {
       cerrado = true;
       window.removeEventListener('online', resincronizar);
       document.removeEventListener('visibilitychange', resincronizar);
+      window.removeEventListener('kitchago:cola-enviada', recargar);
       socket.disconnect();
     };
   }, [eventos]);

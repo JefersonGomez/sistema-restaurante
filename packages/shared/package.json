@@ -11,7 +11,8 @@
     "./horario": "./src/horario.ts",
     "./color": "./src/color.ts",
     "./mapa": "./src/mapa.ts",
-    "./planes": "./src/planes.ts"
+    "./planes": "./src/planes.ts",
+    "./cola": "./src/cola.ts"
   },
   "scripts": {
     "typecheck": "tsc -p .",

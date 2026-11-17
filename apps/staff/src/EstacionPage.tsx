@@ -8,6 +8,7 @@ import {
   type PedidoEstacion,
   type TipoCuenta,
 } from '@menu-qr/shared';
+import { apiOEncolar } from './sinConexion';
 import { api } from './api';
 import { avisar } from './avisos';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
@@ -459,7 +460,7 @@ export function EstacionPage() {
     temporizador.current = setTimeout(() => setDeshacible(null), DESHACER_MS);
     fijar([i.id], estado);
     llamar(() =>
-      api(`/operacion/pedidos/${p.pedidoId}/avanzar`, {
+      apiOEncolar(`/operacion/pedidos/${p.pedidoId}/avanzar`, {
         method: 'POST',
         body: { estado, itemIds: [i.id] },
       }),
@@ -469,7 +470,7 @@ export function EstacionPage() {
     const ids = p.items.map((i) => i.id);
     fijar(ids, estado);
     llamar(() =>
-      api(`/operacion/pedidos/${p.pedidoId}/avanzar`, {
+      apiOEncolar(`/operacion/pedidos/${p.pedidoId}/avanzar`, {
         method: 'POST',
         body: { estado, itemIds: ids },
       }),
@@ -480,14 +481,16 @@ export function EstacionPage() {
     setPedidos((ps) =>
       ps.map((x) => (x.pedidoId === p.pedidoId ? { ...x, listoAvisadoEn: hora } : x)),
     );
-    llamar(() => api(`/operacion/pedidos/${p.pedidoId}/avisar-listo`, { method: 'POST' }));
+    llamar(() => apiOEncolar(`/operacion/pedidos/${p.pedidoId}/avisar-listo`, { method: 'POST' }));
   };
   const deshacer = () => {
     if (!deshacible) return;
     const { item, estado } = deshacible;
     setDeshacible(null);
     fijar([item.id], estado === 'LISTO' ? 'EN_PREPARACION' : 'PENDIENTE');
-    llamar(() => api(`/operacion/items/${item.id}/deshacer`, { method: 'POST', body: { estado } }));
+    llamar(() =>
+      apiOEncolar(`/operacion/items/${item.id}/deshacer`, { method: 'POST', body: { estado } }),
+    );
   };
 
   const alternarAgotado = async (p: Plato) => {

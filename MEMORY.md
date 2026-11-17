@@ -185,6 +185,18 @@
     recrear el mapa) en el seguimiento con "Ubicación actualizada hace…" (textos es/en). Sin
     librerías nuevas. Test en `repartos.test.ts`. No revisado en el navegador (servidores
     apagados por memoria).
+  - 17.3 subida (commit `d51fe11`).
+- **Fase 18 — Aguantar cortes cortos de internet** (`docs/especificacion-fase18.md`). El usuario
+  eligió "aguantar cortes cortos" (no servidor local). Sub-fases 18.1 cola + aviso, 18.2 última foto
+  de los datos, 18.3 service worker a mano.
+  - **18.1 ✅** `packages/shared/src/cola.ts` (export `@menu-qr/shared/cola`): `esEncolable` (lista
+    cerrada de rutas de cocina/mesero), `describirAccion`, `vaciarCola` (en orden; se detiene sin
+    red; descarta rechazadas). Staff `sinConexion.tsx`: cola en `localStorage kitchago:cola`,
+    `apiOEncolar` (sin red + encolable → guarda; si ya hay cola, va detrás), `enviarPendientes`
+    (al volver la red y cada 10 s; 5xx = sin red), evento `kitchago:cola-enviada` que hace recargar
+    a `useTiempoReal`, `AvisoConexion` abajo (sin conexión / enviando / N no se aplicaron).
+    Conectado en EstacionPage (avanzar, avisar, deshacer), MeseroPage (`accion`) y TomarPedido.
+    Cobros, caja, en línea y panel no se encolan. No probado en el navegador.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

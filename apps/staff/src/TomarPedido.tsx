@@ -10,7 +10,8 @@ import {
   normalizar,
   type NuevaLinea,
 } from '@menu-qr/ui';
-import { api, ErrorApi, obtenerMenu } from './api';
+import { apiOEncolar } from './sinConexion';
+import { ErrorApi, obtenerMenu } from './api';
 
 type Linea = NuevaLinea & { clave: number };
 
@@ -72,7 +73,7 @@ export function TomarPedido({ slug, mesa, precio, onListo, onCerrar }: Props) {
     try {
       for (let intento = 0; ; intento++) {
         try {
-          await api(`/operacion/mesas/${mesa.id}/pedidos`, { method: 'POST', body });
+          await apiOEncolar(`/operacion/mesas/${mesa.id}/pedidos`, { method: 'POST', body });
           return onListo();
         } catch (e) {
           const err = e as ErrorApi;

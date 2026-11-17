@@ -11,6 +11,7 @@ import type {
 import { avisoAgrupado } from '@menu-qr/shared';
 import { IconoMesa, Modal } from '@menu-qr/ui';
 import { avisar } from './avisos';
+import { apiOEncolar } from './sinConexion';
 import { api, obtenerMenu } from './api';
 import { useAuth } from './auth';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
@@ -142,7 +143,7 @@ export function MeseroPage() {
   );
 
   const accion = async (ruta: string, body?: unknown, method = 'PATCH') => {
-    await api(ruta, { method, body }).catch((e: Error) => setError(e.message));
+    await apiOEncolar(ruta, { method, body }).catch((e: Error) => setError(e.message));
     refrescar();
   };
 

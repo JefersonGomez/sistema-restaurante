@@ -6,6 +6,7 @@ import type { Rol } from '@menu-qr/shared';
 import { activarConPrimerToque } from './alertas';
 import { AuthProvider, useAuth } from './auth';
 import { AvisosGlobales } from './AvisosGlobales';
+import { AvisoConexion } from './sinConexion';
 import { CajaPage } from './CajaPage';
 import { ComprobantesCajaPage, RepartidoresCajaPage } from './CajaExtras';
 import { EnLineaPage } from './EnLineaPage';
@@ -61,6 +62,7 @@ function App() {
   return (
     <>
       <AvisosGlobales />
+      {usuario && <AvisoConexion />}
       <Routes>
         <Route path="/login" element={usuario ? <Navigate to={inicio} replace /> : <LoginPage />} />
         <Route path="/olvide" element={<OlvidePage />} />
