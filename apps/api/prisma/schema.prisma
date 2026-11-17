@@ -859,6 +859,7 @@ model Comprobante {
   receptorCorreo  String?
   referenciaId    String?           @db.Uuid // nota de crédito: comprobante que anula
   razon           String? // nota de crédito: motivo de la anulación
+  lineasNota      Json? // nota parcial: { codigo, lineas: [{ indice, cantidad }] } (null = anula todo)
   correoEnviadoEn DateTime? // envío al cliente del PDF y los XML (Fase 15.5)
   correoPara      String?
   correoError     String?

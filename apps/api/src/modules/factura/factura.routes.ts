@@ -5,6 +5,7 @@ import {
   contribuyenteQuerySchema,
   enviarComprobanteSchema,
   idParamSchema,
+  notaParcialSchema,
 } from '@menu-qr/shared';
 import { z } from 'zod';
 import { autenticar } from '../../middlewares/auth';
@@ -27,6 +28,12 @@ comprobantesRouter.post(
   '/:id/enviar',
   validate({ params: idParamSchema, body: enviarComprobanteSchema }),
   c.enviar,
+);
+comprobantesRouter.get('/:id/lineas', validate({ params: idParamSchema }), c.lineas);
+comprobantesRouter.post(
+  '/:id/nota-parcial',
+  validate({ params: idParamSchema, body: notaParcialSchema }),
+  c.notaParcial,
 );
 comprobantesRouter.get(
   '/:id/:tipo',

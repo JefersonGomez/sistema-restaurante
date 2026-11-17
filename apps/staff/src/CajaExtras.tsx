@@ -113,6 +113,7 @@ export function ComprobantesCajaPage() {
                   guardar(`/comprobantes/${id}/anular`, datos)
                 }
                 onEnviarCorreo={(id, correo) => guardar(`/comprobantes/${id}/enviar`, { correo })}
+                onNotaParcial={(id, datos) => guardar(`/comprobantes/${id}/nota-parcial`, datos)}
               />
             )}
           </>

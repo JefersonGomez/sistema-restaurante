@@ -998,6 +998,7 @@ export type ComprobanteResumen = {
   lugar: string; // "Mesa 3", "Domicilio #12 · Ana"
   referenciaId: string | null; // nota de crédito: el comprobante que anula
   anulado: boolean; // tiene una nota de crédito vigente
+  notasParciales: number; // notas de crédito parciales vigentes sobre este comprobante
   receptorCorreo: string | null;
   correoPara: string | null; // último envío por correo
   correoEnviadoEn: string | null;
@@ -1015,6 +1016,29 @@ export const anularComprobanteSchema = z.object({
   receptor: receptorSchema.optional(),
 });
 export type AnularComprobanteInput = z.infer<typeof anularComprobanteSchema>;
+// Nota de crédito parcial: qué unidades de qué líneas se acreditan (Fase 17.2).
+export const notaParcialSchema = z.object({
+  razon: z.string().trim().min(5, 'Escriba el motivo (5 caracteres o más)').max(180),
+  tipo: z.enum(['devolucion', 'error']), // 06 devolución de mercancía / 14 corrige monto
+  lineas: z
+    .array(
+      z.object({
+        indice: z.number().int().min(1).max(1000),
+        cantidad: z.number().int().min(1).max(999),
+      }),
+    )
+    .min(1, 'Elija al menos un plato')
+    .max(100)
+    .refine((ls) => new Set(ls.map((l) => l.indice)).size === ls.length, 'Plato repetido'),
+});
+export type NotaParcialInput = z.infer<typeof notaParcialSchema>;
+export type LineaAcreditable = {
+  indice: number;
+  detalle: string;
+  cantidad: number;
+  precioUnitario: number; // céntimos, como se cobró
+  disponible: number; // unidades que todavía se pueden acreditar
+};
 export type ComprobantesCaja = { activa: boolean; comprobantes: ComprobanteResumen[] };
 
 // Datos de Hacienda del restaurante. Los secretos son opcionales al editar (si faltan se conservan).

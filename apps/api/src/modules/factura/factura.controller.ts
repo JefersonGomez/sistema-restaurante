@@ -24,6 +24,12 @@ export const descargar = async (
     .attachment(a.nombre)
     .send(a.contenido);
 };
+export const lineas = async (req: Request<{ id: string }>, res: Response) => {
+  res.json(await s.lineasAcreditables(restauranteDe(req), req.params.id));
+};
+export const notaParcial = async (req: Request<{ id: string }>, res: Response) => {
+  res.json(await s.notaParcial(restauranteDe(req), req.params.id, req.body));
+};
 export const contribuyente = async (req: Request, res: Response) => {
   res.json(await s.contribuyente((req.query as { id: string }).id));
 };

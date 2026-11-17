@@ -483,3 +483,102 @@ describe('envío por correo y PDF (Fase 15.5)', () => {
     expect(xml.text).toContain('<TiqueteElectronico');
   });
 });
+
+describe('nota de crédito parcial (Fase 17.2)', () => {
+  const post = (ruta: string, body: object) =>
+    request(app).post(ruta).set('Authorization', `Bearer ${caja}`).send(body);
+  const aceptado = async () => {
+    await configurar();
+    await cerrar({ metodoPago: 'EFECTIVO' });
+    const [te] = await comprobantes();
+    await prisma.comprobante.update({ where: { id: te!.id }, data: { estado: 'ACEPTADO' } });
+    return te!;
+  };
+
+  it('acredita solo las unidades elegidas, con su parte del servicio, y no deja pasarse', async () => {
+    const te = await aceptado();
+    const lineas = await request(app)
+      .get(`/comprobantes/${te.id}/lineas`)
+      .set('Authorization', `Bearer ${caja}`);
+    expect(
+      lineas.body.map((l: { detalle: string; disponible: number }) => [l.detalle, l.disponible]),
+    ).toEqual([
+      ['Casado (Medio)', 1],
+      ['Refresco', 2],
+    ]);
+
+    const r = await post(`/comprobantes/${te.id}/nota-parcial`, {
+      razon: 'Devolvió un refresco',
+      tipo: 'devolucion',
+      lineas: [{ indice: 2, cantidad: 1 }],
+    });
+    expect(r.status).toBe(200);
+    const nc = (await comprobantes()).find((c) => c.tipo === 'NC')!;
+    expect(nc).toMatchObject({
+      referenciaId: te.id,
+      lineasNota: { codigo: '06', lineas: [{ indice: 2, cantidad: 1 }] },
+    });
+    expect(nc.xmlFirmado).toContain('<Detalle>Refresco</Detalle>');
+    expect(nc.xmlFirmado).not.toContain('Casado');
+    expect(nc.xmlFirmado).toContain('<Cantidad>1.000</Cantidad>');
+    expect(nc.xmlFirmado).toContain('<Codigo>06</Codigo><Razon>Devolvió un refresco</Razon>');
+    expect(nc.xmlFirmado).toContain('<TipoDocumentoOC>06</TipoDocumentoOC>'); // su parte del 10 %
+    // Hacienda exige el medio de pago también en la nota (se probó en el ambiente de pruebas).
+    expect(nc.xmlFirmado).toContain('<MedioPago><TipoMedioPago>01</TipoMedioPago>');
+    expect(nc.total).toBeGreaterThan(150000); // el refresco con IVA más su servicio
+    expect(nc.total).toBeLessThan(te.total);
+    expect(r.body.comprobantes.find((c: { id: string }) => c.id === te.id)).toMatchObject({
+      anulado: false,
+      notasParciales: 1,
+    });
+
+    // Queda 1 refresco: pedir 2 se rechaza; la anulación total se bloquea.
+    const demas = await post(`/comprobantes/${te.id}/nota-parcial`, {
+      razon: 'Otro refresco',
+      tipo: 'error',
+      lineas: [{ indice: 2, cantidad: 2 }],
+    });
+    expect(demas.body.error).toMatchObject({
+      code: 'EXCEDE',
+      message: expect.stringContaining('solo quedan 1'),
+    });
+    expect(
+      (await post(`/comprobantes/${te.id}/anular`, { razon: 'Anular todo' })).body.error.code,
+    ).toBe('TIENE_PARCIALES');
+    expect(
+      (await post(`/comprobantes/${te.id}/nota-parcial`, { razon: 'x', tipo: 'error', lineas: [] }))
+        .status,
+    ).toBe(400);
+  });
+
+  it('un comprobante anulado no admite parciales; una parcial con error se reemite igual', async () => {
+    const te = await aceptado();
+    await post(`/comprobantes/${te.id}/nota-parcial`, {
+      razon: 'Se cobró de más',
+      tipo: 'error',
+      lineas: [{ indice: 1, cantidad: 1 }],
+    });
+    const nc = (await comprobantes()).find((c) => c.tipo === 'NC')!;
+    expect(nc.xmlFirmado).toContain('<Codigo>14</Codigo>');
+    await prisma.comprobante.update({ where: { id: nc.id }, data: { estado: 'ERROR' } });
+    await post(`/comprobantes/${nc.id}/reintentar`, {});
+    const notas = (await comprobantes()).filter((c) => c.tipo === 'NC');
+    expect(notas).toHaveLength(2);
+    expect(notas[1]).toMatchObject({
+      lineasNota: { codigo: '14', lineas: [{ indice: 1, cantidad: 1 }] },
+    });
+
+    // Otro cobro, anulado por completo: ya no queda nada por acreditar.
+    await prisma.comprobante.deleteMany({ where: { tipo: 'NC' } });
+    await post(`/comprobantes/${te.id}/anular`, { razon: 'Anular todo' });
+    const r = await post(`/comprobantes/${te.id}/nota-parcial`, {
+      razon: 'Devolución',
+      tipo: 'devolucion',
+      lineas: [{ indice: 2, cantidad: 1 }],
+    });
+    expect(r.body.error).toMatchObject({
+      code: 'EXCEDE',
+      message: expect.stringContaining('por completo'),
+    });
+  });
+});

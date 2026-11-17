@@ -4,13 +4,22 @@ import type {
   ConfigHaciendaInput,
   ConfigHaciendaVista,
   Contribuyente,
+  LineaAcreditable,
+  NotaParcialInput,
 } from '@menu-qr/shared';
+import type { Comprobante } from '../../generated/prisma/client';
 import { cifrar, descifrar } from '../../lib/cifrado';
 import { prisma } from '../../lib/prisma';
 import { HttpError, noExiste } from '../../middlewares/errorHandler';
 import { datosLugar, lugarDe } from '../pedidos/detalle';
 import { archivosComprobante, enviarComprobantePorCorreo } from './correo-comprobante';
-import { emitirComprobante, procesarCola, type Receptor } from './factura.service';
+import {
+  emitirComprobante,
+  lineasDelCobro,
+  procesarCola,
+  type DatosNota,
+  type Receptor,
+} from './factura.service';
 import { abrirLlave } from './firma';
 import { ErrorHacienda, token, type Ambiente } from './hacienda';
 
@@ -25,7 +34,7 @@ export async function listar(restauranteId: string): Promise<ComprobantesCaja> {
       include: { cuenta: { select: datosLugar } },
     }),
   ]);
-  // Anulados: los que tienen una nota de crédito que no falló.
+  // Notas de crédito vigentes (que no fallaron): sin líneas = anulado; con líneas = parcial.
   const notas = await prisma.comprobante.findMany({
     where: {
       restauranteId,
@@ -33,9 +42,11 @@ export async function listar(restauranteId: string): Promise<ComprobantesCaja> {
       referenciaId: { in: lista.map((c) => c.id) },
       estado: { notIn: ['ERROR', 'RECHAZADO'] },
     },
-    select: { referenciaId: true },
+    select: { referenciaId: true, lineasNota: true },
   });
-  const anulados = new Set(notas.map((n) => n.referenciaId));
+  const anulados = new Set(notas.filter((n) => !n.lineasNota).map((n) => n.referenciaId));
+  const parciales = (id: string) =>
+    notas.filter((n) => n.lineasNota && n.referenciaId === id).length;
   return {
     activa: !!cfg?.activa,
     comprobantes: lista.map((c) => ({
@@ -50,6 +61,7 @@ export async function listar(restauranteId: string): Promise<ComprobantesCaja> {
       lugar: lugarDe(c.cuenta),
       referenciaId: c.referenciaId,
       anulado: anulados.has(c.id),
+      notasParciales: parciales(c.id),
       receptorCorreo: c.receptorCorreo,
       correoPara: c.correoPara,
       correoEnviadoEn: c.correoEnviadoEn?.toISOString() ?? null,
@@ -86,12 +98,20 @@ export async function reintentar(restauranteId: string, id: string) {
       c.tipo === 'NC' && c.referenciaId
         ? await prisma.comprobante.findUnique({ where: { id: c.referenciaId } })
         : null;
+    const nota = c.lineasNota as DatosNota | null;
     const nuevo = await emitirComprobante({
       restauranteId,
       cuentaId: c.cuentaId,
       pagoId: c.pagoId ?? undefined,
       receptor,
-      anula: original ? { comprobante: original, razon: c.razon ?? 'Anulación' } : undefined,
+      anula: original
+        ? {
+            comprobante: original,
+            razon: c.razon ?? 'Anulación',
+            codigo: nota?.codigo,
+            lineas: nota?.lineas,
+          }
+        : undefined,
     });
     if (!nuevo) throw new HttpError(409, 'FE_INACTIVA', 'La factura electrónica no está activa');
     await prisma.comprobante.update({
@@ -114,11 +134,15 @@ export async function anular(restauranteId: string, id: string, input: AnularCom
       'NO_ACEPTADO',
       'Solo se anula un comprobante aceptado por Hacienda; si tiene error, vuelva a emitirlo',
     );
-  const previa = await prisma.comprobante.findFirst({
-    where: { referenciaId: id, tipo: 'NC', estado: { notIn: ['ERROR', 'RECHAZADO'] } },
-  });
-  if (previa)
+  const { total, porLinea } = await acreditado(c);
+  if (total)
     throw new HttpError(409, 'YA_ANULADO', 'Este comprobante ya tiene una nota de crédito');
+  if (porLinea.size)
+    throw new HttpError(
+      409,
+      'TIENE_PARCIALES',
+      'Ya tiene devoluciones parciales: use «Devolución parcial» para lo que queda',
+    );
 
   const nota = await emitirComprobante({
     restauranteId,
@@ -134,6 +158,84 @@ export async function anular(restauranteId: string, id: string, input: AnularCom
       pagoId: c.pagoId ?? undefined,
       receptor: input.receptor,
     });
+  return listar(restauranteId);
+}
+
+// Lo ya acreditado en notas vigentes: si alguna anula todo, y las unidades por línea de las parciales.
+async function acreditado(c: Comprobante) {
+  const notas = await prisma.comprobante.findMany({
+    where: { referenciaId: c.id, tipo: 'NC', estado: { notIn: ['ERROR', 'RECHAZADO'] } },
+    select: { lineasNota: true },
+  });
+  const porLinea = new Map<number, number>();
+  for (const n of notas)
+    for (const l of (n.lineasNota as DatosNota | null)?.lineas ?? [])
+      porLinea.set(l.indice, (porLinea.get(l.indice) ?? 0) + l.cantidad);
+  return { total: notas.some((n) => !n.lineasNota), porLinea };
+}
+
+async function acreditable(restauranteId: string, id: string) {
+  const c = await prisma.comprobante.findFirst({ where: { id, restauranteId } });
+  if (!c) throw noExiste('Comprobante');
+  if (c.tipo === 'NC') throw new HttpError(409, 'ES_NOTA', 'Una nota de crédito no se acredita');
+  if (c.estado !== 'ACEPTADO')
+    throw new HttpError(
+      409,
+      'NO_ACEPTADO',
+      'Solo se acredita un comprobante aceptado por Hacienda',
+    );
+  const cuenta = await prisma.cuenta.findUniqueOrThrow({
+    where: { id: c.cuentaId },
+    select: { tipo: true, restaurante: { select: { cabysGeneral: true, porcentajeIva: true } } },
+  });
+  const lineas = await lineasDelCobro(
+    { cuentaId: c.cuentaId, pagoId: c.pagoId ?? undefined },
+    cuenta.tipo,
+    cuenta.restaurante,
+  );
+  const { total, porLinea } = await acreditado(c);
+  const disponibles: LineaAcreditable[] = lineas.map((l, i) => ({
+    indice: i + 1,
+    detalle: l.detalle,
+    cantidad: l.cantidad,
+    precioUnitario: l.precioUnitario,
+    disponible: total ? 0 : l.cantidad - (porLinea.get(i + 1) ?? 0),
+  }));
+  return { c, disponibles };
+}
+
+// Platos del comprobante y cuántas unidades se pueden acreditar todavía.
+export async function lineasAcreditables(restauranteId: string, id: string) {
+  return (await acreditable(restauranteId, id)).disponibles;
+}
+
+// Nota de crédito parcial: acredita solo las unidades elegidas (06 devolución, 14 error de monto).
+export async function notaParcial(restauranteId: string, id: string, input: NotaParcialInput) {
+  const { c, disponibles } = await acreditable(restauranteId, id);
+  for (const l of input.lineas) {
+    const d = disponibles[l.indice - 1];
+    if (!d) throw new HttpError(400, 'LINEA_INVALIDA', 'Ese plato no está en el comprobante');
+    if (l.cantidad > d.disponible)
+      throw new HttpError(
+        409,
+        'EXCEDE',
+        d.disponible
+          ? `De «${d.detalle}» solo quedan ${d.disponible} por acreditar`
+          : `«${d.detalle}» ya se acreditó por completo`,
+      );
+  }
+  const nota = await emitirComprobante({
+    restauranteId,
+    cuentaId: c.cuentaId,
+    pagoId: c.pagoId ?? undefined,
+    anula: {
+      comprobante: c,
+      razon: input.razon,
+      codigo: input.tipo === 'devolucion' ? '06' : '14',
+      lineas: input.lineas,
+    },
+  });
+  if (!nota) throw new HttpError(409, 'FE_INACTIVA', 'La factura electrónica no está activa');
   return listar(restauranteId);
 }
 

@@ -160,6 +160,19 @@
     mayor). Reportes: sección "Servicio a repartir (10 %)" con plazo Efectivo 1 semana / Tarjeta
     1 mes (según la info del usuario, a confirmar) y por día; también en el CSV. Test en
     `reportes.test.ts`.
+  - 17.1 subida (commit `48ce2ea`).
+  - **17.2 ✅ Notas de crédito parciales**: `POST /comprobantes/:id/nota-parcial`
+    {razon, tipo devolucion|error, lineas [{indice, cantidad}]} → NC con código 06 (devolución de
+    mercancía) o 14 (corrige monto por error material) — códigos de la v4.4, el 03 ya no existe —,
+    solo esas líneas, su parte proporcional del servicio, sin envío y **con MedioPago** (el
+    principal del cobro por lo acreditado: Hacienda la rechazó sin ese nodo, error -496).
+    `GET /comprobantes/:id/lineas` (disponible = cantidad − lo acreditado en notas vigentes).
+    `Comprobante.lineasNota` JSON {codigo, lineas} (migración `nota_parcial`); el reintento de una
+    NC con error conserva código y líneas. Con parciales se bloquea la anulación total
+    (TIENE_PARCIALES); anulado → no admite parciales. `lineasDelCobro` exportada desde
+    factura.service. Lista: `notasParciales`. Pantalla de comprobantes: "Devolución parcial"
+    (platos con selector de unidades, tipo y motivo) y el aviso "N devoluciones parciales".
+    **Probado en Hacienda (pruebas): notas 06 y 14 ACEPTADAS.** 2 tests nuevos.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

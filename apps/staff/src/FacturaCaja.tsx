@@ -1,7 +1,9 @@
-import { Ban, Download, FileText, Mail, RotateCw, Search } from 'lucide-react';
+import { Ban, Download, FileText, Mail, RotateCw, Search, Undo2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import {
   type AnularComprobanteInput,
+  type LineaAcreditable,
+  type NotaParcialInput,
   receptorSchema,
   TIPOS_IDENTIFICACION,
   type ComprobanteResumen,
@@ -193,6 +195,7 @@ export function ListaComprobantes({
   onReintentar,
   onAnular,
   onEnviarCorreo,
+  onNotaParcial,
   ocupado,
 }: {
   datos: ComprobantesCaja;
@@ -200,8 +203,10 @@ export function ListaComprobantes({
   onReintentar: (id: string) => void;
   onAnular: (id: string, datos: AnularComprobanteInput) => Promise<boolean>;
   onEnviarCorreo: (id: string, correo: string) => Promise<boolean>;
+  onNotaParcial: (id: string, datos: NotaParcialInput) => Promise<boolean>;
   ocupado: boolean;
 }) {
+  const [parcial, setParcial] = useState<string | null>(null);
   const [anulando, setAnulando] = useState<string | null>(null);
   const [enviando, setEnviando] = useState<{ id: string; correo: string } | null>(null);
   const lista = datos.comprobantes;
@@ -298,15 +303,50 @@ export function ListaComprobantes({
                 Anulado con nota de crédito
               </p>
             )}
-            {c.estado === 'ACEPTADO' && c.tipo !== 'NC' && !c.anulado && anulando !== c.id && (
-              <button
-                type="button"
-                disabled={ocupado}
-                onClick={() => setAnulando(c.id)}
-                className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 font-medium text-muted hover:bg-surface disabled:opacity-50"
-              >
-                <Ban className="size-4" aria-hidden /> Anular
-              </button>
+            {c.notasParciales > 0 && (
+              <p className="mt-1 text-xs font-semibold text-amber-ink">
+                {c.notasParciales === 1
+                  ? '1 devolución parcial'
+                  : `${c.notasParciales} devoluciones parciales`}
+              </p>
+            )}
+            {c.estado === 'ACEPTADO' &&
+              c.tipo !== 'NC' &&
+              !c.anulado &&
+              anulando !== c.id &&
+              parcial !== c.id && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {/* Con devoluciones parciales ya no se anula todo: se acredita lo que queda. */}
+                  {c.notasParciales === 0 && (
+                    <button
+                      type="button"
+                      disabled={ocupado}
+                      onClick={() => setAnulando(c.id)}
+                      className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 font-medium text-muted hover:bg-surface disabled:opacity-50"
+                    >
+                      <Ban className="size-4" aria-hidden /> Anular
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={ocupado}
+                    onClick={() => setParcial(c.id)}
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 font-medium text-muted hover:bg-surface disabled:opacity-50"
+                  >
+                    <Undo2 className="size-4" aria-hidden /> Devolución parcial
+                  </button>
+                </div>
+              )}
+            {parcial === c.id && (
+              <FormParcial
+                id={c.id}
+                precio={precio}
+                ocupado={ocupado}
+                onCancelar={() => setParcial(null)}
+                onEmitir={async (d) => {
+                  if (await onNotaParcial(c.id, d)) setParcial(null);
+                }}
+              />
             )}
             {anulando === c.id && (
               <FormAnular
@@ -397,6 +437,108 @@ function FormAnular({
             })
           }
           className="min-h-11 flex-1 rounded-md bg-danger px-3 text-xs font-semibold text-on-accent disabled:opacity-50"
+        >
+          Emitir nota de crédito
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Devolución parcial: cuántas unidades de cada plato se acreditan, el tipo y el motivo.
+function FormParcial({
+  id,
+  precio,
+  ocupado,
+  onCancelar,
+  onEmitir,
+}: {
+  id: string;
+  precio: (c: number) => string;
+  ocupado: boolean;
+  onCancelar: () => void;
+  onEmitir: (d: NotaParcialInput) => void;
+}) {
+  const [lineas, setLineas] = useState<LineaAcreditable[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [cantidades, setCantidades] = useState<Record<number, number>>({});
+  const [tipo, setTipo] = useState<NotaParcialInput['tipo']>('devolucion');
+  const [razon, setRazon] = useState('');
+  useEffect(() => {
+    api<LineaAcreditable[]>(`/comprobantes/${id}/lineas`).then(setLineas, (e: Error) =>
+      setError(e.message),
+    );
+  }, [id]);
+  const elegidas = Object.entries(cantidades)
+    .filter(([, n]) => n > 0)
+    .map(([indice, cantidad]) => ({ indice: Number(indice), cantidad }));
+  const aviso = !elegidas.length
+    ? 'Elija al menos un plato'
+    : razon.trim().length < 5
+      ? 'Escriba el motivo (5 caracteres o más)'
+      : null;
+  return (
+    <div className="mt-2 space-y-2 rounded-md bg-surface/60 p-2 text-xs">
+      {error && <p className="text-danger">{error}</p>}
+      {!lineas && !error && <p className="text-muted">Cargando platos…</p>}
+      {lineas?.map((l) => (
+        <label key={l.indice} className="flex min-h-11 items-center gap-2">
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-medium">{l.detalle}</span>
+            <span className="text-muted">
+              {precio(l.precioUnitario)} c/u · quedan {l.disponible} de {l.cantidad}
+            </span>
+          </span>
+          <select
+            value={cantidades[l.indice] ?? 0}
+            disabled={!l.disponible}
+            aria-label={`Unidades de ${l.detalle} a acreditar`}
+            onChange={(e) => setCantidades((c) => ({ ...c, [l.indice]: Number(e.target.value) }))}
+            className="h-10 rounded-lg border border-line bg-surface px-2"
+          >
+            {Array.from({ length: l.disponible + 1 }, (_, n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+      ))}
+      <label className="block">
+        <span className="font-medium">Tipo</span>
+        <select
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value as NotaParcialInput['tipo'])}
+          className={`${campo} h-10`}
+        >
+          <option value="devolucion">El cliente devolvió (devolución)</option>
+          <option value="error">Se cobró de más (error en el monto)</option>
+        </select>
+      </label>
+      <label className="block">
+        <span className="font-medium">Motivo</span>
+        <input
+          value={razon}
+          maxLength={180}
+          placeholder="Ej.: devolvió un refresco"
+          onChange={(e) => setRazon(e.target.value)}
+          className={`${campo} h-10`}
+        />
+      </label>
+      {aviso && (elegidas.length > 0 || razon) && <p className="text-amber-ink">{aviso}</p>}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onCancelar}
+          className="min-h-11 rounded-md px-3 font-medium hover:bg-surface"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          disabled={ocupado || !!aviso}
+          onClick={() => onEmitir({ razon: razon.trim(), tipo, lineas: elegidas })}
+          className="min-h-11 flex-1 rounded-md bg-danger px-3 font-semibold text-on-accent disabled:opacity-50"
         >
           Emitir nota de crédito
         </button>
