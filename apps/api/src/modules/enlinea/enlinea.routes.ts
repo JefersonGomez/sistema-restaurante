@@ -7,6 +7,7 @@ import {
   idParamSchema,
   motivoSchema,
   recibirEfectivoSchema,
+  ubicacionRepartidorSchema,
 } from '@menu-qr/shared';
 import { autenticar } from '../../middlewares/auth';
 import { requireRole } from '../../middlewares/roles';
@@ -61,6 +62,8 @@ enLineaRouter.post(
 export const repartosRouter = Router();
 repartosRouter.use(autenticar, requireRole('REPARTIDOR'), tenant, planCompleto);
 repartosRouter.get('/', c.misRepartos);
+// Antes de '/:id/…': la ubicación del celular mientras hay entregas en camino.
+repartosRouter.post('/ubicacion', validate({ body: ubicacionRepartidorSchema }), c.ubicacion);
 repartosRouter.post('/:id/salir', conId, c.salir);
 repartosRouter.post(
   '/:id/entregar',

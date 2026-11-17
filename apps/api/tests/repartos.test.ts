@@ -178,3 +178,49 @@ describe('domicilio: ubicación y repartidores', () => {
     expect((await como(caja).get('/enlinea/efectivo')).body).toHaveLength(1);
   });
 });
+
+describe('rastreo del repartidor (Fase 17.3)', () => {
+  it('comparte la ubicación solo con el pedido en camino y la borra al entregar', async () => {
+    const r = await domicilio({ ubicacion: { lat: 9.9326, lng: -84.0796 } });
+    const token = r.body.token as string;
+    const seguir = async () =>
+      (await request(app).get(`/public/seguimiento/${token}`)).body as SeguimientoEnLinea;
+    const id = (await seguir()).cuenta.id;
+    await como(caja).post(`/enlinea/${id}/aceptar`).send({ tiempoEstimadoMin: 30 });
+    const pepe = await repartidor('moto@resto-a.test');
+    await como(caja).post(`/enlinea/${id}/repartidor`).send({ repartidorId: pepe.id });
+    const punto = { lat: 9.934, lng: -84.07 };
+
+    // Todavía no salió: no se guarda nada.
+    expect((await como(pepe.token).post('/repartos/ubicacion').send(punto)).body).toEqual({
+      compartiendo: false,
+    });
+    expect((await seguir()).repartidor).toBeNull();
+
+    await como(caja).post(`/enlinea/${id}/etapa`).send({ etapa: 'LISTO' });
+    await como(pepe.token).post(`/repartos/${id}/salir`);
+    expect((await como(pepe.token).post('/repartos/ubicacion').send(punto)).body).toEqual({
+      compartiendo: true,
+    });
+    expect((await seguir()).repartidor).toMatchObject(punto);
+
+    // Ubicación vieja (más de 10 min): no se muestra.
+    await prisma.usuario.update({
+      where: { id: pepe.id },
+      data: { ubicacionEn: new Date(Date.now() - 11 * 60_000) },
+    });
+    expect((await seguir()).repartidor).toBeNull();
+
+    await como(pepe.token).post('/repartos/ubicacion').send(punto);
+    await como(pepe.token).post(`/repartos/${id}/entregar`).send({ metodoPago: 'EFECTIVO' });
+    expect((await seguir()).repartidor).toBeNull();
+    const u = await prisma.usuario.findUniqueOrThrow({ where: { id: pepe.id } });
+    expect(u).toMatchObject({ latActual: null, lngActual: null, ubicacionEn: null });
+
+    // Valida el punto y solo el repartidor la puede mandar.
+    expect(
+      (await como(pepe.token).post('/repartos/ubicacion').send({ lat: 200, lng: 0 })).status,
+    ).toBe(400);
+    expect((await como(caja).post('/repartos/ubicacion').send(punto)).status).toBe(403);
+  });
+});

@@ -110,6 +110,12 @@ export const es = {
   etapaListoRecoger: '¡Listo! Puede pasar a recogerlo',
   etapaListoDomicilio: 'Listo: pronto sale a entregar',
   etapaEnCamino: 'En camino',
+  repartidorEnMapa: 'Dónde va su pedido',
+  ubicacionHace: (seg: number) =>
+    seg < 60
+      ? 'Ubicación actualizada hace un momento'
+      : `Ubicación de hace ${Math.round(seg / 60)} min`,
+  esperandoUbicacion: 'El repartidor va en camino. Su ubicación aparecerá aquí en un momento.',
   etapaEntregado: '¡Entregado! Gracias por su pedido',
   etapaRechazado: (motivo: string | null) =>
     `El restaurante no pudo aceptar el pedido${motivo ? `: ${motivo}` : ''}.`,

@@ -752,7 +752,14 @@ export type SeguimientoEnLinea = {
   };
   cuenta: CuentaDetalle;
   fidelidad: Fidelidad | null; // sellos del teléfono del pedido (si el restaurante la activó)
+  // Repartidor en camino (Fase 17.3): última ubicación reciente; null si no hay.
+  repartidor: { lat: number; lng: number; actualizadoEn: string } | null;
 };
+// Ubicación que manda el celular del repartidor mientras tiene entregas en camino.
+export const ubicacionRepartidorSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+});
 
 export type PedidoEstacion = {
   pedidoId: string;

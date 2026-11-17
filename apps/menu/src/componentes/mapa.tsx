@@ -157,3 +157,65 @@ export function PuntoEntrega({
     </div>
   );
 }
+
+// Seguimiento (Fase 17.3): mapa de solo lectura con la moto del repartidor y el punto de entrega.
+// La moto se mueve sola cuando llega una ubicación nueva (sin volver a crear el mapa).
+export function MapaRastreo({ repartidor, destino }: { repartidor: Punto; destino: Punto | null }) {
+  const caja = useRef<HTMLDivElement>(null);
+  const mapa = useRef<MapaLeaflet | null>(null);
+  const moto = useRef<Marker | null>(null);
+
+  useEffect(() => {
+    let vivo = true;
+    let tamano: ResizeObserver | undefined;
+    (async () => {
+      const L = (await import('leaflet')).default;
+      await import('leaflet/dist/leaflet.css');
+      if (!vivo || !caja.current) return;
+      const m = L.map(caja.current, { zoomControl: true, attributionControl: true });
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap',
+      }).addTo(m);
+      const iconoMoto = L.divIcon({
+        className: 'pin-caja',
+        html: '<span class="moto-repartidor" aria-hidden="true">🛵</span>',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+      });
+      moto.current = L.marker([repartidor.lat, repartidor.lng], { icon: iconoMoto }).addTo(m);
+      if (destino) {
+        const iconoDestino = L.divIcon({
+          className: 'pin-caja',
+          html: '<span class="pin-entrega"></span>',
+          iconSize: [28, 28],
+          iconAnchor: [14, 28],
+        });
+        L.marker([destino.lat, destino.lng], { icon: iconoDestino }).addTo(m);
+        m.fitBounds(
+          L.latLngBounds([
+            [repartidor.lat, repartidor.lng],
+            [destino.lat, destino.lng],
+          ]),
+          { padding: [40, 40], maxZoom: 17 },
+        );
+      } else m.setView([repartidor.lat, repartidor.lng], 16);
+      mapa.current = m;
+      tamano = new ResizeObserver(() => m.invalidateSize());
+      tamano.observe(caja.current);
+    })();
+    return () => {
+      vivo = false;
+      tamano?.disconnect();
+      mapa.current?.remove();
+      mapa.current = null;
+    };
+    // El mapa se crea una vez; la moto se mueve abajo.
+  }, []);
+
+  useEffect(() => {
+    moto.current?.setLatLng([repartidor.lat, repartidor.lng]);
+  }, [repartidor.lat, repartidor.lng]);
+
+  return <div ref={caja} className="h-72 w-full overflow-hidden rounded-lg md:h-80" />;
+}

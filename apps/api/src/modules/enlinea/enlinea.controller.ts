@@ -76,3 +76,7 @@ export const entregarReparto = async (req: ConId, res: Response) => {
     ),
   );
 };
+
+export const ubicacion = async (req: Request, res: Response) => {
+  res.json(await service.actualizarUbicacion(restauranteDe(req), req.usuario!.id, req.body));
+};

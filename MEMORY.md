@@ -173,6 +173,18 @@
     factura.service. Lista: `notasParciales`. Pantalla de comprobantes: "Devolución parcial"
     (platos con selector de unidades, tipo y motivo) y el aviso "N devoluciones parciales".
     **Probado en Hacienda (pruebas): notas 06 y 14 ACEPTADAS.** 2 tests nuevos.
+  - 17.2 subida (commit `026e6e4`).
+  - **17.3 ✅ Rastreo del repartidor** (estaba fuera de alcance desde la Fase 5; lo pidió el
+    usuario): `Usuario.latActual/lngActual/ubicacionEn` (migración `ubicacion_repartidor`).
+    `POST /repartos/ubicacion {lat,lng}` (`ubicacionRepartidorSchema`): solo guarda si el
+    repartidor tiene entregas EN_CAMINO (si no, borra y responde `compartiendo:false`); al
+    entregar la última se borra. `SeguimientoEnLinea.repartidor` = posición si el pedido está
+    EN_CAMINO y tiene menos de 10 min. Staff `RepartosPage`: `useCompartirUbicacion`
+    (watchPosition, envío cada ≥15 s, aviso "Compartiendo…"/sin permiso/sin GPS). Menú
+    `MapaRastreo` (Leaflet de solo lectura, moto 🛵 con halo + punto de entrega, se mueve sin
+    recrear el mapa) en el seguimiento con "Ubicación actualizada hace…" (textos es/en). Sin
+    librerías nuevas. Test en `repartos.test.ts`. No revisado en el navegador (servidores
+    apagados por memoria).
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

@@ -1,5 +1,5 @@
-import { Bike, Check, MapPin, Navigation, Phone } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { Bike, Check, LocateFixed, MapPin, Navigation, Phone } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CuentaDetalle, MenuPublico } from '@menu-qr/shared';
 import { api, obtenerMenu } from './api';
 import { useAuth } from './auth';
@@ -166,6 +166,58 @@ function Entrega({
   );
 }
 
+// Rastreo (Fase 17.3): con una entrega en camino, el celular comparte su ubicación con el cliente.
+// Se manda como máximo cada 15 s; al no haber entregas en camino se deja de leer el GPS.
+type EstadoUbicacion = 'apagada' | 'buscando' | 'compartiendo' | 'sin-permiso' | 'no-disponible';
+function useCompartirUbicacion(activa: boolean): EstadoUbicacion {
+  const [estado, setEstado] = useState<EstadoUbicacion>('apagada');
+  const ultimoEnvio = useRef(0);
+  useEffect(() => {
+    if (!activa) {
+      setEstado('apagada');
+      return;
+    }
+    if (!('geolocation' in navigator)) {
+      setEstado('no-disponible');
+      return;
+    }
+    setEstado('buscando');
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        setEstado('compartiendo');
+        if (Date.now() - ultimoEnvio.current < 15_000) return;
+        ultimoEnvio.current = Date.now();
+        api('/repartos/ubicacion', {
+          method: 'POST',
+          body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+        }).catch(() => {
+          ultimoEnvio.current = 0; // se reintenta con la próxima lectura
+        });
+      },
+      (e) => setEstado(e.code === e.PERMISSION_DENIED ? 'sin-permiso' : 'no-disponible'),
+      { enableHighAccuracy: true, maximumAge: 10_000, timeout: 30_000 },
+    );
+    return () => navigator.geolocation.clearWatch(id);
+  }, [activa]);
+  return estado;
+}
+
+const TEXTO_UBICACION: Record<Exclude<EstadoUbicacion, 'apagada'>, [string, string]> = {
+  buscando: ['bg-surface-2 text-muted', 'Buscando su ubicación…'],
+  compartiendo: [
+    'bg-info-soft text-info',
+    'Compartiendo su ubicación con el cliente mientras va en camino. Deje esta pantalla abierta.',
+  ],
+  'sin-permiso': [
+    'bg-amber-soft text-amber-ink',
+    'El cliente no puede ver dónde va: permita la ubicación para esta página en el navegador.',
+  ],
+  'no-disponible': [
+    'bg-amber-soft text-amber-ink',
+    'No se pudo leer la ubicación del celular (revise que el GPS esté encendido).',
+  ],
+};
+
 export function RepartosPage() {
   const { usuario } = useAuth();
   const [entregas, setEntregas] = useState<CuentaDetalle[] | null>(null);
@@ -212,6 +264,7 @@ export function RepartosPage() {
   const lista = entregas ?? [];
   const pendientes = lista.filter((c) => c.enLinea?.etapa !== 'ENTREGADO');
   const hechas = lista.filter((c) => c.enLinea?.etapa === 'ENTREGADO');
+  const ubicacion = useCompartirUbicacion(pendientes.some((c) => c.enLinea?.etapa === 'EN_CAMINO'));
   const efectivo = hechas
     .filter((c) => c.metodoPago === 'EFECTIVO' && !c.enLinea?.efectivoCuadrado)
     .reduce((n, c) => n + c.total, 0);
@@ -231,6 +284,15 @@ export function RepartosPage() {
         <div className="m-3 esqueleto h-60 rounded-lg" aria-busy="true" />
       ) : (
         <main className="mx-auto flex max-w-xl flex-col gap-3 p-3">
+          {ubicacion !== 'apagada' && (
+            <p
+              role="status"
+              className={`flex items-start gap-2 rounded-md px-3 py-2 text-sm ${TEXTO_UBICACION[ubicacion][0]}`}
+            >
+              <LocateFixed className="mt-0.5 size-4 shrink-0" aria-hidden />
+              {TEXTO_UBICACION[ubicacion][1]}
+            </p>
+          )}
           {efectivo > 0 && (
             <p className="rounded-md bg-surface-2 px-3 py-2 text-sm">
               Efectivo por entregar en caja: <strong>{precio(efectivo)}</strong>

@@ -32,7 +32,24 @@ Pedido del usuario (2026-11-16): "súbelo y sigue con las notas de crédito parc
   usa devolución parcial para lo que queda); un comprobante anulado no admite parciales.
 - Solo afecta lo fiscal (la venta sigue en los reportes), igual que la anulación total.
 
+## 17.3 Rastreo del repartidor en vivo
+
+Pedido del usuario (2026-11-16): "súbelo y sigue con el rastreo del repartidor". Estaba fuera de
+alcance desde la Fase 5 ("rastreo GPS"); el usuario lo pide ahora.
+
+- **Repartidor** (pantalla "Mis entregas" en su celular): mientras tenga una entrega **en camino**,
+  el celular comparte su ubicación (permiso del navegador). Se envía cada ~15 s como máximo y la
+  pantalla dice "Compartiendo tu ubicación con el cliente" (o por qué no, si negó el permiso).
+- **Cliente** (seguimiento del pedido): con el pedido en camino ve un **mapa** con la moto del
+  repartidor y el punto de entrega, que se actualiza solo, y hace cuánto fue la última posición.
+- Privacidad: la ubicación solo se guarda y se muestra mientras hay una entrega en camino y si es
+  reciente (10 min); al entregar la última se borra. No se guarda historial de recorridos.
+- Sin librerías nuevas: geolocalización del navegador y Leaflet (ya aprobado en la Fase 7).
+- Fuera: estimar la hora de llegada por distancia, ruta trazada, rastreo en segundo plano con la
+  pantalla apagada (limitación del navegador: hay que dejar la pantalla de entregas abierta).
+
 ## Plan
 
 1. **17.1** Servicio a repartir en Reportes (API + pantalla + tests). ✅
 2. **17.2** Notas de crédito parciales. ✅ (06 y 14 aceptadas por Hacienda en pruebas)
+3. **17.3** Rastreo del repartidor en vivo. ✅

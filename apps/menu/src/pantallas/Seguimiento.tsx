@@ -7,6 +7,7 @@ import { Cargando, formatoPrecio, nombreEn, Pastilla } from '@menu-qr/ui';
 import * as api from '../api';
 import { TotalsSummary } from '../componentes/cuenta';
 import { ErrorScreen, Main } from '../componentes/estructura';
+import { MapaRastreo } from '../componentes/mapa';
 import { TarjetaSellos } from '../componentes/sellos';
 import { useIdioma, useTextos } from '../estado/idioma';
 
@@ -167,6 +168,25 @@ export function Seguimiento() {
               </ol>
             )}
           </section>
+
+          {/* Rastreo del repartidor: solo con el pedido en camino. */}
+          {d.etapa === 'EN_CAMINO' && c.tipo === 'DOMICILIO' && (
+            <section className="anim-entrar space-y-2 rounded-lg bg-surface p-4">
+              <h2 className="font-semibold">{t.repartidorEnMapa}</h2>
+              {q.data.repartidor ? (
+                <>
+                  <MapaRastreo repartidor={q.data.repartidor} destino={d.ubicacion} />
+                  <p className="text-xs text-muted">
+                    {t.ubicacionHace(
+                      Math.max(0, (ahora - Date.parse(q.data.repartidor.actualizadoEn)) / 1000),
+                    )}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted">{t.esperandoUbicacion}</p>
+              )}
+            </section>
+          )}
 
           {d.pagoElegido === 'SINPE' && d.etapa !== 'RECHAZADO' && (
             <p className="rounded-md bg-amber-soft p-4 text-sm text-amber-ink">

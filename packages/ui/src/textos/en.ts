@@ -106,6 +106,10 @@ export const en: Textos = {
   etapaListoRecoger: 'Ready! You can pick it up',
   etapaListoDomicilio: 'Ready: leaving soon',
   etapaEnCamino: 'On its way',
+  repartidorEnMapa: 'Where your order is',
+  ubicacionHace: (seg) =>
+    seg < 60 ? 'Location updated just now' : `Location from ${Math.round(seg / 60)} min ago`,
+  esperandoUbicacion: 'The driver is on the way. Their location will show up here shortly.',
   etapaEntregado: 'Delivered! Thank you for your order',
   etapaRechazado: (motivo) =>
     `The restaurant could not accept the order${motivo ? `: ${motivo}` : ''}.`,

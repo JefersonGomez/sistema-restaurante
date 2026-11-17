@@ -156,6 +156,10 @@ model Usuario {
   pinHash             String? // PIN de 4 dígitos para entrar en una tablet vinculada
   intentosPin         Int       @default(0)
   pinBloqueadoHasta   DateTime?
+  // Repartidor en camino (Fase 17.3): última ubicación; se borra al terminar sus entregas.
+  latActual           Float?
+  lngActual           Float?
+  ubicacionEn         DateTime?
   activo              Boolean   @default(true)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt

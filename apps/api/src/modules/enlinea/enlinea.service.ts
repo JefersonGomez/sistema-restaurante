@@ -154,7 +154,44 @@ export async function seguimiento(token: string): Promise<SeguimientoEnLinea> {
     { id: c.restauranteId, fidelidadActiva, sellosMeta, premioFidelidad },
     c.telefonoNormal,
   );
-  return { restaurante, cuenta: aCuenta(cuenta), fidelidad };
+  return {
+    restaurante,
+    cuenta: aCuenta(cuenta),
+    fidelidad,
+    repartidor: await ubicacionRepartidor(c.etapa, c.repartidorId),
+  };
+}
+
+// La ubicación del repartidor solo se muestra con el pedido en camino y si es reciente.
+const VIGENCIA_UBICACION = 10 * 60_000;
+async function ubicacionRepartidor(etapa: string | null, repartidorId: string | null) {
+  if (etapa !== 'EN_CAMINO' || !repartidorId) return null;
+  const u = await prisma.usuario.findUnique({
+    where: { id: repartidorId },
+    select: { latActual: true, lngActual: true, ubicacionEn: true },
+  });
+  if (u?.latActual == null || u.lngActual == null || !u.ubicacionEn) return null;
+  if (Date.now() - u.ubicacionEn.getTime() > VIGENCIA_UBICACION) return null;
+  return { lat: u.latActual, lng: u.lngActual, actualizadoEn: u.ubicacionEn.toISOString() };
+}
+
+// El celular del repartidor manda su ubicación mientras tiene entregas en camino. Sin entregas en
+// camino no se guarda nada (y se borra la anterior).
+export async function actualizarUbicacion(
+  restauranteId: string,
+  repartidorId: string,
+  { lat, lng }: { lat: number; lng: number },
+) {
+  const enCamino = await prisma.cuenta.count({
+    where: { restauranteId, repartidorId, etapa: 'EN_CAMINO', estado: { not: 'CERRADA' } },
+  });
+  await prisma.usuario.updateMany({
+    where: { id: repartidorId, restauranteId, rol: 'REPARTIDOR' },
+    data: enCamino
+      ? { latActual: lat, lngActual: lng, ubicacionEn: new Date() }
+      : { latActual: null, lngActual: null, ubicacionEn: null },
+  });
+  return { compartiendo: enCamino > 0 };
 }
 
 // --- Restaurante ---
@@ -329,8 +366,21 @@ export async function entregar(
     );
   });
   await emitirComprobante({ restauranteId, cuentaId: id });
+  // Si el repartidor ya no lleva más pedidos en camino, se borra su ubicación.
+  if (c.repartidorId) await borrarUbicacionSinEntregas(restauranteId, c.repartidorId);
   avisar(restauranteId, 'enlinea:actualizado', { cuentaId: id });
   return detalle(id);
+}
+
+async function borrarUbicacionSinEntregas(restauranteId: string, repartidorId: string) {
+  const quedan = await prisma.cuenta.count({
+    where: { restauranteId, repartidorId, etapa: 'EN_CAMINO', estado: { not: 'CERRADA' } },
+  });
+  if (!quedan)
+    await prisma.usuario.updateMany({
+      where: { id: repartidorId, restauranteId },
+      data: { latActual: null, lngActual: null, ubicacionEn: null },
+    });
 }
 
 // --- Repartidores (Fase 7) ---
