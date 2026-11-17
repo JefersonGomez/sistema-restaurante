@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  ChevronDown,
   Bell,
   Bike,
   BellRing,
@@ -32,7 +33,7 @@ import {
   useAvisos,
   type TipoAviso,
 } from './avisos';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import type { Moneda } from '@menu-qr/shared';
 import { useAuth } from './auth';
 
@@ -466,4 +467,95 @@ export function Campana() {
 export function pedirMotivo(pregunta: string, sugerido?: string) {
   const m = prompt(pregunta, sugerido)?.trim();
   return m ? m.slice(0, 200) : null;
+}
+
+// Menú "Más" del encabezado: cada opción abre su propia pantalla. El contador avisa sin abrirlo.
+export function MenuMas({
+  opciones,
+}: {
+  opciones: { a: string; texto: string; detalle?: string; contador?: number; alerta?: boolean }[];
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const caja = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!abierto) return;
+    const fuera = (e: MouseEvent) => {
+      if (!caja.current?.contains(e.target as Node)) setAbierto(false);
+    };
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAbierto(false);
+    };
+    document.addEventListener('mousedown', fuera);
+    document.addEventListener('keydown', tecla);
+    return () => {
+      document.removeEventListener('mousedown', fuera);
+      document.removeEventListener('keydown', tecla);
+    };
+  }, [abierto]);
+  const total = opciones.reduce((n, o) => n + (o.contador ?? 0), 0);
+  const alerta = opciones.some((o) => o.alerta && o.contador);
+  return (
+    <div ref={caja} className="relative">
+      <button
+        type="button"
+        aria-expanded={abierto}
+        aria-haspopup="menu"
+        onClick={() => setAbierto(!abierto)}
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] bg-surface px-3 text-sm font-semibold hover:bg-surface-2"
+      >
+        Más
+        {total > 0 && (
+          <span
+            className={`rounded-full px-1.5 text-xs font-bold ${alerta ? 'bg-danger text-on-accent' : 'bg-info text-on-accent'}`}
+          >
+            {total}
+          </span>
+        )}
+        <ChevronDown
+          className={`size-4 transition-transform ${abierto ? 'rotate-180' : ''}`}
+          aria-hidden
+        />
+      </button>
+      {abierto && (
+        <div
+          role="menu"
+          className="anim-entrar absolute right-0 z-30 mt-2 w-72 rounded-lg border border-line bg-app p-1 shadow-app"
+        >
+          {opciones.map((o) => (
+            <Link
+              key={o.a}
+              to={o.a}
+              role="menuitem"
+              onClick={() => setAbierto(false)}
+              className="flex min-h-12 items-center gap-3 rounded-md px-3 py-2 hover:bg-surface"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold">{o.texto}</span>
+                {o.detalle && <span className="block text-xs text-muted">{o.detalle}</span>}
+              </span>
+              {!!o.contador && (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-bold ${o.alerta ? 'bg-danger-soft text-danger' : 'bg-info-soft text-info'}`}
+                >
+                  {o.contador}
+                </span>
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Vuelve a la caja desde sus pantallas aparte.
+export function VolverACaja() {
+  return (
+    <Link
+      to="/caja"
+      className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] bg-surface px-3 text-sm font-semibold hover:bg-surface-2"
+    >
+      ← Volver a caja
+    </Link>
+  );
 }

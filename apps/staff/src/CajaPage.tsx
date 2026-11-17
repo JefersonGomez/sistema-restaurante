@@ -1,13 +1,4 @@
-import {
-  Bike,
-  PanelRightClose,
-  PanelRightOpen,
-  Plus,
-  Printer,
-  Undo2,
-  Users,
-  X,
-} from 'lucide-react';
+import { PanelRightClose, PanelRightOpen, Plus, Printer, Undo2, Users, X } from 'lucide-react';
 import { IconoMesa, QuantityStepper } from '@menu-qr/ui';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -23,20 +14,13 @@ import {
   metodoDeLineas,
   type Totales,
   type TurnoCajaDetalle,
-  type AnularComprobanteInput,
 } from '@menu-qr/shared';
 import { api, obtenerMenu } from './api';
 import { useAuth } from './auth';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
-import {
-  FacturaA,
-  ListaComprobantes,
-  receptorDelCobro,
-  useComprobantes,
-  type FormReceptor,
-} from './FacturaCaja';
+import { FacturaA, receptorDelCobro, useComprobantes, type FormReceptor } from './FacturaCaja';
 import { TicketCierre, TurnoCaja } from './TurnoCaja';
-import { Conexion, Encabezado, formatoPrecio, hora, TituloColumna } from './ui';
+import { Conexion, Encabezado, formatoPrecio, hora, MenuMas, TituloColumna } from './ui';
 
 const METODOS: { id: MetodoPago; texto: string }[] = [
   { id: 'EFECTIVO', texto: 'Efectivo' },
@@ -212,26 +196,9 @@ export function CajaPage() {
 
   // Factura a nombre de alguien (solo si la factura electrónica está activa).
   const factura = fe.datos?.activa ? receptorDelCobro(receptor) : { error: null };
-  const anularComprobante = async (id: string, datos: AnularComprobanteInput) => {
-    let ok = false;
-    await accion(async () => {
-      fe.setDatos(await api(`/comprobantes/${id}/anular`, { method: 'POST', body: datos }));
-      ok = true;
-    });
-    return ok;
-  };
-  const enviarCorreoComprobante = async (id: string, correo: string) => {
-    let ok = false;
-    await accion(async () => {
-      fe.setDatos(await api(`/comprobantes/${id}/enviar`, { method: 'POST', body: { correo } }));
-      ok = true;
-    });
-    return ok;
-  };
-  const reintentar = (id: string) =>
-    accion(async () =>
-      fe.setDatos(await api(`/comprobantes/${id}/reintentar`, { method: 'POST' })),
-    );
+  const problemas =
+    fe.datos?.comprobantes.filter((c) => c.estado === 'ERROR' || c.estado === 'RECHAZADO').length ??
+    0;
 
   const cerrarJunto = () =>
     cuenta &&
@@ -319,6 +286,29 @@ export function CajaPage() {
   return (
     <div className="tema-operacion min-h-dvh">
       <Encabezado titulo="Caja">
+        <MenuMas
+          opciones={[
+            {
+              a: '/caja/repartidores',
+              texto: 'Efectivo de repartidores',
+              detalle: 'Pedidos en línea a domicilio',
+              contador: efectivo.length,
+            },
+            ...(fe.datos?.activa
+              ? [
+                  {
+                    a: '/caja/comprobantes',
+                    texto: 'Factura electrónica',
+                    detalle: problemas
+                      ? 'Hay comprobantes con problema'
+                      : 'Tiquetes, facturas y notas de crédito',
+                    contador: problemas,
+                    alerta: true,
+                  },
+                ]
+              : []),
+          ]}
+        />
         {!lateral && (
           <button
             type="button"
@@ -662,7 +652,7 @@ export function CajaPage() {
           )}
         </section>
 
-        {/* Panel de caja: turno, efectivo de repartidores y factura electrónica (se puede ocultar). */}
+        {/* Panel de caja: turno y arqueo (se puede ocultar). */}
         {lateral && (
           <aside className="space-y-2 lg:col-start-1 xl:sticky xl:top-20 xl:col-start-auto xl:max-h-[calc(100dvh-6rem)] xl:overflow-y-auto xl:pr-1">
             <div className="flex items-center justify-between px-1">
@@ -685,57 +675,6 @@ export function CajaPage() {
                 setTimeout(() => window.print(), 50);
               }}
             />
-            {efectivo.length > 0 && (
-              <>
-                <div className="pt-4">
-                  <TituloColumna titulo="Efectivo de repartidores" punto="bg-info" />
-                </div>
-                {efectivo.map((e) => (
-                  <div
-                    key={e.repartidor.id}
-                    className="flex items-center gap-3 rounded-lg bg-app p-3 shadow-tarjeta"
-                  >
-                    <Bike className="size-6 shrink-0 text-info" aria-hidden />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-semibold">{e.repartidor.nombre}</span>
-                      <span className="block text-xs text-muted">
-                        {e.pedidos === 1 ? '1 entrega' : `${e.pedidos} entregas`} ·{' '}
-                        {precio(e.total)}
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      disabled={ocupado}
-                      onClick={() =>
-                        confirm(
-                          `¿Recibió ${precio(e.total)} en efectivo de ${e.repartidor.nombre}?`,
-                        ) &&
-                        accion(async () => {
-                          await api('/enlinea/efectivo/recibir', {
-                            method: 'POST',
-                            body: { repartidorId: e.repartidor.id },
-                          });
-                          cargar();
-                        })
-                      }
-                      className="min-h-11 rounded-md bg-ok px-3 text-sm font-semibold text-on-accent disabled:opacity-50"
-                    >
-                      Recibido
-                    </button>
-                  </div>
-                ))}
-              </>
-            )}
-            {fe.datos?.activa && (
-              <ListaComprobantes
-                datos={fe.datos}
-                precio={precio}
-                onReintentar={reintentar}
-                onAnular={anularComprobante}
-                onEnviarCorreo={enviarCorreoComprobante}
-                ocupado={ocupado}
-              />
-            )}
           </aside>
         )}
       </div>

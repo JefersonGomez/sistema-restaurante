@@ -10,7 +10,7 @@ import {
   type ReceptorInput,
 } from '@menu-qr/shared';
 import { api, descargar } from './api';
-import { hora, TituloColumna } from './ui';
+import { hora } from './ui';
 
 // --- Factura electrónica en la caja (Fase 15.3) ---
 
@@ -204,20 +204,12 @@ export function ListaComprobantes({
 }) {
   const [anulando, setAnulando] = useState<string | null>(null);
   const [enviando, setEnviando] = useState<{ id: string; correo: string } | null>(null);
-  const lista = datos.comprobantes.slice(0, 8);
-  const conProblema = datos.comprobantes.filter(
-    (c) => c.estado === 'ERROR' || c.estado === 'RECHAZADO',
-  ).length;
+  const lista = datos.comprobantes;
   return (
-    <div className="space-y-2 pt-4">
-      <TituloColumna
-        titulo="Factura electrónica"
-        punto={conProblema ? 'bg-danger' : 'bg-ok'}
-        cantidad={conProblema || undefined}
-      />
+    <div className="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {!lista.length && (
-        <p className="rounded-lg border border-dashed border-line p-4 text-center text-sm text-muted">
-          Cada cobro genera su comprobante y se envía solo a Hacienda.
+        <p className="col-span-full rounded-lg border border-dashed border-line p-6 text-center text-sm text-muted">
+          No hay comprobantes en esta vista.
         </p>
       )}
       {lista.map((c) => {
@@ -270,7 +262,7 @@ export function ListaComprobantes({
                     className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-surface px-3 font-medium hover:bg-surface-2"
                   >
                     <Mail className="size-4" aria-hidden />
-                    {c.correoEnviadoEn ? 'Reenviar' : 'Enviar por correo'}
+                    {c.correoEnviadoEn ? 'Reenviar copia' : 'Enviar copia al cliente'}
                   </button>
                 </div>
                 {enviando?.id === c.id && (

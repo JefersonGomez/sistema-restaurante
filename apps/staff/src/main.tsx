@@ -7,6 +7,7 @@ import { activarConPrimerToque } from './alertas';
 import { AuthProvider, useAuth } from './auth';
 import { AvisosGlobales } from './AvisosGlobales';
 import { CajaPage } from './CajaPage';
+import { ComprobantesCajaPage, RepartidoresCajaPage } from './CajaExtras';
 import { EnLineaPage } from './EnLineaPage';
 import { EstacionPage } from './EstacionPage';
 import { LoginPage } from './LoginPage';
@@ -122,6 +123,22 @@ function App() {
           element={
             <Solo roles={['CAJA', 'DUENO']}>
               <CajaPage />
+            </Solo>
+          }
+        />
+        <Route
+          path="/caja/comprobantes"
+          element={
+            <Solo roles={['CAJA', 'DUENO']}>
+              <ComprobantesCajaPage />
+            </Solo>
+          }
+        />
+        <Route
+          path="/caja/repartidores"
+          element={
+            <Solo roles={['CAJA', 'DUENO']}>
+              <RepartidoresCajaPage />
             </Solo>
           }
         />

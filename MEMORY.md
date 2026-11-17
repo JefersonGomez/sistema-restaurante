@@ -124,6 +124,24 @@
     electrónica) en `?seccion=`; General en 3 columnas; Horario en 2 columnas. `PanelLayout`
     pasa de `max-w-6xl` a `max-w-[1600px]` (afecta a todo el panel).
   - Revisado en Chrome a 1568 px y en marco de 390 px (sin desborde).
+  - Subidas 15.5 y Fase 16 (commit `fd50842`). El usuario no quedó convencido con la caja y
+    pidió (2026-11-16) dejarla "tal cual" pero con **secciones desplegables** para "Pedidos en
+    línea" (efectivo de repartidores) y "Factura electrónica": componente `Desplegable` en
+    `ui.tsx` (cerrada por defecto, resumen en el título, estado en `localStorage`
+    `desplegable:<id>`). Preguntó para qué sirve "Enviar por correo": se renombró a "Enviar copia
+    al cliente" / "Reenviar copia" con una línea que explica que la copia sale sola si el cliente
+    dio su correo al cobrar.
+  - Pasarela de pagos: sigue fuera de alcance (desde la Fase 5). Se le explicó que no hace falta
+    para alquilar el sistema (la mensualidad se registra a mano por SINPE/transferencia y la
+    suspensión es automática); queda como mejora futura.
+  - Corrección del usuario: los desplegables no debían abrirse dentro de la caja sino llevar a
+    **pantallas aparte** ("capaz hay muchas solicitudes y se va a llenar"). Ahora: menú **"Más"**
+    en el encabezado de Caja (`MenuMas` en `ui.tsx`, con contadores: efectivo por recibir y
+    comprobantes con problema en rojo) → `/caja/repartidores` y `/caja/comprobantes`
+    (`CajaExtras.tsx`, roles CAJA y DUENO, botón `VolverACaja`). Comprobantes en cuadrícula a todo
+    el ancho con filtro Todos / Con problema / En Hacienda / Aceptados; `ListaComprobantes` ya no
+    tiene límite de 8 ni desplegable. El panel lateral de la caja quedó solo con el turno; el
+    componente `Desplegable` se borró al quedar sin uso.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

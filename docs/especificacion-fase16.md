@@ -20,6 +20,30 @@ que ocupen el ancho de la pantalla igual."
   se puede **ocultar** con un botón y queda recordado en esa computadora. En pantallas medianas va
   debajo de las cuentas.
 
+### Ajuste del diseño de la caja (2026-11-16)
+
+Pedido del usuario: "el rediseño para la caja será tal cual como está, pero que haya un menú
+desplegable para lo que viene siendo la parte de pedidos en línea y para la parte de facturación
+electrónica". También preguntó para qué sirve "Enviar por correo".
+
+- En el panel de caja, "Pedidos en línea" (efectivo de repartidores) y "Factura electrónica" son
+  secciones **desplegables**, cerradas por defecto, con un contador en el título (por recibir /
+  con problema). Se recuerda cuáles quedaron abiertas en esa computadora.
+- El botón pasa a llamarse **"Enviar copia al cliente"** y la sección explica que, si el cliente
+  dio su correo al cobrar, la copia sale sola al aceptarse.
+
+Corrección del usuario (2026-11-16): "el menú desplegable está bien, pero no quería que se abriera
+en la misma pantalla de la caja sino aparte… capaz hay muchas solicitudes y se va a llenar esa
+pantalla… mejor hacer una pantalla específica para cada cosa."
+
+- En la caja queda un **menú desplegable** ("Más") en el encabezado con dos opciones, cada una con
+  su contador: **Efectivo de repartidores** (por recibir) y **Factura electrónica** (con problema /
+  en Hacienda). Cada una abre **su propia pantalla** a todo el ancho, con botón para volver a Caja.
+- `/caja/repartidores`: efectivo pendiente de cada repartidor, en tarjetas, con «Recibido».
+- `/caja/comprobantes`: todos los comprobantes recientes en cuadrícula, con filtro (Todos, Con
+  problema, En Hacienda, Aceptados) y las mismas acciones (PDF, enviar copia, anular, reintentar).
+- El panel lateral de la caja queda solo con el turno y el arqueo.
+
 ## Ajustes
 
 - **Barra de menú** con las secciones: Horario, General (idiomas, moneda, impuestos, confirmación),
