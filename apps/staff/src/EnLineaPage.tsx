@@ -383,7 +383,8 @@ function Tarjeta({
                 <Bike className="size-4" aria-hidden /> Salió a entregar
               </button>
             )}
-            {!esperaPago && (
+            {/* Se entrega desde "Listos y en camino": así el pedido pasa por todas las columnas. */}
+            {!esperaPago && (d.etapa === 'LISTO' || d.etapa === 'EN_CAMINO') && (
               <span className="flex items-center gap-1.5">
                 <select
                   value={metodo}

@@ -142,6 +142,16 @@
     el ancho con filtro Todos / Con problema / En Hacienda / Aceptados; `ListaComprobantes` ya no
     tiene límite de 8 ni desplegable. El panel lateral de la caja quedó solo con el turno; el
     componente `Desplegable` se borró al quedar sin uso.
+  - Subido el menú "Más" (commit `d9a8444`).
+  - **Bug en pedidos en línea** (reporte del usuario): en "En cocina" se mostraba "Entregado y
+    cobrado" y el pedido saltaba "Listos y en camino"; y un domicilio en efectivo cerrado desde la
+    pantalla En línea sin repartidor (#103, ₡12 800) no entraba ni en "Efectivo de repartidores"
+    ni al arqueo. Arreglo: el botón solo en LISTO/EN_CAMINO y la API lo exige
+    (`entregar` → 409 "Primero márquelo «Listo para entregar»"); `entregar(…, porRepartidor)`:
+    si lo cierra la caja y es domicilio en efectivo → `efectivoCuadrado` y `efectivoRecibidoEn`
+    ya (entra al turno); si lo entrega el repartidor (`entregarReparto`) queda pendiente hasta
+    «Recibido». Migración de datos `efectivo_domicilio_sin_repartidor` (corrigió #103 y #94).
+    2 tests nuevos en `enlinea.test.ts`.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

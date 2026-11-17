@@ -44,6 +44,25 @@ pantalla… mejor hacer una pantalla específica para cada cosa."
   problema, En Hacienda, Aceptados) y las mismas acciones (PDF, enviar copia, anular, reintentar).
 - El panel lateral de la caja queda solo con el turno y el arqueo.
 
+### Corrección en pedidos en línea (2026-11-16)
+
+Reporte del usuario: "cuando en pedidos en línea le doy a «recibido»… pasa de la columna de cocina
+a terminados, se salta una columna; y cuando pasa a terminados no aparece en caja en la parte de
+pedidos en línea".
+
+Causa: en "En cocina" se mostraba "Entregado y cobrado", así que el pedido saltaba "Listos y en
+camino". Y un domicilio en efectivo cerrado desde esa pantalla sin repartidor (p. ej. #103) no
+entraba ni en "Efectivo de repartidores" ni al arqueo (el domicilio en efectivo solo contaba al
+recibirlo de un repartidor).
+
+- "Entregado y cobrado" solo aparece en "Listos y en camino" y la API lo exige (etapa LISTO o
+  EN_CAMINO): el pedido recorre las cuatro columnas.
+- Quien entrega es quien tiene la plata: si lo marca la **caja** (pantalla En línea), el efectivo
+  entra al turno en ese momento; si lo entrega el **repartidor** desde su celular, queda en
+  "Efectivo de repartidores" hasta que la caja toque «Recibido».
+- Migración que corrige los domicilios en efectivo ya cerrados sin repartidor: entran al turno con
+  la hora en que se cerraron.
+
 ## Ajustes
 
 - **Barra de menú** con las secciones: Horario, General (idiomas, moneda, impuestos, confirmación),

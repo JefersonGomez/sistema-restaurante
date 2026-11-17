@@ -301,10 +301,12 @@ export async function entregar(
   usuarioId: string,
   id: string,
   metodoPago: 'EFECTIVO' | 'TARJETA' | 'SINPE',
+  porRepartidor = false,
 ) {
   const c = await cuentaEnLinea(restauranteId, id);
-  if (!['ACEPTADO', 'LISTO', 'EN_CAMINO'].includes(c.etapa ?? ''))
-    throw etapaInvalida('Primero hay que aceptar el pedido');
+  // Se entrega desde "Listos y en camino": el pedido recorre todas las columnas.
+  if (!['LISTO', 'EN_CAMINO'].includes(c.etapa ?? ''))
+    throw etapaInvalida('Primero márquelo «Listo para entregar»');
   if (esperaSinpe(c)) throw sinPago();
   await prisma.$transaction(async (tx) => {
     await bloquearCuenta(tx, id);
@@ -312,7 +314,18 @@ export async function entregar(
     await cerrarEnTx(
       tx,
       { restauranteId, mesaId: null, cuentaId: id, usuarioId },
-      { metodoPago, etapa: 'ENTREGADO' },
+      {
+        metodoPago,
+        etapa: 'ENTREGADO',
+        // Quien entrega tiene la plata: si lo cierra la caja, el efectivo ya está en la caja;
+        // si lo entrega el repartidor, queda pendiente hasta que la caja toque «Recibido».
+        ...(!porRepartidor &&
+          c.tipo === 'DOMICILIO' &&
+          metodoPago === 'EFECTIVO' && {
+            efectivoCuadrado: true,
+            efectivoRecibidoEn: new Date(),
+          }),
+      },
     );
   });
   await emitirComprobante({ restauranteId, cuentaId: id });
@@ -395,7 +408,7 @@ export async function entregarReparto(
   metodoPago: 'EFECTIVO' | 'TARJETA' | 'SINPE',
 ) {
   await deRepartidor(restauranteId, repartidorId, id);
-  return entregar(restauranteId, repartidorId, id, metodoPago);
+  return entregar(restauranteId, repartidorId, id, metodoPago, true);
 }
 
 // Efectivo de entregas ya cobradas que el repartidor todavía no entregó en caja.

@@ -277,3 +277,35 @@ describe('enlace y QR para compartir', () => {
     ).toBe(403);
   });
 });
+
+describe('entregar y efectivo (Fase 16)', () => {
+  it('no se entrega desde "En cocina": hay que marcarlo listo primero', async () => {
+    const { cuenta } = await seguir((await pedir()).body.token);
+    await comoCaja().post(`/enlinea/${cuenta.id}/aceptar`).send({ tiempoEstimadoMin: 15 });
+    const antes = await comoCaja()
+      .post(`/enlinea/${cuenta.id}/entregar`)
+      .send({ metodoPago: 'EFECTIVO' });
+    expect(antes.status).toBe(409);
+    expect(antes.body.error.message).toMatch(/Listo para entregar/);
+    await comoCaja().post(`/enlinea/${cuenta.id}/etapa`).send({ etapa: 'LISTO' });
+    expect(
+      (await comoCaja().post(`/enlinea/${cuenta.id}/entregar`).send({ metodoPago: 'EFECTIVO' }))
+        .status,
+    ).toBe(200);
+  });
+
+  it('domicilio en efectivo cerrado por la caja: el efectivo entra al turno, no queda pendiente', async () => {
+    const r = await pedir({
+      tipo: 'DOMICILIO',
+      cliente: { nombre: 'Luis', telefono: '8777 0000', direccion: 'Barrio Escalante, casa 12' },
+    });
+    const { cuenta } = await seguir(r.body.token);
+    await comoCaja().post(`/enlinea/${cuenta.id}/aceptar`).send({ tiempoEstimadoMin: 30 });
+    await comoCaja().post(`/enlinea/${cuenta.id}/etapa`).send({ etapa: 'LISTO' });
+    await comoCaja().post(`/enlinea/${cuenta.id}/entregar`).send({ metodoPago: 'EFECTIVO' });
+    const c = await prisma.cuenta.findUniqueOrThrow({ where: { id: cuenta.id } });
+    expect(c).toMatchObject({ efectivoCuadrado: true, etapa: 'ENTREGADO' });
+    expect(c.efectivoRecibidoEn).not.toBeNull();
+    expect((await comoCaja().get('/enlinea/efectivo')).body).toEqual([]);
+  });
+});
