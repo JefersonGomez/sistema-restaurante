@@ -60,7 +60,7 @@ pnpm db:seed
 Con `pnpm dev` corriendo y el seed cargado:
 
 1. **Cocina** — en una tablet o ventana: `http://localhost:5181`, entrar con `cocina@sodalaesquina.test`
-   (o vincular la tablet y entrar con PIN, ver **Dispositivos**). Tocar **Activar sonido** una vez.
+   (o vincular la tablet y entrar con PIN, ver **Dispositivos**). Tocar la pantalla una vez activa el sonido.
 2. **Mesero** — en otra ventana (o el celular): entrar con `mesero@sodalaesquina.test`.
 3. **Comensal** — abrir la URL de la **mesa 3** que imprimió el seed (`http://localhost:5180/m/<token>`).
    Elegir platos (el casado con bistec pide el término), agregar al pedido y **Enviar pedido**.
@@ -85,9 +85,10 @@ mesero; y una cuenta cerrada hoy (mesa 6) que aparece en el reporte **Hoy** del 
 
 ### Recorrido de la Fase 4
 
-1. **Avisos:** en cocina, mesero o caja toque una vez la pantalla (activa el sonido) o
-   "Activar sonido y avisos" (también pide permiso para las notificaciones del sistema; solo en
-   `localhost` o https). La campanita guarda los avisos aunque cambie de pantalla. Llamar al
+1. **Avisos:** en cocina, mesero o caja, el primer toque en la pantalla activa el sonido. El icono
+   de la bocina elige el sonido del equipo: **Suave** (por defecto), **Campana** (más fuerte) o
+   **Sin sonido**, y pide el permiso de notificaciones del sistema si falta (solo en `localhost` o
+   https). La campanita guarda los avisos aunque cambie de pantalla. Llamar al
    mesero desde el menú suena siempre; si la mesa vuelve a llamar sin ser atendida, se le recuerda
    (máximo cada 30 s).
 2. **Alertas por tiempo:** en cocina, un pedido con más de 10 min sin empezar se marca con un
@@ -170,15 +171,14 @@ Recuperar la contraseña por correo todavía no existe (falta elegir el proveedo
   el internet.
 - Borradores legales para completar: [`docs/legal/`](docs/legal/).
 
-### Cocina para muchos pedidos (Fase 10)
+### Cocina en comandas (Fase 20.1)
 
-En `http://localhost:5181/cocina` (cocina o dueño): KPIs arriba (nuevos, en preparación, listos,
-atrasados, espera promedio), buscador por mesa o pedido, **Todas / estaciones** con contador,
-**Vista compacta** y el límite de **Atraso** (15 min por defecto, se guarda en el dispositivo).
-"Pendiente ahora" suma los platos por hacer; tocar uno los resalta en todas las tarjetas. Tocar un
-plato lo empieza (pedido nuevo) o lo marca listo (en preparación); cuando todos están listos el
-pedido pasa a **Listos** con "Entregado". Los pedidos con más de 2 h salen de la cola a un aviso rojo
-con "Marcar como entregado". Mesero, Caja, En línea y Mis entregas usan el mismo tema oscuro.
+En `http://localhost:5181/cocina` (cocina o dueño): una **comanda por pedido**, la más vieja primero.
+Solo el botón **"Listo"** despacha el pedido entero, avisa al mesero y deja
+"Deshacer" unos segundos. El tiempo va en minutos: la línea de arriba y la píldora se ponen ámbar
+cerca del límite y rojas al pasarse (15 min por defecto). Si hay más de una estación sale el filtro
+**Todas / estaciones**. En el menú **"⋯"**: platos agotados, letra grande y el límite de atraso (se
+guardan en el dispositivo). Los pedidos de más de 2 h se esconden con un "Ver" abajo.
 
 ### Superadmin, planes y contraseñas (Fase 9)
 

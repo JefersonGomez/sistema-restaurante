@@ -226,6 +226,45 @@ usarFoto)` (foto solo en la primera carga de la pantalla; después, sin red, fal
     y "Lo que ve es de las …". Cocina no se probó en el navegador (contraseña cambiada).
     Nota: con `NODE_ENV=development` el build también usa React en modo desarrollo; en el VPS el
     `.env` debe tener `NODE_ENV=production`.
+  - Fase 18.3 subida (commit `32c4bc8`, encima del commit del usuario que agregó LICENSE).
+- **17.3 probada en el navegador (2026-11-23, Claude con Chrome; GPS simulado en la página):** el
+  repartidor ve "Compartiendo su ubicación…", el seguimiento del cliente muestra el mapa con la moto
+  y el destino, la moto avanza sola, y al entregar el seguimiento pasa a Entregado, quita el mapa y
+  la ubicación queda en null en la BD. Sin cambios de código. El botón "Entregué" usa `confirm()`
+  del navegador (bloquea la automatización; en el celular funciona).
+- **Fase 19 — Rediseño de la mesa del mesero** (`docs/especificacion-fase19.md`).
+  - **19.1 ✅** `apps/staff/src/MesaDetalle.tsx` (nuevo) reemplaza el `Modal` con lista plana de
+    `MeseroPage`: secciones Por confirmar (botón "Confirmar y enviar a cocina" + Cancelar pedido),
+    Listo para servir ("Servido" por grupo), En cocina (Preparando/En espera, "⋯" → cancelar uno),
+    Ya servido (atenuado), Cancelados (desplegable). `agrupar()` junta mismo plato+estado+extras+nota.
+    Encabezado con personas y "Pidió la cuenta"; total oculto si es 0; "Tomar pedido · Para clientes
+    sin celular". `accion` de MeseroPage devuelve si quedó encolada (cambio visible al instante) y
+    avisa "Esto necesita internet…" si una acción no encolable falla sin red. Se quitó `ESTADO_ITEM`.
+    Probado en Chrome como dueño (las contraseñas de mesero y cocina del demo están cambiadas):
+    agrupado, Servido, Confirmar y el menú "⋯".
+- **Fase 20 — Simplificar el sistema** (`docs/especificacion-fase20.md`). El usuario se siente
+  abrumado (sobre todo cocina: mucho rojo, poco legible, tablero tipo canvas, muchos pasos, "tin
+  tin" molesto). Decisiones: cocina en comandas en cuadrícula; confirmación del mesero opcional en
+  Ajustes (apagada por defecto); plan nuevo "Solo en línea" a ₡7 900; sonido suave elegible.
+  Sub-fases 20.1 cocina, 20.2 sonido, 20.3 ventanas propias, 20.4 confirmación opcional, 20.5 mesero
+  una pantalla, 20.6 plan en línea, 20.7 inicio/ajustes, 20.8 en línea con menos pasos.
+  - **20.1 ✅ Cocina en comandas:** `EstacionPage.tsx` reescrita (sin columnas, KPIs, buscador,
+    "Pendiente ahora", vista compacta ni columna Listos). Una tarjeta por pedido, más vieja primero;
+    los platos NO se tocan (el usuario lo pidió: solo el botón "Listo" marca); "Listo" = avanzar todo a LISTO y, si el
+    pedido queda completo, `avisar-listo` (ambas encolables); toast "Mesa X listo · Deshacer" 8 s
+    (servidor acepta 15 s). Color solo en línea superior (border-t-4) y píldora "N min": neutro,
+    ámbar >70 % del límite, rojo al pasarse. Notas en ámbar (alergia en rojo), cambios "sin/extra"
+    en ámbar. Menú "⋯": Platos agotados, Letra grande, Atrasado después de. Pedidos >2 h escondidos
+    con "Ver". Probado en Chrome (Listo, Deshacer, menú). Sin cambios en la API. Opciones del
+    plato en letra normal (`text-fg`, no gris), aprobado por el usuario.
+  - **20.2 ✅ Sonido:** `alertas.ts` sin el tono cuadrado de 880 Hz ("tin tin"): `tipoSonido()`
+    por equipo (`localStorage kitchago:sonido`): suave (por defecto, ding-dong senoidal 659/880 Hz,
+    volumen bajo, una vez), campana (triangular 1319 Hz, 2 veces si es urgente) o apagado.
+    `BotonSonido` (ui.tsx) ya no es el botón amarillo que parpadeaba: icono de bocina con menú
+    Suave/Campana/Sin sonido (al elegir suena de prueba) y "Avisar también con la pantalla
+    apagada" si falta el permiso (punto ámbar en el icono). El audio sigue activándose con el
+    primer toque (`activarConPrimerToque`). Se quitó `sonidoActivo`. Probado en Chrome (menú y
+    guardado); el timbre no se puede oír desde la prueba automática.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

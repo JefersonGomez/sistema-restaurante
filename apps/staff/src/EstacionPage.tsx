@@ -1,36 +1,26 @@
-import { Ban, Check, LayoutGrid, Rows3, Search, Undo2 } from 'lucide-react';
+import { Ban, Check, CheckCheck, Ellipsis, Undo2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   avisoAgrupado,
-  tiempoTranscurrido,
   type EstadoItem,
   type ItemDetalle,
   type PedidoEstacion,
-  type TipoCuenta,
 } from '@menu-qr/shared';
 import { apiOEncolar, esSinRed, leerConFoto } from './sinConexion';
 import { api } from './api';
 import { avisar } from './avisos';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
-import {
-  BotonSonido,
-  ColumnaTablero,
-  Conexion,
-  Encabezado,
-  hora,
-  Kpi,
-  Segmentado,
-  tonoTiempo,
-} from './ui';
+import { BotonSonido, Conexion, Encabezado, hora, Segmentado } from './ui';
 
-// Cocina y bar (KDS, Fase 10): pensado para muchos pedidos a la vez.
+// Cocina y bar en comandas (Fase 20.1), como los sistemas de cocina de Square, Toast o Loyverse:
+// una tarjeta por pedido, la más vieja primero, y un solo toque ("Listo") para despacharla.
+// Solo el botón "Listo" marca (el usuario no quiere que tocar un plato lo marque). El color solo
+// está en la franja del tiempo.
 const LIMITES = [10, 15, 20, 30]; // minutos para considerar un pedido atrasado
-const OLVIDADO_MS = 2 * 60 * 60_000; // más de 2 h: sale de la cola y va al aviso rojo
-const ESPERA_LISTO_MS = 5 * 60_000; // listo sin entregar: "Esperando hace…"
-const DESHACER_MS = 5000;
+const OLVIDADO_MS = 2 * 60 * 60_000; // más de 2 h: se esconde para no tapar lo urgente
+const DESHACER_MS = 8000; // el servidor acepta deshacer hasta 15 s
 const TODAS = 'todas';
 
-type Columna = 'nuevos' | 'prep' | 'listos';
 type Estacion = { id: string; nombre: string };
 type Plato = {
   id: string;
@@ -39,15 +29,9 @@ type Plato = {
   activo: boolean;
   estacionId: string;
 };
-type Vista = PedidoEstacion & {
-  columna: Columna;
-  edad: number; // ms desde que se confirmó
-  listoHace: number | null; // ms desde que quedó listo el último plato
-  atrasado: boolean;
-};
-type Deshacible = { item: ItemDetalle; lugar: string; estado: EstadoItem };
+type Despachado = { lugar: string; ids: string[] };
 
-// Preferencias del dispositivo (estación, vista, límite); sin almacenamiento, los valores por defecto.
+// Preferencias del dispositivo (estación, letra, límite); sin almacenamiento, los valores por defecto.
 const leer = (clave: string) => {
   try {
     return localStorage.getItem(clave);
@@ -80,207 +64,120 @@ function useWakeLock() {
   }, []);
 }
 
-const CANAL: Record<TipoCuenta, { texto: string; clase: string }> = {
-  MESA: { texto: 'Salón', clase: 'bg-surface-2 text-muted' },
-  RECOGER: { texto: 'Para llevar', clase: 'bg-info-soft text-info' },
-  DOMICILIO: { texto: 'En línea', clase: 'bg-linea-soft text-linea' },
-};
 const nombreDe = (p: PedidoEstacion) =>
   p.canal === 'MESA'
     ? p.lugar
     : `${p.canal === 'RECOGER' ? 'Llevar' : 'Domicilio'} #${p.numero ?? ''}`;
 const hecho = (i: ItemDetalle) => i.estado === 'LISTO' || i.estado === 'ENTREGADO';
-
-// Etiquetas del plato: alergia (roja, primero), cambios (ámbar), notas (gris) y la estación.
-type Etiqueta = { texto: string; clase: string; orden: number };
+// "sin cebolla", "extra queso"…: cambios que la cocina no puede pasar por alto.
 const CAMBIO = /^(sin|extra|con|más|mas|poco|doble|aparte)\b/i;
-function etiquetasDe(i: ItemDetalle, estacion: string | null): Etiqueta[] {
-  const lista: Etiqueta[] = i.modificadores.map((m) =>
-    CAMBIO.test(m.nombre)
-      ? { texto: m.nombre, clase: 'bg-amber text-bg', orden: 1 }
-      : { texto: m.nombre, clase: 'bg-surface-2 text-muted', orden: 2 },
-  );
-  if (i.notas)
-    lista.push(
-      /alerg/i.test(i.notas)
-        ? { texto: i.notas, clase: 'bg-danger text-bg', orden: 0 }
-        : { texto: i.notas, clase: 'bg-surface-2 text-fg', orden: 2 },
-    );
-  if (estacion)
-    lista.push({ texto: estacion.toUpperCase(), clase: 'bg-teal-soft text-teal', orden: 3 });
-  return lista.sort((a, b) => a.orden - b.orden);
-}
 
-function Tarjeta({
+function Comanda({
   p,
-  items,
+  edad,
   limiteMs,
-  compacta,
-  resaltado,
-  nombreEstacion,
-  onItem,
-  onPedido,
-  onAvisar,
+  grande,
+  estacionDe,
+  onListo,
 }: {
-  p: Vista;
-  items: ItemDetalle[];
+  p: PedidoEstacion;
+  edad: number;
   limiteMs: number;
-  compacta: boolean;
-  resaltado: string | null;
-  nombreEstacion: (i: ItemDetalle) => string | null;
-  onItem: (p: Vista, i: ItemDetalle) => void;
-  onPedido: (p: Vista, estado: 'EN_PREPARACION' | 'LISTO') => void;
-  onAvisar: (p: Vista) => void;
+  grande: boolean;
+  estacionDe: (i: ItemDetalle) => string | null;
+  onListo: () => void;
 }) {
-  const proporcion = p.edad / limiteMs;
-  const pildora = tonoTiempo(proporcion);
-  const barra = p.atrasado ? 'bg-danger' : p.columna === 'nuevos' ? 'bg-info' : 'bg-amber';
-  const listos = items.filter(hecho).length;
-  const meta = [p.numero ? `#${p.numero}` : null, p.atendio, hora(p.confirmadoEn)]
-    .filter(Boolean)
-    .join(' · ');
-
+  // Franja del tiempo: neutra, ámbar al acercarse al límite y roja solo al pasarse.
+  // Tiempo: neutro, ámbar al acercarse al límite y rojo solo al pasarse. El color va en una línea
+  // fina arriba y en la píldora del tiempo; la tarjeta no se pinta entera.
+  const [linea, pildora] =
+    edad > limiteMs
+      ? ['border-t-danger', 'bg-danger text-bg']
+      : edad > limiteMs * 0.7
+        ? ['border-t-amber', 'bg-amber text-bg']
+        : ['border-t-line', 'bg-surface-2 text-fg'];
+  const texto = grande ? 'text-2xl' : 'text-lg';
   return (
     <article
-      className={`flex flex-col overflow-hidden rounded-xl bg-app ${
-        p.atrasado
-          ? 'border-2 border-danger shadow-[0_0_0_4px_var(--peligro-suave)]'
-          : 'border border-line'
-      }`}
+      className={`flex flex-col overflow-hidden rounded-xl border border-t-4 border-line bg-app ${linea}`}
     >
-      <header
-        className={`flex items-start gap-2 ${compacta ? 'px-2.5 pt-2 pb-1.5' : 'px-3 pt-3 pb-2'}`}
-      >
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <h3 className="font-display text-[22px] leading-tight font-extrabold">{nombreDe(p)}</h3>
-            <span
-              className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold ${CANAL[p.canal].clase}`}
-            >
-              {CANAL[p.canal].texto}
-            </span>
-            {p.atrasado && (
-              <span className="rounded-md bg-danger px-1.5 py-0.5 text-[11px] font-extrabold tracking-wide text-bg">
-                ATRASADO
-              </span>
-            )}
-          </div>
-          {!compacta && meta && <p className="mt-0.5 truncate text-xs text-muted">{meta}</p>}
-        </div>
+      <header className="flex items-center justify-between gap-2 px-3.5 pt-2.5">
+        <h2 className={`font-display font-extrabold ${grande ? 'text-3xl' : 'text-2xl'}`}>
+          {nombreDe(p)}
+        </h2>
         <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-bold tabular-nums ${pildora}`}
+          className={`rounded-full px-2.5 py-0.5 font-bold tabular-nums ${pildora} ${grande ? 'text-lg' : 'text-sm'}`}
         >
-          {tiempoTranscurrido(p.edad)}
+          {Math.floor(edad / 60_000)} min
         </span>
       </header>
-      <div className="h-1 bg-surface-2" aria-hidden>
-        <div
-          className={`h-full ${barra}`}
-          style={{ width: `${Math.min(100, proporcion * 100)}%` }}
-        />
-      </div>
+      <p className="px-3.5 pt-1.5 text-xs text-muted">
+        {p.canal === 'RECOGER' ? 'Para llevar · ' : p.canal === 'DOMICILIO' ? 'A domicilio · ' : ''}
+        {hora(p.confirmadoEn)}
+        {p.atendio && ` · ${p.atendio}`}
+      </p>
       {p.nota && (
-        <p className="mx-2 mt-2 rounded-md bg-amber-soft px-2.5 py-1.5 text-sm font-semibold text-amber">
-          Nota: {p.nota}
+        <p className="mx-3 mt-2 rounded-md bg-amber-soft px-3 py-2 text-sm font-semibold text-amber-ink">
+          {p.nota}
         </p>
       )}
-      <ul className={`flex flex-col gap-1.5 ${compacta ? 'p-1.5' : 'p-2'}`}>
-        {items.map((i) => {
+      <ul className="flex flex-1 flex-col px-1.5 py-1.5">
+        {p.items.map((i) => {
           const listo = hecho(i);
-          const marcado = !listo && resaltado === i.nombreEs;
+          const estacion = estacionDe(i);
           return (
             <li key={i.id}>
-              <button
-                type="button"
-                aria-pressed={listo}
-                onClick={() => onItem(p, i)}
-                disabled={listo}
-                className={`flex min-h-11 w-full items-start gap-2.5 rounded-lg border px-2.5 text-left disabled:cursor-default ${
-                  compacta ? 'py-1.5' : 'py-2'
-                } ${
-                  listo
-                    ? 'border-transparent bg-ok-soft'
-                    : marcado
-                      ? 'border-info bg-info-soft'
-                      : 'border-line bg-surface hover:bg-surface-2'
-                }`}
-              >
-                <span className="font-display text-[17px] leading-snug font-extrabold text-amber tabular-nums">
+              <div className="flex min-h-12 w-full items-start gap-2.5 px-2 py-1.5">
+                <span
+                  className={`${texto} w-9 shrink-0 text-right font-extrabold tabular-nums ${listo ? 'text-muted' : ''}`}
+                >
                   {i.cantidad}×
                 </span>
                 <span className="min-w-0 flex-1">
                   <span
-                    className={`block text-[17px] leading-snug font-bold ${listo ? 'text-ok line-through' : ''}`}
+                    className={`${texto} block leading-snug font-semibold ${listo ? 'text-muted line-through' : ''}`}
                   >
                     {i.nombreEs}
+                    {estacion && (
+                      <span className="ml-2 align-middle text-xs font-bold text-teal">
+                        {estacion.toUpperCase()}
+                      </span>
+                    )}
                   </span>
-                  {(() => {
-                    const etiquetas = etiquetasDe(i, nombreEstacion(i));
-                    return (
-                      etiquetas.length > 0 && (
-                        <span className="mt-1 flex flex-wrap gap-1">
-                          {etiquetas.map((e, n) => (
-                            <span
-                              key={n}
-                              className={`rounded px-1.5 py-0.5 text-xs font-bold ${e.clase}`}
-                            >
-                              {e.texto}
-                            </span>
-                          ))}
-                        </span>
-                      )
-                    );
-                  })()}
+                  {!listo &&
+                    i.modificadores.map((m) => (
+                      <span
+                        key={m.nombre}
+                        className={`block font-semibold ${grande ? 'text-lg' : 'text-base'} ${CAMBIO.test(m.nombre) ? 'text-amber' : 'text-fg'}`}
+                      >
+                        {m.nombre}
+                      </span>
+                    ))}
+                  {!listo && i.notas && (
+                    <span
+                      className={`mt-1 block rounded-md px-2 py-1 text-sm font-semibold ${
+                        /alerg/i.test(i.notas)
+                          ? 'bg-danger text-bg'
+                          : 'bg-amber-soft text-amber-ink'
+                      }`}
+                    >
+                      {i.notas}
+                    </span>
+                  )}
                 </span>
-                <span
-                  aria-hidden
-                  className={`mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border-2 ${
-                    listo
-                      ? 'border-ok bg-ok text-bg'
-                      : i.estado === 'EN_PREPARACION'
-                        ? 'border-amber'
-                        : 'border-line'
-                  }`}
-                >
-                  {listo && <Check className="size-4" strokeWidth={3} />}
-                </span>
-              </button>
+                {listo && <Check className="mt-1 size-5 shrink-0 text-ok" aria-hidden />}
+              </div>
             </li>
           );
         })}
       </ul>
-      <footer
-        className={`mt-auto flex items-center justify-between gap-2 border-t border-line ${compacta ? 'p-1.5' : 'p-2.5'}`}
+      <button
+        type="button"
+        onClick={onListo}
+        className={`m-2 mt-0 inline-flex items-center justify-center gap-2 rounded-lg bg-ok font-bold text-on-accent ${grande ? 'h-16 text-xl' : 'h-14 text-lg'}`}
       >
-        <span className="text-sm text-muted tabular-nums">
-          {listos} de {items.length} listos
-        </span>
-        {p.columna === 'nuevos' ? (
-          <button
-            type="button"
-            onClick={() => onPedido(p, 'EN_PREPARACION')}
-            className="min-h-11 rounded-[10px] bg-info px-4 text-sm font-bold text-bg"
-          >
-            Empezar
-          </button>
-        ) : listos === items.length ? (
-          <button
-            type="button"
-            onClick={() => onAvisar(p)}
-            className="min-h-11 rounded-[10px] bg-ok px-4 text-sm font-bold text-bg"
-          >
-            Listo · avisar mesero
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onPedido(p, 'LISTO')}
-            className="min-h-11 rounded-[10px] bg-surface-2 px-4 text-sm font-bold hover:bg-line"
-          >
-            Marcar todo listo
-          </button>
-        )}
-      </footer>
+        <Check className="size-5" aria-hidden /> Listo
+      </button>
     </article>
   );
 }
@@ -291,11 +188,10 @@ export function EstacionPage() {
   const [pedidos, setPedidos] = useState<PedidoEstacion[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [ahora, setAhora] = useState(Date.now());
-  const [buscar, setBuscar] = useState('');
-  const [compacta, setCompacta] = useState(() => leer('kds-vista') === 'compacta');
+  const [grande, setGrande] = useState(() => leer('kds-letra') === 'grande');
   const [limiteMin, setLimiteMin] = useState(() => Number(leer('kds-limite')) || 15);
-  const [resaltado, setResaltado] = useState<string | null>(null);
   const [verAgotados, setVerAgotados] = useState(false);
+  const [verViejos, setVerViejos] = useState(false);
   const [platos, setPlatos] = useState<Plato[]>([]);
   useWakeLock();
 
@@ -303,14 +199,14 @@ export function EstacionPage() {
     leerConFoto<Estacion[]>('/operacion/estaciones', true).then(setEstaciones, (e: Error) =>
       setError(e.message),
     );
-    const reloj = setInterval(() => setAhora(Date.now()), 1000);
+    const reloj = setInterval(() => setAhora(Date.now()), 15_000);
     return () => clearInterval(reloj);
   }, []);
   useEffect(() => guardar('staff-estacion', filtro), [filtro]);
-  useEffect(() => guardar('kds-vista', compacta ? 'compacta' : 'normal'), [compacta]);
+  useEffect(() => guardar('kds-letra', grande ? 'grande' : 'normal'), [grande]);
   useEffect(() => guardar('kds-limite', String(limiteMin)), [limiteMin]);
 
-  // Se cargan todas las estaciones visibles (para los contadores) y se filtra en pantalla.
+  // Se cargan todas las estaciones visibles y se filtra en pantalla.
   const conDatos = useRef(false);
   const cargar = useCallback(async () => {
     if (estaciones.length === 0) return;
@@ -321,7 +217,7 @@ export function EstacionPage() {
         ),
       );
       conDatos.current = true;
-      // Un pedido con platos de cocina y de bar llega dos veces: se junta en una tarjeta.
+      // Un pedido con platos de cocina y de bar llega dos veces: se junta en una comanda.
       const porPedido = new Map<string, PedidoEstacion>();
       for (const p of listas.flat()) {
         const previo = porPedido.get(p.pedidoId);
@@ -347,7 +243,7 @@ export function EstacionPage() {
       'pedido:confirmado': refrescar, // el aviso con sonido lo da AvisosGlobales
       'item:estado': refrescar,
       'pedido:cancelado': refrescar,
-      'pedido:listo': refrescar, // otra pantalla de cocina avisó al mesero
+      'pedido:listo': refrescar,
       'cuenta:cerrada': refrescar,
       'menu:actualizado': () => verAgotados && cargarPlatos(),
     },
@@ -356,90 +252,39 @@ export function EstacionPage() {
 
   const filtroValido = filtro === TODAS || estaciones.some((e) => e.id === filtro) ? filtro : TODAS;
   // La estación principal no lleva etiqueta: la que se llama "Cocina" (o la primera).
-  const primeraEstacion = (estaciones.find((e) => /cocina/i.test(e.nombre)) ?? estaciones[0])?.id;
-  const nombreEstacion = useCallback(
-    (i: ItemDetalle) =>
-      filtroValido === TODAS && i.estacionId !== primeraEstacion
-        ? (estaciones.find((e) => e.id === i.estacionId)?.nombre ?? null)
-        : null,
-    [filtroValido, primeraEstacion, estaciones],
-  );
+  const principal = (estaciones.find((e) => /cocina/i.test(e.nombre)) ?? estaciones[0])?.id;
+  const estacionDe = (i: ItemDetalle) =>
+    filtroValido === TODAS && estaciones.length > 1 && i.estacionId !== principal
+      ? (estaciones.find((e) => e.id === i.estacionId)?.nombre ?? null)
+      : null;
   const limiteMs = limiteMin * 60_000;
+  const edadDe = (p: PedidoEstacion) => ahora - Date.parse(p.confirmadoEn);
 
-  // Pedidos con los platos de la estación elegida, en su columna y con sus tiempos.
-  const clasificar = useCallback(
-    (estacion: string) =>
-      pedidos.flatMap((p): Vista[] => {
-        const items = p.items.filter((i) => estacion === TODAS || i.estacionId === estacion);
-        if (items.length === 0) return [];
-        // Todo listo pero sin avisar al mesero: se queda en preparación con el botón verde.
-        const columna: Columna = items.every(hecho)
-          ? p.listoAvisadoEn
-            ? 'listos'
-            : 'prep'
-          : items.every((i) => i.estado === 'PENDIENTE')
-            ? 'nuevos'
-            : 'prep';
-        const edad = ahora - Date.parse(p.confirmadoEn);
-        // La espera en Listos se mide desde el aviso al mesero.
-        const listoEn = p.listoAvisadoEn ? Date.parse(p.listoAvisadoEn) : 0;
-        return [
-          {
-            ...p,
-            items,
-            columna,
-            edad,
-            listoHace: columna === 'listos' && listoEn ? ahora - listoEn : null,
-            atrasado: columna !== 'listos' && edad > limiteMs,
-          },
-        ];
-      }),
-    [pedidos, ahora, limiteMs],
-  );
-  const todos = clasificar(filtroValido);
-  const olvidados = todos.filter((p) => p.edad > OLVIDADO_MS);
-  const activos = todos.filter((p) => p.edad <= OLVIDADO_MS);
-  const nuevos = activos.filter((p) => p.columna === 'nuevos');
-  const enPrep = activos.filter((p) => p.columna === 'prep');
-  const listos = activos.filter((p) => p.columna === 'listos');
-  const atrasados = activos.filter((p) => p.atrasado);
-  const enCurso = [...nuevos, ...enPrep];
-  const esperaPromedio = enCurso.length
-    ? enCurso.reduce((n, p) => n + p.edad, 0) / enCurso.length
-    : 0;
+  // Comandas con algo por hacer en la estación elegida, la más vieja primero.
+  const deEstacion = (estacion: string) =>
+    pedidos
+      .map((p) => ({
+        ...p,
+        items: p.items.filter((i) => estacion === TODAS || i.estacionId === estacion),
+      }))
+      .filter((p) => p.items.length > 0 && !p.items.every(hecho))
+      .sort((a, b) => Date.parse(a.confirmadoEn) - Date.parse(b.confirmadoEn));
+  const comandas = deEstacion(filtroValido);
+  const viejas = comandas.filter((p) => edadDe(p) > OLVIDADO_MS);
+  const enCola = comandas.filter((p) => edadDe(p) <= OLVIDADO_MS);
+  const atrasadas = enCola.filter((p) => edadDe(p) > limiteMs);
 
-  // Contador por estación: pedidos con trabajo pendiente (nuevos + en preparación).
-  const pendientesDe = (estacion: string) =>
-    clasificar(estacion).filter((p) => p.edad <= OLVIDADO_MS && p.columna !== 'listos').length;
-
-  // Buscador: número de mesa, número de pedido o parte del nombre.
-  const q = buscar.trim().toLowerCase();
-  const coincide = (p: Vista) =>
-    !q ||
-    String(p.mesa?.numero ?? '') === q ||
-    String(p.numero ?? '') === q.replace('#', '') ||
-    p.lugar.toLowerCase().includes(q);
-
-  // "Pendiente ahora": cantidades de platos sin terminar, para cocinarlos en tanda.
-  const suma = new Map<string, number>();
-  for (const p of enCurso)
-    for (const i of p.items)
-      if (!hecho(i)) suma.set(i.nombreEs, (suma.get(i.nombreEs) ?? 0) + i.cantidad);
-  const pendienteAhora = [...suma.entries()].sort(
-    (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
-  );
-
-  // Aviso (con sonido) cuando un pedido pasa a atrasado.
+  // Aviso cuando un pedido pasa a atrasado.
   const yaAvisados = useRef(new Set<string>());
-  const claveAtrasados = atrasados.map((p) => p.pedidoId).join(',');
+  const claveAtrasadas = atrasadas.map((p) => p.pedidoId).join(',');
   useEffect(() => {
-    avisoAgrupado(yaAvisados.current, claveAtrasados ? claveAtrasados.split(',') : [], (n) =>
+    avisoAgrupado(yaAvisados.current, claveAtrasadas ? claveAtrasadas.split(',') : [], (n) =>
       avisar('cocina', n === 1 ? 'Un pedido está atrasado' : `${n} pedidos están atrasados`),
     );
-  }, [claveAtrasados]);
+  }, [claveAtrasadas]);
 
-  // "Deshacer" del último toque, visible DESHACER_MS.
-  const [deshacible, setDeshacible] = useState<Deshacible | null>(null);
+  // "Deshacer" del último despacho, visible DESHACER_MS.
+  const [despachado, setDespachado] = useState<Despachado | null>(null);
   const temporizador = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(temporizador.current), []);
 
@@ -447,11 +292,7 @@ export function EstacionPage() {
     setPedidos((ps) =>
       ps.map((p) => ({
         ...p,
-        items: p.items.map((i) =>
-          ids.includes(i.id)
-            ? { ...i, estado, listoEn: estado === 'LISTO' ? new Date().toISOString() : i.listoEn }
-            : i,
-        ),
+        items: p.items.map((i) => (ids.includes(i.id) ? { ...i, estado } : i)),
       })),
     );
   const llamar = async (fn: () => Promise<unknown>) => {
@@ -459,44 +300,45 @@ export function EstacionPage() {
     refrescar();
   };
 
-  // Tocar un plato: en un pedido nuevo lo empieza; en preparación lo marca listo.
-  const tocarItem = (p: Vista, i: ItemDetalle) => {
-    const estado: EstadoItem = p.columna === 'nuevos' ? 'EN_PREPARACION' : 'LISTO';
-    clearTimeout(temporizador.current);
-    setDeshacible({ item: i, lugar: nombreDe(p), estado });
-    temporizador.current = setTimeout(() => setDeshacible(null), DESHACER_MS);
-    fijar([i.id], estado);
-    llamar(() =>
-      apiOEncolar(`/operacion/pedidos/${p.pedidoId}/avanzar`, {
+  // Marca listos los platos; si con eso queda todo el pedido listo, avisa al mesero.
+  const marcarListos = (p: PedidoEstacion, ids: string[]) => {
+    const completo = pedidos
+      .find((x) => x.pedidoId === p.pedidoId)
+      ?.items.every((i) => hecho(i) || ids.includes(i.id));
+    fijar(ids, 'LISTO');
+    if (completo) {
+      clearTimeout(temporizador.current);
+      setDespachado({ lugar: nombreDe(p), ids });
+      temporizador.current = setTimeout(() => setDespachado(null), DESHACER_MS);
+    }
+    llamar(async () => {
+      await apiOEncolar(`/operacion/pedidos/${p.pedidoId}/avanzar`, {
         method: 'POST',
-        body: { estado, itemIds: [i.id] },
-      }),
-    );
+        body: { estado: 'LISTO', itemIds: ids },
+      });
+      if (completo)
+        await apiOEncolar(`/operacion/pedidos/${p.pedidoId}/avisar-listo`, { method: 'POST' });
+    });
   };
-  const avanzarPedido = (p: Vista, estado: 'EN_PREPARACION' | 'LISTO' | 'ENTREGADO') => {
-    const ids = p.items.map((i) => i.id);
-    fijar(ids, estado);
-    llamar(() =>
-      apiOEncolar(`/operacion/pedidos/${p.pedidoId}/avanzar`, {
-        method: 'POST',
-        body: { estado, itemIds: ids },
-      }),
+  const listo = (p: PedidoEstacion) =>
+    marcarListos(
+      p,
+      p.items.filter((i) => !hecho(i)).map((i) => i.id),
     );
-  };
-  const avisarMesero = (p: Vista) => {
-    const hora = new Date().toISOString();
-    setPedidos((ps) =>
-      ps.map((x) => (x.pedidoId === p.pedidoId ? { ...x, listoAvisadoEn: hora } : x)),
-    );
-    llamar(() => apiOEncolar(`/operacion/pedidos/${p.pedidoId}/avisar-listo`, { method: 'POST' }));
-  };
   const deshacer = () => {
-    if (!deshacible) return;
-    const { item, estado } = deshacible;
-    setDeshacible(null);
-    fijar([item.id], estado === 'LISTO' ? 'EN_PREPARACION' : 'PENDIENTE');
+    if (!despachado) return;
+    const { ids } = despachado;
+    setDespachado(null);
+    fijar(ids, 'EN_PREPARACION');
     llamar(() =>
-      apiOEncolar(`/operacion/items/${item.id}/deshacer`, { method: 'POST', body: { estado } }),
+      Promise.all(
+        ids.map((id) =>
+          apiOEncolar(`/operacion/items/${id}/deshacer`, {
+            method: 'POST',
+            body: { estado: 'LISTO' },
+          }),
+        ),
+      ),
     );
   };
 
@@ -507,81 +349,16 @@ export function EstacionPage() {
     cargarPlatos();
   };
 
-  const grid = `grid gap-2.5 ${compacta ? '[grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr))]' : '[grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr))]'}`;
-  const tarjeta = (p: Vista) => (
-    <Tarjeta
-      key={p.pedidoId}
-      p={p}
-      items={p.items}
-      limiteMs={limiteMs}
-      compacta={compacta}
-      resaltado={resaltado}
-      nombreEstacion={nombreEstacion}
-      onItem={tocarItem}
-      onPedido={avanzarPedido}
-      onAvisar={avisarMesero}
-    />
-  );
-  const vacio = (texto: string) => (
-    <p className="rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">
-      {texto}
-    </p>
-  );
-  const control =
-    'inline-flex h-10 items-center gap-1.5 rounded-[10px] bg-app px-3 text-sm font-semibold hover:bg-surface';
+  const opcion =
+    'flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-3 text-sm hover:bg-surface-2';
+  const mostradas = verViejos ? [...enCola, ...viejas] : enCola;
 
   return (
-    <div className="tema-operacion flex min-h-dvh flex-col lg:h-dvh">
-      <Encabezado
-        titulo="Cocina y bar"
-        debajo={
-          pendienteAhora.length > 0 && (
-            <div className="flex items-center gap-2 border-t border-line px-3 py-2">
-              <span className="shrink-0 text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
-                Pendiente ahora
-              </span>
-              <div className="flex gap-1.5 overflow-x-auto">
-                {pendienteAhora.map(([nombre, cantidad]) => (
-                  <button
-                    key={nombre}
-                    type="button"
-                    aria-pressed={resaltado === nombre}
-                    onClick={() => setResaltado((r) => (r === nombre ? null : nombre))}
-                    className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold whitespace-nowrap ${
-                      resaltado === nombre
-                        ? 'border-info bg-info-soft text-fg'
-                        : 'border-line bg-app hover:bg-surface'
-                    }`}
-                  >
-                    <span className="font-display font-extrabold text-amber tabular-nums">
-                      {cantidad}
-                    </span>
-                    {nombre}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )
-        }
-      >
-        <Kpi texto="nuevos" valor={nuevos.length} />
-        <Kpi texto="en preparación" valor={enPrep.length} />
-        <Kpi texto="listos" valor={listos.length} />
-        <Kpi texto="atrasados" valor={atrasados.length} alerta={atrasados.length > 0} />
-        <Kpi
-          texto="espera prom."
-          valor={enCurso.length ? tiempoTranscurrido(esperaPromedio) : '—'}
-        />
-        <label className="flex h-10 w-44 items-center gap-2 rounded-[10px] bg-app px-3">
-          <Search className="size-4 shrink-0 text-muted" aria-hidden />
-          <span className="sr-only">Buscar mesa o pedido</span>
-          <input
-            value={buscar}
-            onChange={(e) => setBuscar(e.target.value)}
-            placeholder="Mesa o pedido"
-            className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none"
-          />
-        </label>
+    <div className="tema-operacion min-h-dvh">
+      <Encabezado titulo="Cocina">
+        <span className="rounded-full bg-app px-3 py-1.5 text-sm font-semibold tabular-nums">
+          {enCola.length} {enCola.length === 1 ? 'pedido' : 'pedidos'}
+        </span>
         {estaciones.length > 1 && (
           <Segmentado
             etiqueta="Estación"
@@ -590,51 +367,53 @@ export function EstacionPage() {
             opciones={[{ id: TODAS, nombre: 'Todas' }, ...estaciones].map((e) => ({
               id: e.id,
               texto: e.nombre,
-              cantidad: pendientesDe(e.id),
+              cantidad: deEstacion(e.id).filter((p) => edadDe(p) <= OLVIDADO_MS).length,
             }))}
           />
         )}
-        <button
-          type="button"
-          aria-pressed={compacta}
-          onClick={() => setCompacta((c) => !c)}
-          className={control}
-        >
-          {compacta ? (
-            <LayoutGrid className="size-4" aria-hidden />
-          ) : (
-            <Rows3 className="size-4" aria-hidden />
-          )}
-          {compacta ? 'Vista normal' : 'Vista compacta'}
-        </button>
-        <label className={control}>
-          <span className="text-muted">Atraso</span>
-          <select
-            value={limiteMin}
-            onChange={(e) => setLimiteMin(Number(e.target.value))}
-            aria-label="Minutos para considerar un pedido atrasado"
-            className="bg-transparent font-semibold outline-none"
-          >
-            {LIMITES.map((m) => (
-              <option key={m} value={m}>
-                {m} min
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          aria-pressed={verAgotados}
-          onClick={() => {
-            setVerAgotados((v) => !v);
-            cargarPlatos();
-          }}
-          className={control}
-        >
-          <Ban className="size-4" aria-hidden /> Agotados
-        </button>
         <BotonSonido />
         <Conexion conectado={conectado} />
+        <details className="relative">
+          <summary
+            className="grid size-10 cursor-pointer list-none place-items-center rounded-[10px] bg-app hover:bg-surface"
+            aria-label="Opciones de la cocina"
+          >
+            <Ellipsis className="size-5" aria-hidden />
+          </summary>
+          <div className="absolute right-0 z-30 mt-1 w-64 rounded-xl border border-line bg-app p-1.5 shadow-app">
+            <button
+              type="button"
+              className={opcion}
+              onClick={() => {
+                setVerAgotados((v) => !v);
+                cargarPlatos();
+              }}
+            >
+              <span className="inline-flex items-center gap-2">
+                <Ban className="size-4" aria-hidden /> Platos agotados
+              </span>
+              <span className="text-muted">{verAgotados ? 'Ocultar' : 'Ver'}</span>
+            </button>
+            <button type="button" className={opcion} onClick={() => setGrande((g) => !g)}>
+              Letra grande
+              <span className="text-muted">{grande ? 'Sí' : 'No'}</span>
+            </button>
+            <label className={opcion}>
+              Atrasado después de
+              <select
+                value={limiteMin}
+                onChange={(e) => setLimiteMin(Number(e.target.value))}
+                className="bg-transparent font-semibold outline-none"
+              >
+                {LIMITES.map((m) => (
+                  <option key={m} value={m}>
+                    {m} min
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </details>
       </Encabezado>
 
       {error && (
@@ -645,8 +424,10 @@ export function EstacionPage() {
 
       {verAgotados && (
         <section className="mx-3 mt-3 rounded-xl border border-line bg-app p-4">
-          <h2 className="font-display text-lg font-extrabold">Marcar platos agotados</h2>
-          <p className="mb-3 text-sm text-muted">Los agotados dejan de poder pedirse en el menú.</p>
+          <h2 className="font-display text-lg font-extrabold">Platos agotados</h2>
+          <p className="mb-3 text-sm text-muted">
+            Toque un plato para marcarlo agotado: deja de poder pedirse en el menú.
+          </p>
           <div className="flex flex-wrap gap-2">
             {platos
               .filter((p) => p.activo && (filtroValido === TODAS || p.estacionId === filtroValido))
@@ -668,145 +449,50 @@ export function EstacionPage() {
         </section>
       )}
 
-      {olvidados.length > 0 && (
-        <section
-          role="alert"
-          className="mx-3 mt-3 flex flex-col gap-1.5 rounded-xl border-2 border-danger bg-danger-soft p-3"
-        >
-          {olvidados.map((p) => (
-            <p key={p.pedidoId} className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="flex-1">
-                <strong>{nombreDe(p)}</strong> lleva{' '}
-                {/* Más de 2 h en Listos: ese tiempo; si no, el total desde que se pidió. */}
-                {p.columna === 'listos' && (p.listoHace ?? 0) > OLVIDADO_MS ? (
-                  <>
-                    <strong className="tabular-nums">{tiempoTranscurrido(p.listoHace!)}</strong> en
-                    Listos
-                  </>
-                ) : (
-                  <>
-                    <strong className="tabular-nums">{tiempoTranscurrido(p.edad)}</strong> desde que
-                    se pidió (
-                    {p.columna === 'listos'
-                      ? 'está en Listos'
-                      : p.columna === 'prep'
-                        ? 'en preparación'
-                        : 'sin empezar'}
-                    )
-                  </>
-                )}
-                . Lo sacamos de la cola para que no tape lo urgente.
-              </span>
-              <button
-                type="button"
-                onClick={() => avanzarPedido(p, 'ENTREGADO')}
-                className="min-h-11 rounded-[10px] bg-danger px-3 text-sm font-bold text-bg"
-              >
-                Marcar como entregado
-              </button>
-            </p>
-          ))}
-        </section>
-      )}
-
-      <main className="flex flex-1 flex-wrap gap-3 p-3 lg:min-h-0 lg:flex-nowrap">
-        <ColumnaTablero
-          titulo="NUEVOS"
-          punto="bg-info"
-          cantidad={nuevos.length}
-          pista="Más antiguos primero"
-          className="w-full lg:w-auto lg:flex-[1_1_0]"
-        >
-          {nuevos.filter(coincide).length === 0 ? (
-            vacio(q ? 'Nada coincide con la búsqueda' : 'Sin pedidos nuevos')
-          ) : (
-            <div className={grid}>
-              {nuevos
-                .filter(coincide)
-                .sort((a, b) => b.edad - a.edad)
-                .map(tarjeta)}
-            </div>
-          )}
-        </ColumnaTablero>
-        <ColumnaTablero
-          titulo="EN PREPARACIÓN"
-          punto="bg-amber"
-          cantidad={enPrep.length}
-          pista="Toca cada plato al terminarlo"
-          className="w-full lg:w-auto lg:flex-[2.4_1_0]"
-        >
-          {enPrep.filter(coincide).length === 0 ? (
-            vacio(q ? 'Nada coincide con la búsqueda' : 'Nada en preparación')
-          ) : (
-            <div className={grid}>
-              {enPrep
-                .filter(coincide)
-                .sort((a, b) => Number(b.atrasado) - Number(a.atrasado) || b.edad - a.edad)
-                .map(tarjeta)}
-            </div>
-          )}
-        </ColumnaTablero>
-        <ColumnaTablero
-          titulo="LISTOS PARA ENTREGAR"
-          punto="bg-ok"
-          cantidad={listos.length}
-          pista="El que más espera arriba"
-          className="w-full lg:w-[300px] lg:flex-none"
-        >
-          {listos.filter(coincide).length === 0 ? (
-            vacio('Nada esperando')
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {listos
-                .filter(coincide)
-                .sort((a, b) => (b.listoHace ?? 0) - (a.listoHace ?? 0))
-                .map((p) => {
-                  const esperando = (p.listoHace ?? 0) > ESPERA_LISTO_MS;
-                  return (
-                    <li key={p.pedidoId} className="rounded-xl border border-line bg-app p-2.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-display text-lg font-extrabold">{nombreDe(p)}</span>
-                        <span
-                          className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold ${CANAL[p.canal].clase}`}
-                        >
-                          {CANAL[p.canal].texto}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 text-sm text-muted">
-                        {p.items.map((i) => `${i.cantidad}× ${i.nombreEs}`).join(' · ')}
-                      </p>
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <span
-                          className={`text-sm font-semibold tabular-nums ${esperando ? 'text-amber' : 'text-ok'}`}
-                        >
-                          {esperando ? 'Esperando hace' : 'Listo hace'}{' '}
-                          {tiempoTranscurrido(p.listoHace ?? 0)}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => avanzarPedido(p, 'ENTREGADO')}
-                          className="min-h-11 rounded-[10px] bg-ok px-4 text-sm font-bold text-bg"
-                        >
-                          Entregado
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-            </ul>
-          )}
-        </ColumnaTablero>
+      <main className="p-3">
+        {mostradas.length === 0 ? (
+          <div className="mt-16 flex flex-col items-center gap-3 text-center text-muted">
+            <CheckCheck className="size-12" aria-hidden />
+            <p className="text-lg font-semibold text-fg">Todo al día</p>
+            <p className="text-sm">Los pedidos nuevos aparecen aquí solos.</p>
+          </div>
+        ) : (
+          <div
+            className={`grid items-start gap-3 ${grande ? '[grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))]' : '[grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr))]'}`}
+          >
+            {mostradas.map((p) => (
+              <Comanda
+                key={p.pedidoId}
+                p={p}
+                edad={edadDe(p)}
+                limiteMs={limiteMs}
+                grande={grande}
+                estacionDe={estacionDe}
+                onListo={() => listo(p)}
+              />
+            ))}
+          </div>
+        )}
+        {viejas.length > 0 && (
+          <p className="mt-4 text-center text-sm text-muted">
+            {viejas.length} {viejas.length === 1 ? 'pedido' : 'pedidos'} de hace más de 2 horas.{' '}
+            <button
+              type="button"
+              onClick={() => setVerViejos((v) => !v)}
+              className="min-h-11 font-semibold text-fg underline underline-offset-2"
+            >
+              {verViejos ? 'Ocultar' : 'Ver'}
+            </button>
+          </p>
+        )}
       </main>
 
-      {deshacible && (
+      {despachado && (
         <div
           role="status"
           className="anim-aparecer fixed bottom-4 left-1/2 z-30 flex max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-3 rounded-[14px] bg-fg py-2 pr-2 pl-4 text-bg shadow-app"
         >
-          <span className="text-sm font-semibold">
-            {deshacible.lugar} · {deshacible.item.nombreEs} →{' '}
-            {deshacible.estado === 'LISTO' ? 'Listo' : 'En preparación'}
-          </span>
+          <span className="text-sm font-semibold">{despachado.lugar} listo</span>
           <button
             type="button"
             onClick={deshacer}

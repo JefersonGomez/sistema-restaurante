@@ -9,12 +9,13 @@ import type {
   PedidoDetalle,
 } from '@menu-qr/shared';
 import { avisoAgrupado } from '@menu-qr/shared';
-import { IconoMesa, Modal } from '@menu-qr/ui';
+import { IconoMesa } from '@menu-qr/ui';
 import { avisar } from './avisos';
 import { apiOEncolar, esSinRed, leerConFoto } from './sinConexion';
 import { obtenerMenu } from './api';
 import { useAuth } from './auth';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
+import { MesaDetalle } from './MesaDetalle';
 import { TomarPedido } from './TomarPedido';
 import { BotonSonido, Conexion, Encabezado, formatoPrecio, hora, pedirMotivo } from './ui';
 
@@ -46,12 +47,6 @@ const TEXTO_MESA: Record<EstadoMesa, string> = {
   PEDIDO_PENDIENTE: 'Por confirmar',
   PIDIO_CUENTA: 'Pidió la cuenta',
   LLAMADA: 'Llamando',
-};
-const ESTADO_ITEM: Record<ItemDetalle['estado'], string> = {
-  PENDIENTE: 'en cocina',
-  EN_PREPARACION: 'en preparación',
-  LISTO: 'listo',
-  ENTREGADO: 'entregado',
 };
 
 // Insignia sobre la tarjeta de la mesa: ícono + texto (nunca solo color).
@@ -153,7 +148,10 @@ export function MeseroPage() {
 
   const accion = async (ruta: string, body?: unknown, method = 'PATCH') => {
     const r = await apiOEncolar(ruta, { method, body }).catch((e: Error) => {
-      if (!esSinRed(e)) setError(e.message);
+      // Sin red y no se puede guardar (cancelar, por ejemplo): se avisa.
+      setError(
+        esSinRed(e) ? 'Esto necesita internet. Inténtelo cuando vuelva la conexión.' : e.message,
+      );
       return null;
     });
     // Guardada sin conexión: se quita de la lista ya, para que no se vuelva a tocar.
@@ -164,6 +162,7 @@ export function MeseroPage() {
       if (ruta.endsWith('/estado')) setListos((is) => is.filter((i) => i.id !== id));
     }
     refrescar();
+    return !!r?.encolada;
   };
 
   const abrirMesa = (m: MesaOperacion) => {
@@ -436,70 +435,22 @@ export function MeseroPage() {
       )}
 
       {mesaAbierta && (
-        <Modal etiqueta={`Mesa ${mesaAbierta.numero}`} onCerrar={() => setMesaAbierta(null)}>
-          <div className="flex items-center justify-between pt-5 pb-3">
-            <h2 className="font-display text-2xl font-extrabold">Mesa {mesaAbierta.numero}</h2>
-            <button type="button" onClick={() => setMesaAbierta(null)} className={botonSuave}>
-              Cerrar
-            </button>
-          </div>
-          {cuenta ? (
-            <ul className="mb-3 divide-y divide-line text-sm">
-              {cuenta.pedidos.flatMap((p) =>
-                p.items.map((i) => (
-                  <li
-                    key={i.id}
-                    className={`flex min-h-11 items-center gap-2 py-1 ${i.cancelado ? 'opacity-50' : ''}`}
-                  >
-                    <span className="flex-1">
-                      <span className="tabular-nums">{i.cantidad}×</span> {i.nombreEs}
-                      <span className="ml-1.5 text-xs text-muted">
-                        {p.estado === 'PENDIENTE'
-                          ? 'por confirmar'
-                          : i.cancelado
-                            ? 'cancelado'
-                            : ESTADO_ITEM[i.estado]}
-                      </span>
-                    </span>
-                    {!i.cancelado &&
-                      p.estado === 'CONFIRMADO' &&
-                      (i.estado === 'PENDIENTE' || i.estado === 'EN_PREPARACION') && (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            const motivo = pedirMotivo(`¿Por qué se cancela ${i.nombreEs}?`);
-                            if (motivo) {
-                              await accion(`/operacion/items/${i.id}/cancelar`, { motivo });
-                              cargarCuenta(cuenta.id);
-                            }
-                          }}
-                          className="min-h-11 px-2 text-xs font-medium text-danger underline"
-                        >
-                          Cancelar
-                        </button>
-                      )}
-                  </li>
-                )),
-              )}
-              <li className="flex justify-between py-3 font-semibold">
-                <span>Total</span>
-                <span className="tabular-nums">{precio(cuenta.total)}</span>
-              </li>
-            </ul>
-          ) : (
-            <p className="mb-3 text-sm text-muted">Mesa libre: todavía no tiene cuenta.</p>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              setTomando(mesaAbierta);
-              setMesaAbierta(null);
-            }}
-            className="flex h-14 w-full items-center justify-center rounded-md bg-purple text-[15.5px] font-semibold text-on-accent"
-          >
-            Tomar pedido
-          </button>
-        </Modal>
+        <MesaDetalle
+          mesa={mesaAbierta}
+          cuenta={cuenta}
+          precio={precio}
+          onAccion={accion}
+          onCuenta={setCuenta}
+          onRecargar={() => {
+            refrescar();
+            if (cuenta) cargarCuenta(cuenta.id);
+          }}
+          onTomar={() => {
+            setTomando(mesaAbierta);
+            setMesaAbierta(null);
+          }}
+          onCerrar={() => setMesaAbierta(null)}
+        />
       )}
 
       {tomando && (

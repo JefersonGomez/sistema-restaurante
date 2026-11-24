@@ -4,6 +4,7 @@ import {
   Bell,
   Bike,
   BellRing,
+  Check,
   ChefHat,
   ClipboardList,
   ConciergeBell,
@@ -20,10 +21,11 @@ import {
   Utensils,
   UtensilsCrossed,
   Volume2,
+  VolumeX,
   type LucideIcon,
 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { activarSonido, sonidoActivo } from './alertas';
+import { activarSonido, elegirSonido, SONIDOS, tipoSonido, type TipoSonido } from './alertas';
 import {
   borrarAvisos,
   marcarLeidos,
@@ -329,31 +331,57 @@ export function TituloColumna({
   );
 }
 
-// Aparece mientras el audio esté bloqueado o falte el permiso de notificaciones. Un toque activa
-// las dos cosas (el navegador exige un toque para ambas).
+// Sonido del equipo (Fase 20.2): un botón pequeño con el sonido elegido (suave, campana o sin
+// sonido) y, si falta, el permiso de notificaciones. El audio se activa solo con el primer toque.
 export function BotonSonido() {
+  const [tipo, setTipo] = useState<TipoSonido>(tipoSonido);
   const [, refrescar] = useState(0);
-  useEffect(() => {
-    // El primer toque en cualquier parte también activa el audio (alertas.ts): se revisa de nuevo.
-    const revisar = () => setTimeout(() => refrescar((n) => n + 1), 300);
-    window.addEventListener('pointerdown', revisar);
-    return () => window.removeEventListener('pointerdown', revisar);
-  }, []);
   const faltaPermiso = notificacionesDisponibles() && Notification.permission === 'default';
-  if (sonidoActivo() && !faltaPermiso) return null;
+  const Icono = tipo === 'apagado' ? VolumeX : Volume2;
   return (
-    <button
-      type="button"
-      onClick={async () => {
-        activarSonido();
-        await pedirPermisoNotificaciones();
-        refrescar((n) => n + 1);
-      }}
-      className="inline-flex min-h-11 animate-pulse items-center gap-1.5 rounded-md bg-amber px-3 text-sm font-semibold text-on-amber"
-    >
-      <Volume2 className="size-4" aria-hidden />
-      <span className="max-sm:sr-only">Activar sonido y avisos</span>
-    </button>
+    <details className="relative">
+      <summary
+        className="relative grid size-10 cursor-pointer list-none place-items-center rounded-md hover:bg-surface"
+        aria-label={`Sonido: ${SONIDOS.find((s) => s.id === tipo)!.texto}`}
+        onClick={() => activarSonido(false)}
+      >
+        <Icono className="size-5" aria-hidden />
+        {faltaPermiso && (
+          <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-amber" aria-hidden />
+        )}
+      </summary>
+      <div className="absolute right-0 z-30 mt-1 w-60 rounded-xl border border-line bg-app p-1.5 shadow-app">
+        <p className="px-3 pt-1.5 pb-1 text-xs font-semibold text-muted">Sonido de los avisos</p>
+        {SONIDOS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            aria-pressed={tipo === s.id}
+            onClick={() => {
+              elegirSonido(s.id);
+              setTipo(s.id);
+            }}
+            className="flex min-h-11 w-full items-center justify-between rounded-md px-3 text-sm hover:bg-surface-2"
+          >
+            {s.texto}
+            {tipo === s.id && <Check className="size-4 text-ok" aria-hidden />}
+          </button>
+        ))}
+        {faltaPermiso && (
+          <button
+            type="button"
+            onClick={async () => {
+              await pedirPermisoNotificaciones();
+              refrescar((n) => n + 1);
+            }}
+            className="mt-1 flex min-h-11 w-full items-center gap-2 rounded-md border-t border-line px-3 text-left text-sm hover:bg-surface-2"
+          >
+            <BellRing className="size-4 shrink-0" aria-hidden />
+            Avisar también con la pantalla apagada
+          </button>
+        )}
+      </div>
+    </details>
   );
 }
 
