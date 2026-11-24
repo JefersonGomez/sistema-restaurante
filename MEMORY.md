@@ -205,6 +205,27 @@ usarFoto)` (foto solo en la primera carga de la pantalla; después, sin red, fal
     ve es de las HH:MM"), `borrarFotos()` en el logout de `auth.tsx`. EstacionPage y MeseroPage
     (mesas, pendientes, llamadas, listos, cuenta de la mesa, platos) usan `leerConFoto` y no
     muestran error rojo sin red. No probado en el navegador.
+  - 18.2 subida (commit `e3e42a2`).
+  - **18.3 ✅ Service worker a mano** `apps/staff/public/sw.js` (cache `kitchago-staff-v1`; subir
+    la versión al cambiarlo): navegación red primero con respaldo de `/`; archivos propios caché
+    primero; nunca API/socket/public/uploads ni otro origen. Registro en `main.tsx` solo con
+    `import.meta.env.PROD`; tras registrarse manda al SW los recursos ya cargados
+    (`performance.getEntriesByType('resource')`). Globals declarados con `/* global */` para ESLint.
+    Solo funciona con HTTPS o localhost. **Fase 18 completa.**
+  - **Prueba en el navegador (2026-11-23, Claude con Chrome, apagando API y panel de verdad):**
+    encontró y se corrigieron 4 fallos: (1) el SW nunca se registraba porque el `.env` local tiene
+    `NODE_ENV=development` y Vite deja `import.meta.env.PROD` en false → ahora
+    `import.meta.env.MODE === 'production'`; (2) sin red la app quedaba en blanco: `vite preview`
+    manda `Vary: Origin` y el módulo se pide con Origin → `caches.match(..., {ignoreVary:true})`;
+    (3) tras actualizar el SW el JS no quedaba guardado → el `install` baja `/` y guarda los
+    `/assets/...` que pide (cache `kitchago-staff-v3`); (4) al abrir sin red mandaba al login →
+    `api.ultimoRefrescoSinRed()` y `auth.tsx` sigue con el último usuario (`kitchago:foto:usuario`,
+    se borra al salir). Además el mesero ahora quita al instante de Pendientes lo guardado sin
+    conexión (antes quedaba visible y se podía tocar dos veces). Verificado: cola guardada y enviada
+    sola al volver (confirmar, atender, entregado), recarga sin servidor abre el mesero con la foto
+    y "Lo que ve es de las …". Cocina no se probó en el navegador (contraseña cambiada).
+    Nota: con `NODE_ENV=development` el build también usa React en modo desarrollo; en el VPS el
+    `.env` debe tener `NODE_ENV=production`.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

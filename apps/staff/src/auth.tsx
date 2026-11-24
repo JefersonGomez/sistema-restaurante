@@ -28,17 +28,20 @@ const Ctx = createContext<Sesion | null>(null);
 let sesionInicial: Promise<Usuario | null> | undefined;
 // Con la cookie de refresh (correo y contraseña) o, en una tablet, con la sesión del PIN guardada.
 const yo = () => api.api<{ usuario: Usuario }>('/auth/me').then((r) => r.usuario);
+// Sin internet al abrir (Fase 18): se sigue con el último usuario de este equipo; los datos los
+// pide la pantalla y al volver la red la sesión se renueva sola con la cookie o la tablet.
+const ultimoUsuario = () => api.leerFoto<Usuario>('usuario')?.d ?? null;
 const recuperarSesion = () =>
   (sesionInicial ??= api
     .refrescar()
     .then((ok) => {
       if (ok) return yo();
       const tablet = api.sesionTablet();
-      if (!tablet) return null;
+      if (!tablet) return api.ultimoRefrescoSinRed() ? ultimoUsuario() : null;
       api.fijarToken(tablet);
       return yo();
     })
-    .catch(() => null));
+    .catch((e) => (e instanceof api.ErrorApi && e.status === 0 ? ultimoUsuario() : null)));
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
@@ -50,6 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(setUsuario)
       .finally(() => setCargando(false));
   }, []);
+  // Se recuerda quién usa el equipo para abrir sin internet; se borra al cerrar sesión.
+  useEffect(() => {
+    if (usuario) api.guardarFoto('usuario', usuario);
+  }, [usuario]);
 
   // La animación de "entrando" se ve al menos un momento (si el login falla, el error sale ya).
   const login = async (email: string, password: string) => {

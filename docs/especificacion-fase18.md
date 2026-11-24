@@ -34,7 +34,8 @@ Caídas de internet de minutos en el restaurante. KitchaGo sigue en la nube; no 
    muestra la última foto y el aviso dice de qué hora es. Las fotos se borran al cerrar sesión.
    Límite: al abrir de cero sin internet, la foto no incluye lo hecho después sin conexión. ✅
 3. **18.3** Que el panel abra aunque se recargue sin internet (service worker escrito a mano, sin
-   librerías: guarda la aplicación y la abre desde el equipo).
+   librerías: guarda la aplicación y la abre desde el equipo). Solo en producción y con HTTPS o
+   localhost; no guarda datos de la API (eso es la "última foto", que se borra al salir). ✅
 
 ## Fuera de alcance
 

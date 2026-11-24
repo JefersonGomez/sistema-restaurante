@@ -31,13 +31,20 @@ const post = (ruta: string, body?: unknown) =>
 // Un solo refresh a la vez: dos simultáneos con la misma cookie se tomarían como reuso del token
 // y la API cerraría todas las sesiones.
 let refrescando: Promise<boolean> | null = null;
+// Si el último refresco falló por falta de red (no porque la sesión venció). Fase 18.
+let refrescoSinRed = false;
+export const ultimoRefrescoSinRed = () => refrescoSinRed;
 export function refrescar() {
   refrescando ??= post('/auth/refresh')
     .then(async (res) => {
+      refrescoSinRed = false;
       fijarToken(res.ok ? (await res.json()).accessToken : null);
       return res.ok;
     })
-    .catch(() => false)
+    .catch(() => {
+      refrescoSinRed = true;
+      return false;
+    })
     .finally(() => {
       refrescando = null;
     });

@@ -168,6 +168,27 @@ function App() {
 
 activarConPrimerToque();
 
+// Fase 18.3: la aplicación queda guardada en el equipo y abre aunque se recargue sin internet.
+// Solo en producción (en desarrollo interferiría con la recarga en caliente). Requiere HTTPS o
+// localhost.
+// Se usa MODE (el modo del build) y no PROD: con NODE_ENV=development en el .env, PROD es false.
+if (import.meta.env.MODE === 'production' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then(async () => {
+        const sw = (await navigator.serviceWorker.ready).active;
+        // Lo que se cargó antes de que el service worker controlara la página.
+        const urls = performance
+          .getEntriesByType('resource')
+          .map((r) => r.name)
+          .concat(location.origin + '/');
+        sw?.postMessage({ tipo: 'guardar', urls });
+      })
+      .catch(() => {});
+  });
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

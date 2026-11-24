@@ -235,6 +235,19 @@ Entrar como dueño (`dueno@sodalaesquina.test`) en `http://localhost:5181/panel`
    de pago, vistos vs. pedidos, preparación y cancelaciones. **Exportar CSV** baja lo mismo que se ve.
 6. Cocina, mesero y caja siguen el modo claro u oscuro del sistema operativo.
 
+### Cortes de internet (Fase 18)
+
+Cocina y mesero aguantan caídas cortas: las acciones se guardan en el equipo y se envían al volver
+(aviso abajo), y las pantallas muestran la última copia de los datos. Para probarlo: abrir cocina o
+mesero, desconectar el Wi-Fi, marcar platos y volver a conectarlo. Cobrar y la caja necesitan
+internet.
+
+Que el panel **abra al recargar sin internet** lo da un service worker (`apps/staff/public/sw.js`)
+que solo se registra en el **build de producción** y con **HTTPS o localhost**: con `pnpm dev` o
+por `http://192.168…` no se activa. Para probarlo en la computadora: `pnpm --filter staff build`,
+`pnpm --filter staff exec vite preview`, abrir `http://localhost:5181`, recargar una vez y luego recargar con
+la red cortada (DevTools → Network → Offline). Si se cambia `sw.js`, subir la versión de `CACHE`.
+
 ### Probar con el celular (misma red Wi-Fi)
 
 1. Averiguar la IP de la PC (`ipconfig` → IPv4, p. ej. `192.168.1.50`).

@@ -152,9 +152,17 @@ export function MeseroPage() {
   );
 
   const accion = async (ruta: string, body?: unknown, method = 'PATCH') => {
-    await apiOEncolar(ruta, { method, body }).catch(
-      (e: Error) => !esSinRed(e) && setError(e.message),
-    );
+    const r = await apiOEncolar(ruta, { method, body }).catch((e: Error) => {
+      if (!esSinRed(e)) setError(e.message);
+      return null;
+    });
+    // Guardada sin conexión: se quita de la lista ya, para que no se vuelva a tocar.
+    if (r?.encolada) {
+      const id = ruta.split('/')[3];
+      if (ruta.endsWith('/atender')) setLlamadas((ls) => ls.filter((l) => l.id !== id));
+      if (ruta.endsWith('/confirmar')) setPendientes((ps) => ps.filter((p) => p.id !== id));
+      if (ruta.endsWith('/estado')) setListos((is) => is.filter((i) => i.id !== id));
+    }
     refrescar();
   };
 
