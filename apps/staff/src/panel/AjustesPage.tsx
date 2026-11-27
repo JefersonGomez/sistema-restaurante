@@ -84,7 +84,7 @@ function AjustesWifi({ r }: { r: { wifiNombre: string | null; wifiClave: string 
 }
 type Restaurante = {
   nombre: string;
-  plan: 'BASICO' | 'COMPLETO';
+  plan: 'EN_LINEA' | 'BASICO' | 'COMPLETO';
   wifiNombre: string | null;
   wifiClave: string | null;
   cabysGeneral: string | null;

@@ -42,7 +42,7 @@ Decisiones del usuario (misma fecha):
    apagado por defecto: el pedido del QR va directo a cocina y el mesero solo recibe el aviso.
 5. **20.5 Mesero en una sola pantalla.** ✅ Las mesas, con una franja arriba de lo urgente
    (llamadas, platos listos y, si está encendida la confirmación, pedidos por confirmar).
-6. **20.6 Plan "Solo en línea" (₡7 900).** Menú en línea, recoger, domicilio, repartidores, cocina
+6. **20.6 Plan "Solo en línea" (₡7 900).** ✅ Menú en línea, recoger, domicilio, repartidores, cocina
    y caja; sin mesas, QR de mesa ni mesero. Las pantallas y el panel esconden lo que no incluye.
 7. **20.7 Inicio y Ajustes más simples.** Asistente de inicio para el dueño (menú → mesas →
    personal → listo) y Ajustes con lo avanzado (factura electrónica, CABYS, etc.) en

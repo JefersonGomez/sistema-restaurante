@@ -1,7 +1,13 @@
 // Planes de la mensualidad (Fase 9). Montos en céntimos de colón.
-export type PlanId = 'BASICO' | 'COMPLETO';
+export type PlanId = 'EN_LINEA' | 'BASICO' | 'COMPLETO';
 
 export const PLANES: Record<PlanId, { nombre: string; mensual: number; incluye: string }> = {
+  // Fase 20.6: para quien solo vende en línea (sin salón).
+  EN_LINEA: {
+    nombre: 'Solo en línea',
+    mensual: 790_000,
+    incluye: 'Pedidos en línea para recoger y a domicilio, repartidores, cocina, caja y reportes',
+  },
   BASICO: {
     nombre: 'Básico',
     mensual: 990_000,
@@ -25,8 +31,10 @@ export const suspensionDe = (venceEn: Date | string) =>
 export const montoSugerido = (plan: PlanId, meses: number) =>
   PLANES[plan].mensual * (Math.floor(meses / 12) * 10 + (meses % 12));
 
-// Pedidos en línea, repartidores, clientes y sellos son del plan Completo.
-export const incluyeEnLinea = (plan: PlanId) => plan === 'COMPLETO';
+// Pedidos en línea, repartidores, clientes y sellos: planes Completo y Solo en línea.
+export const incluyeEnLinea = (plan: PlanId) => plan !== 'BASICO';
+// Mesas, QR de mesa y mesero: todos menos Solo en línea.
+export const incluyeMesas = (plan: PlanId) => plan !== 'EN_LINEA';
 
 export type EstadoSuscripcion = 'SUSPENDIDO' | 'PRUEBA' | 'AL_DIA' | 'POR_VENCER' | 'VENCIDO';
 

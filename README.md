@@ -194,9 +194,12 @@ guardan en el dispositivo). Los pedidos de más de 2 h se esconden con un "Ver" 
    búsqueda y filtro por estado, y el detalle de cada restaurante: **Registrar pago** (plan, meses,
    monto sugerido, método, referencia), historial de pagos, **Suspender/Reactivar** y **Contraseña
    del dueño** (temporal, se muestra una vez).
-3. Planes: **Básico** ₡9 900/mes y **Completo** ₡19 900/mes (anual = 10 meses). Todo registro nuevo
-   empieza en Completo con 30 días de prueba. Con Básico desaparecen "En línea" y "Clientes" del
-   panel, la API responde 403 `PLAN_NO_INCLUYE` y el menú en línea no abre. El dueño ve un aviso
+3. Planes: **Solo en línea** ₡7 900/mes (Fase 20.6), **Básico** ₡9 900/mes y **Completo**
+   ₡19 900/mes (anual = 10 meses). El registro nuevo empieza con 30 días de prueba del plan del
+   botón de la landing (`/registro?plan=EN_LINEA` o `BASICO`; sin `plan`, Completo). Con Básico
+   desaparecen "En línea" y "Clientes" del panel, la API responde 403 `PLAN_NO_INCLUYE` y el menú en
+   línea no abre. Con Solo en línea desaparecen "Mesas y QR" y "Mesero", `/mesas` responde 403
+   `PLAN_NO_INCLUYE` y el QR de una mesa no abre. El dueño ve un aviso
    arriba de su panel cuando está en prueba, por vencer (2 días antes) o vencido. Desde la Fase 11,
    vencido + 1 día de gracia se **suspende solo** (la API lo revisa al arrancar y cada hora) y un
    pago registrado lo reactiva; la suspensión a mano no se levanta con un pago.

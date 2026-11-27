@@ -147,7 +147,8 @@ export async function registrar({ restaurante, dueno }: RegistroInput) {
     data: {
       nombre: restaurante.nombre,
       slug: await slugLibre(restaurante.nombre),
-      planVenceEn: finPrueba(), // plan Completo con el mes de prueba
+      plan: restaurante.plan ?? 'COMPLETO', // mes de prueba del plan elegido (Completo por defecto)
+      planVenceEn: finPrueba(),
       telefono: restaurante.telefono,
       direccion: restaurante.direccion || null,
       usuarios: {

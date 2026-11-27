@@ -118,10 +118,12 @@ export function IconoSeccion({ ruta, chico }: { ruta: string; chico?: boolean })
   );
 }
 
-// Secciones del plan Completo: con el plan Básico no se muestran.
-export const SOLO_COMPLETO = new Set(['/en-linea', '/panel/clientes']);
+// Secciones según el plan: el Básico no tiene en línea ni clientes; Solo en línea (Fase 20.6) no
+// tiene mesas ni mesero.
+const SIN_BASICO = new Set(['/en-linea', '/panel/clientes']);
+const SIN_EN_LINEA = new Set(['/panel/mesas', '/mesero']);
 export const verSeccion = (plan: string | undefined, ruta: string) =>
-  plan !== 'BASICO' || !SOLO_COMPLETO.has(ruta);
+  !(plan === 'BASICO' && SIN_BASICO.has(ruta)) && !(plan === 'EN_LINEA' && SIN_EN_LINEA.has(ruta));
 
 // Pestañas del encabezado según el rol (el mesero y la caja también atienden los pedidos en línea).
 const PANTALLAS: Partial<Record<string, { ruta: string; texto: string }[]>> = {

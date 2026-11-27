@@ -160,3 +160,31 @@ describe('superadmin: planes y suscripciones', () => {
     expect((await request(app).get('/admin/restaurantes')).status).toBe(401);
   });
 });
+
+describe('plan Solo en línea (Fase 20.6)', () => {
+  it('el registro desde su botón empieza en ese plan; sin mesas ni QR de mesa, con pedidos en línea', async () => {
+    const r = await request(app)
+      .post('/auth/registro')
+      .send({
+        restaurante: { nombre: 'Pollos en Línea', telefono: '8888 0000', plan: 'EN_LINEA' },
+        dueno: { nombre: 'Dueña', email: 'pollos@x.test', password: PASSWORD },
+      });
+    expect(r.status).toBe(201);
+    const fila = await prisma.restaurante.findFirstOrThrow({
+      where: { nombre: 'Pollos en Línea' },
+    });
+    expect(fila.plan).toBe('EN_LINEA');
+    const dueno = r.body.accessToken as string;
+
+    const mesas = await como(dueno).get('/mesas');
+    expect(mesas.status).toBe(403);
+    expect(mesas.body.error.code).toBe('PLAN_NO_INCLUYE');
+    expect((await como(dueno).get('/enlinea')).status).toBe(200);
+
+    // Una mesa que quedó de otro plan no abre el menú por QR.
+    const mesa = await prisma.mesa.create({
+      data: { restauranteId: fila.id, numero: 1, tokenQr: 'qr-de-prueba-solo-en-linea-0001' },
+    });
+    expect((await request(app).get(`/public/mesa/${mesa.tokenQr}`)).status).toBe(404);
+  });
+});

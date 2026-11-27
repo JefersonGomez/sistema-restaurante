@@ -717,9 +717,9 @@ a {
 /* Planes */
 .planes {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
-  max-width: 900px;
+  max-width: 1120px;
   margin-top: 44px;
 }
 .plan {
@@ -949,6 +949,10 @@ a {
   .pasos,
   .tarjetas {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .planes {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 560px;
   }
 }
 @media (max-width: 640px) {

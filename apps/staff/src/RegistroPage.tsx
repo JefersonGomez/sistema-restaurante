@@ -1,7 +1,7 @@
 import { Store, UserRound } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
-import { registroSchema } from '@menu-qr/shared';
+import { Link, useSearchParams } from 'react-router-dom';
+import { planSchema, registroSchema } from '@menu-qr/shared';
 import { Cargando } from '@menu-qr/ui';
 import type { ErrorApi } from './api';
 import { useAuth } from './auth';
@@ -23,6 +23,9 @@ export function RegistroPage() {
   });
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
+  // El botón del plan en la landing manda ?plan=EN_LINEA (o BASICO); si no, mes de prueba Completo.
+  const [buscar] = useSearchParams();
+  const planElegido = planSchema.safeParse(buscar.get('plan')).data;
   const poner = (k: keyof typeof f, v: string) => {
     setErrores(({ [k]: _, ...resto }) => resto);
     setF((x) => ({ ...x, [k]: v }));
@@ -32,6 +35,7 @@ export function RegistroPage() {
       nombre: f.nombre,
       telefono: f.telefono,
       direccion: f.direccion.trim() || undefined,
+      plan: planElegido,
     },
     dueno: { nombre: f.duenoNombre, email: f.email, password: f.password },
   });

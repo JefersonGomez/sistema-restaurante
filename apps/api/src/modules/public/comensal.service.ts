@@ -1,4 +1,5 @@
 import type { CrearPedidoInput, MesaPublica } from '@menu-qr/shared';
+import { incluyeMesas } from '@menu-qr/shared/planes';
 import { prisma } from '../../lib/prisma';
 import { generarRefreshToken, hashToken } from '../../lib/tokens';
 import { HttpError, noExiste } from '../../middlewares/errorHandler';
@@ -39,9 +40,10 @@ const sesionesActivas = (cuentaId: string) =>
 async function mesaPorToken(tokenQr: string) {
   const mesa = await prisma.mesa.findUnique({
     where: { tokenQr },
-    include: { restaurante: { select: { slug: true, nombre: true, activo: true } } },
+    include: { restaurante: { select: { slug: true, nombre: true, activo: true, plan: true } } },
   });
-  if (!mesa || !mesa.activa || !mesa.restaurante.activo) throw noExiste('Mesa');
+  if (!mesa || !mesa.activa || !mesa.restaurante.activo || !incluyeMesas(mesa.restaurante.plan))
+    throw noExiste('Mesa');
   return mesa;
 }
 

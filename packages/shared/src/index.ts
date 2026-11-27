@@ -11,7 +11,7 @@ export const rolSchema = z.enum(['SUPERADMIN', 'DUENO', 'MESERO', 'COCINA', 'CAJ
 export type Rol = z.infer<typeof rolSchema>;
 
 export const monedaSchema = z.enum(['CRC', 'USD']);
-export const planSchema = z.enum(['BASICO', 'COMPLETO']);
+export const planSchema = z.enum(['EN_LINEA', 'BASICO', 'COMPLETO']);
 export type Plan = z.infer<typeof planSchema>;
 export type Moneda = z.infer<typeof monedaSchema>;
 
@@ -158,6 +158,7 @@ export const registroSchema = z.object({
     nombre: texto(80),
     telefono: telefonoSchema,
     direccion: z.string().trim().max(200).optional(),
+    plan: planSchema.optional(), // el plan del mes de prueba (el botón de la landing lo elige)
   }),
   dueno: z.object({ nombre: texto(), email, password }),
 });

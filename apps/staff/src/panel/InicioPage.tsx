@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 import type { MesaOperacion, Moneda, ReporteHoy } from '@menu-qr/shared';
 import { formatoPrecio, Modal } from '@menu-qr/ui';
 import { api } from '../api';
+import { useAuth } from '../auth';
+import { verSeccion } from '../ui';
 import { useTiempoReal } from '../tiempoReal';
 import {
   Boton,
@@ -45,6 +47,7 @@ function Indicador({
 }
 
 export function InicioPage() {
+  const { usuario } = useAuth();
   const qc = useQueryClient();
   const [agotadosAbierto, setAgotadosAbierto] = useState(false);
   const reporte = useQuery({
@@ -167,19 +170,21 @@ export function InicioPage() {
             {cerrado ? 'Abrir' : 'Cerrar ahora'}
           </Boton>
         </Tarjeta>
-        <Tarjeta className="flex flex-col gap-3">
-          <QrCode className="size-6 text-purple" aria-hidden />
-          <div>
-            <p className="font-semibold">Imprimir QR</p>
-            <p className="text-sm text-muted">Tarjetas recortables con el QR de cada mesa.</p>
-          </div>
-          <Link
-            to="/panel/mesas"
-            className="inline-flex min-h-11 items-center justify-center rounded-md bg-surface px-4 text-sm font-semibold hover:bg-surface-2"
-          >
-            Ir a mesas y QR
-          </Link>
-        </Tarjeta>
+        {verSeccion(usuario?.restaurante?.plan, '/panel/mesas') && (
+          <Tarjeta className="flex flex-col gap-3">
+            <QrCode className="size-6 text-purple" aria-hidden />
+            <div>
+              <p className="font-semibold">Imprimir QR</p>
+              <p className="text-sm text-muted">Tarjetas recortables con el QR de cada mesa.</p>
+            </div>
+            <Link
+              to="/panel/mesas"
+              className="inline-flex min-h-11 items-center justify-center rounded-md bg-surface px-4 text-sm font-semibold hover:bg-surface-2"
+            >
+              Ir a mesas y QR
+            </Link>
+          </Tarjeta>
+        )}
       </div>
 
       {agotadosAbierto && (

@@ -319,6 +319,15 @@ root@169.58.105.198`. **Hay otros 5 proyectos con nginx del sistema en 80/443 (c
   mesa y no quedan ítems PENDIENTE/EN_PREPARACION, ACEPTADO → LISTO y `enlinea:actualizado`). Test
   nuevo en `enlinea.test.ts`. Se quitaron `Kpi`, `ColumnaTablero` y `tonoTiempo` de ui.tsx (sin
   uso). Probado en Chrome local: aceptar, SINPE, listo automático desde cocina, entregar.
+  - 20.5 + 20.8 subidas y desplegadas a kitchago.com (commit `0603c57`).
+- **20.6 ✅ Plan "Solo en línea" (₡7 900):** enum `Plan.EN_LINEA` (migración `plan_en_linea`),
+  `PLANES.EN_LINEA` (790_000), `incluyeEnLinea(plan) = plan !== 'BASICO'`, `incluyeMesas(plan) =
+plan !== 'EN_LINEA'`. API: `planConMesas` en `mesasRouter`; `mesaPorToken` (QR público) da 404 si
+  el plan no incluye mesas; `registroSchema.restaurante.plan` opcional (default COMPLETO).
+  Panel: `verSeccion` esconde `/panel/mesas` y `/mesero` con EN_LINEA (y en línea/clientes con
+  BASICO); Inicio esconde "Imprimir QR"; Registro lee `?plan=`. Landing: 3 tarjetas (Solo en
+  línea, Básico con `?plan=BASICO`, Completo). Tests en planes.test y admin.test. Probado en Chrome
+  local (landing y panel con el demo pasado a EN_LINEA y devuelto a COMPLETO).
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

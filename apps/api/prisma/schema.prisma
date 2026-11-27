@@ -688,6 +688,7 @@ model CanjeSello {
 // --- Suscripción y cuentas (Fase 9) ---
 
 enum Plan {
+  EN_LINEA // Fase 20.6: solo pedidos en línea, sin mesas
   BASICO
   COMPLETO
 }

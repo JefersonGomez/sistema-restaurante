@@ -6,12 +6,13 @@ import { requireRole } from '../../middlewares/roles';
 import { tenant } from '../../middlewares/tenant';
 import { validate } from '../../middlewares/validate';
 import * as c from './mesas.controller';
+import { planConMesas } from '../../middlewares/plan';
 
 const conId = validate({ params: idParamSchema });
 
 // /mesas (DUENO)
 export const mesasRouter = Router();
-mesasRouter.use(autenticar, requireRole('DUENO'), tenant);
+mesasRouter.use(autenticar, requireRole('DUENO'), tenant, planConMesas);
 mesasRouter.get('/', c.listar);
 mesasRouter.post('/', validate({ body: mesaSchema }), c.crear);
 // Antes de '/:id'.

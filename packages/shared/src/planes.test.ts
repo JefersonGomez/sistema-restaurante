@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { estadoSuscripcion, montoSugerido, nuevoVencimiento } from './planes';
+import {
+  estadoSuscripcion,
+  incluyeEnLinea,
+  incluyeMesas,
+  montoSugerido,
+  nuevoVencimiento,
+} from './planes';
 
 const ahora = new Date('2026-11-01T12:00:00Z');
 const enDias = (d: number) => new Date(ahora.getTime() + d * 86_400_000);
@@ -32,5 +38,13 @@ describe('planes', () => {
     expect(nuevoVencimiento(enDias(-10), 1, ahora).toISOString()).toBe('2026-12-01T12:00:00.000Z');
     expect(nuevoVencimiento(enDias(10), 1, ahora).toISOString()).toBe('2026-12-11T12:00:00.000Z');
     expect(nuevoVencimiento(null, 2, ahora).toISOString()).toBe('2027-01-01T12:00:00.000Z');
+  });
+
+  it('Solo en línea: ₡7 900, con pedidos en línea y sin mesas (Fase 20.6)', () => {
+    expect(montoSugerido('EN_LINEA', 1)).toBe(790_000);
+    expect(montoSugerido('EN_LINEA', 12)).toBe(7_900_000);
+    expect([incluyeEnLinea('EN_LINEA'), incluyeMesas('EN_LINEA')]).toEqual([true, false]);
+    expect([incluyeEnLinea('BASICO'), incluyeMesas('BASICO')]).toEqual([false, true]);
+    expect([incluyeEnLinea('COMPLETO'), incluyeMesas('COMPLETO')]).toEqual([true, true]);
   });
 });
