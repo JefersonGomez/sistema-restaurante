@@ -66,7 +66,7 @@ Con `pnpm dev` corriendo y el seed cargado:
    Elegir platos (el casado con bistec pide el término), agregar al pedido y **Enviar pedido**.
 4. Por defecto el pedido va **directo a cocina** (`NUNCA`) y aparece al instante como comanda (el
    bar recibe solo sus bebidas). Si el dueño encendió "El mesero revisa los pedidos del cliente"
-   en Ajustes, el pedido espera en **Pendientes** y en la mesa hasta **Confirmar y enviar a
+   en Ajustes, el pedido espera en **Ahora** (al lado de las mesas) y en la mesa hasta **Confirmar y enviar a
    cocina**.
 5. Cocina toca **Listo** en la comanda (un toque equivocado se deshace con **Deshacer**). El
    comensal ve los estados en "Mi cuenta".
@@ -121,13 +121,16 @@ mesero; y una cuenta cerrada hoy (mesa 6) que aparece en el reporte **Hoy** del 
    con promoción y menús del día), toca **Ver pedido**, elige para recoger o a domicilio, escribe sus
    datos y la forma de pago (efectivo o SINPE: ve el número y el monto) y **Hacer pedido**. Queda en
    una página de seguimiento que se actualiza sola.
-3. Personal (dueño, caja o mesero) → **En línea**: el pedido llega con sonido a "Nuevos". **Aceptar**
+3. Personal (dueño, caja o mesero) → **En línea**: el pedido llega con aviso, primero en la lista y
+   con un botón por tarjeta (Fase 20.8). **Aceptar**
    (con el tiempo estimado) lo manda a cocina; **Rechazar** pide un motivo que ve el cliente. Con
    SINPE, aceptado queda "esperando el SINPE" (con la cuenta regresiva para el cliente y el personal)
-   y pasa a cocina solo al tocar **Pago verificado**; si no pagan, **Cancelar** con motivo.
-4. Cocina lo ve como "Para llevar #N · nombre" o "Domicilio #N · nombre" y lo prepara como siempre.
-5. En "En curso": **Pago verificado** (SINPE), **Listo para entregar**, **Salió a entregar**
-   (domicilio) y **Entregado y cobrado** (con el método). El cliente ve cada paso.
+   y pasa a cocina solo al tocar **Ya recibí el SINPE**; si no pagan, **Cancelar** con motivo.
+4. Cocina lo ve como "Llevar #N" o "Domicilio #N" y toca **Listo**: el pedido pasa **solo** a
+   "Listo" en En línea (queda **Ya está listo** por si no se usa la pantalla de cocina).
+5. Listo: **Entregado y cobrado** (con el método). A domicilio, se elige **¿Quién lo lleva?** y el
+   repartidor marca la salida y la entrega desde su celular. El cliente ve cada paso. Los
+   terminados quedan abajo, en un desplegable.
 6. Los pedidos en línea no llevan el 10 % de servicio; a domicilio se suma el envío. En Reportes
    aparecen en **Por canal** (en mesa, para recoger, a domicilio); los rechazados no cuentan.
 
@@ -141,8 +144,8 @@ mesero; y una cuenta cerrada hoy (mesa 6) que aparece en el reporte **Hoy** del 
 3. En **En línea** (caja, mesero o dueño) acepte el pedido: la tarjeta muestra "punto en el mapa" y
    un selector **Elegir repartidor**. Al elegirlo, al repartidor le suena el aviso.
 4. En otra ventana entre como repartidor: **Mis entregas** muestra el pedido con **Llamar**,
-   **Google Maps** y **Waze**. Cuando cocina termina y alguien marca **Listo para entregar**,
-   aparece **Salí a entregar**; luego **Entregué** con el método de pago.
+   **Google Maps** y **Waze**. Cuando cocina toca **Listo**, el pedido queda listo solo y aparece
+   **Salí a entregar**; luego **Entregué** con el método de pago.
 5. En **Caja** aparece **Efectivo de repartidores** con lo que trae cada uno; **Recibido** lo cuadra.
 
 ### Clientes, tarjeta de sellos y comprobante (Fase 8)

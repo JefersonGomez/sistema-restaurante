@@ -309,3 +309,23 @@ describe('entregar y efectivo (Fase 16)', () => {
     expect((await comoCaja().get('/enlinea/efectivo')).body).toEqual([]);
   });
 });
+
+describe('listo automático (Fase 20.8)', () => {
+  it('cuando cocina despacha el último plato, el pedido en línea pasa solo a "Listo"', async () => {
+    const r = await pedir();
+    const id = (await seguir(r.body.token)).cuenta.id;
+    await comoCaja().post(`/enlinea/${id}/aceptar`).send({ tiempoEstimadoMin: 20 });
+    const cocina = await tokenDe('cocina@resto-a.test');
+    const s = await seguir(r.body.token);
+    const pedido = s.cuenta.pedidos[0]!;
+    const conCocina = (u: string) => request(app).post(u).set('Authorization', `Bearer ${cocina}`);
+
+    await conCocina(`/operacion/pedidos/${pedido.id}/avanzar`).send({
+      estado: 'LISTO',
+      itemIds: pedido.items.map((i) => i.id),
+    });
+    expect((await seguir(r.body.token)).cuenta.enLinea!.etapa).toBe('ACEPTADO');
+    expect((await conCocina(`/operacion/pedidos/${pedido.id}/avisar-listo`)).status).toBe(200);
+    expect((await seguir(r.body.token)).cuenta.enLinea!.etapa).toBe('LISTO');
+  });
+});

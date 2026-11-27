@@ -62,15 +62,35 @@ function Insignia({ icono, texto, tono }: { icono: ReactNode; texto: string; ton
   );
 }
 
-// Una entrada de la bandeja: llamadas, pedidos por confirmar y platos listos, en orden de llegada.
+// "12 min", "3 h", "2 días": cuánto lleva esperando.
+const haceCuanto = (ms: number) => {
+  const min = Math.floor(ms / 60_000);
+  return min < 60
+    ? `${min} min`
+    : min < 1440
+      ? `${Math.floor(min / 60)} h`
+      : `${Math.floor(min / 1440)} días`;
+};
+// Platos iguales (mismo nombre y opciones) en un solo renglón: "4× Empanadas de queso".
+const juntarIguales = (items: ItemListo[]) => {
+  const suma = new Map<string, number>();
+  for (const i of items) {
+    const texto = i.modificadores.length
+      ? `${i.nombreEs} (${i.modificadores.map((m) => m.nombre).join(', ')})`
+      : i.nombreEs;
+    suma.set(texto, (suma.get(texto) ?? 0) + i.cantidad);
+  }
+  return [...suma];
+};
+
+// Una entrada de "Ahora": llamadas, pedidos por confirmar y platos listos (juntos por mesa).
 type Entrada =
   | { tipo: 'llamada'; fecha: string; llamada: Llamada }
   | { tipo: 'pedido'; fecha: string; pedido: PedidoPendiente }
-  | { tipo: 'listo'; fecha: string; item: ItemListo };
+  | { tipo: 'listo'; fecha: string; mesa: number; items: ItemListo[] };
 
 export function MeseroPage() {
   const { usuario } = useAuth();
-  const [tab, setTab] = useState<'mesas' | 'bandeja'>('mesas');
   const [mesas, setMesas] = useState<MesaOperacion[]>([]);
   const [pendientes, setPendientes] = useState<PedidoPendiente[]>([]);
   const [llamadas, setLlamadas] = useState<Llamada[]>([]);
@@ -188,24 +208,40 @@ export function MeseroPage() {
     );
   }, [claveEsperando]);
 
+  // Lo más urgente primero (Fase 20.5): llamadas, pedidos por confirmar y platos listos por mesa;
+  // dentro de cada grupo, lo más antiguo primero.
+  const porFecha = <T extends { fecha: string }>(xs: T[]) =>
+    xs.sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const listosPorMesa = new Map<number, ItemListo[]>();
+  for (const i of listos)
+    listosPorMesa.set(i.mesa.numero, [...(listosPorMesa.get(i.mesa.numero) ?? []), i]);
   const bandeja: Entrada[] = [
-    ...llamadas.map((l) => ({ tipo: 'llamada' as const, fecha: l.createdAt, llamada: l })),
-    ...pendientes.map((p) => ({ tipo: 'pedido' as const, fecha: p.createdAt, pedido: p })),
-    ...listos.map((i) => ({ tipo: 'listo' as const, fecha: i.updatedAt, item: i })),
-  ].sort((a, b) => a.fecha.localeCompare(b.fecha));
+    ...porFecha(
+      llamadas.map((l) => ({ tipo: 'llamada' as const, fecha: l.createdAt, llamada: l })),
+    ),
+    ...porFecha(
+      pendientes.map((p) => ({ tipo: 'pedido' as const, fecha: p.createdAt, pedido: p })),
+    ),
+    ...porFecha(
+      [...listosPorMesa].map(([mesa, items]) => ({
+        tipo: 'listo' as const,
+        fecha: items.reduce((f, i) => (i.updatedAt < f ? i.updatedAt : f), items[0]!.updatedAt),
+        mesa,
+        items,
+      })),
+    ),
+  ];
+  const servirTodos = async (items: ItemListo[]) => {
+    for (const i of items) await accion(`/operacion/items/${i.id}/estado`, { estado: 'ENTREGADO' });
+  };
 
   const porMesa = (n: number) => ({
     pedidos: pendientes.filter((p) => p.mesa.numero === n).length,
     llamadas: llamadas.filter((l) => l.mesa.numero === n && l.tipo === 'MESERO').length,
     cuenta: llamadas.some((l) => l.mesa.numero === n && l.tipo === 'CUENTA'),
     listos: listos.filter((i) => i.mesa.numero === n).length,
-    esperando: listos.some((i) => i.mesa.numero === n && esperando.includes(i.id)),
   });
 
-  const tabs = [
-    { id: 'mesas', texto: 'Mesas', n: 0 },
-    { id: 'bandeja', texto: 'Pendientes', n: bandeja.length },
-  ] as const;
   const botonPrincipal =
     'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-md bg-purple px-4 text-sm font-semibold text-on-accent';
   const botonSuave =
@@ -218,34 +254,19 @@ export function MeseroPage() {
         <Conexion conectado={conectado} />
       </Encabezado>
 
-      <nav className="flex gap-1.5 border-b border-line px-3 py-2" role="tablist">
-        {tabs.map((x) => (
-          <button
-            key={x.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === x.id}
-            onClick={() => setTab(x.id)}
-            className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[10px] font-display text-base ${tab === x.id ? 'bg-surface-2 font-extrabold text-fg' : 'font-semibold text-muted hover:bg-surface'}`}
-          >
-            {x.texto}
-            {x.n > 0 && (
-              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-amber px-1.5 text-xs font-bold text-on-amber">
-                {x.n}
-              </span>
-            )}
-          </button>
-        ))}
-      </nav>
-
       {error && (
         <p role="alert" className="m-3 rounded-md bg-danger-soft p-3 text-sm text-danger">
           {error}. Se vuelve a sincronizar solo; si sigue, revise la conexión.
         </p>
       )}
 
-      {tab === 'mesas' && (
-        <main className="mx-auto grid max-w-5xl grid-cols-2 gap-3 p-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+      {/* Una sola pantalla (Fase 20.5): las mesas y, al lado (abajo en el celular, arriba), lo
+          urgente: llamadas, pedidos por confirmar y platos listos para servir. */}
+      <div className="mx-auto grid max-w-6xl gap-4 p-3 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <main
+          aria-label="Mesas"
+          className="grid grid-cols-2 content-start gap-3 sm:grid-cols-3 xl:grid-cols-4"
+        >
           {!cargado &&
             Array.from({ length: 8 }, (_, i) => (
               <div key={i} className="esqueleto aspect-[4/3] rounded-lg" aria-hidden />
@@ -263,7 +284,7 @@ export function MeseroPage() {
                 type="button"
                 onClick={() => abrirMesa(m)}
                 aria-label={`Mesa ${m.numero}: ${TEXTO_MESA[m.estado]}`}
-                className={`anim-entrar flex min-h-28 flex-col items-start gap-1 rounded-lg border-2 p-3 text-left hover:-translate-y-0.5 hover:shadow-app ${b.esperando ? 'alerta-verde' : ''} ${COLOR_MESA[m.estado]}`}
+                className={`anim-entrar flex min-h-28 flex-col items-start gap-1 rounded-lg border-2 p-3 text-left hover:-translate-y-0.5 hover:shadow-app ${COLOR_MESA[m.estado]}`}
               >
                 <span className="flex w-full items-baseline justify-between">
                   <span className="flex items-center gap-2">
@@ -318,13 +339,22 @@ export function MeseroPage() {
             );
           })}
         </main>
-      )}
 
-      {tab === 'bandeja' && (
-        <main className="mx-auto max-w-2xl space-y-3 p-3">
+        <aside
+          aria-label="Ahora"
+          className="order-first space-y-2 lg:sticky lg:top-24 lg:order-last"
+        >
+          <h2 className="flex items-center gap-2 px-1 text-xs font-semibold tracking-wide text-muted uppercase">
+            Ahora
+            {bandeja.length > 0 && (
+              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-amber px-1.5 text-xs font-bold text-on-amber">
+                {bandeja.length}
+              </span>
+            )}
+          </h2>
           {bandeja.length === 0 && (
-            <p className="rounded-lg border border-dashed border-line p-8 text-center text-muted">
-              Nada pendiente. Lo nuevo aparece aquí, lo más antiguo primero.
+            <p className="rounded-lg border border-dashed border-line px-4 py-3 text-sm text-muted">
+              Nada pendiente. Las llamadas y los platos listos aparecen aquí.
             </p>
           )}
           {bandeja.map((e) =>
@@ -404,36 +434,41 @@ export function MeseroPage() {
               </article>
             ) : (
               <article
-                key={e.item.id}
-                className={`anim-entrar flex items-center gap-3 rounded-lg border-l-4 border-ok bg-app p-3 shadow-tarjeta ${esperando.includes(e.item.id) ? 'alerta-verde' : ''}`}
+                key={`listo-${e.mesa}`}
+                className="anim-entrar flex items-center gap-3 rounded-lg border-l-4 border-ok bg-app p-3 shadow-tarjeta"
               >
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-ok-soft font-bold text-ok">
-                  {e.item.mesa.numero}
+                  {e.mesa}
                 </span>
                 <div className="min-w-0 flex-1 text-sm">
                   <p className="font-semibold">
-                    Listo para llevar: {e.item.cantidad}× {e.item.nombreEs}
+                    Mesa {e.mesa} · listo para servir
+                    {esperando.some((id) => e.items.some((i) => i.id === id)) && (
+                      <span className="ml-1.5 font-normal text-amber">
+                        hace {haceCuanto(ahora - Date.parse(e.fecha))}
+                      </span>
+                    )}
                   </p>
-                  {e.item.modificadores.length > 0 && (
-                    <p className="text-muted">
-                      {e.item.modificadores.map((m) => m.nombre).join(' · ')}
-                    </p>
-                  )}
+                  <ul className="text-muted">
+                    {juntarIguales(e.items).map(([texto, cantidad]) => (
+                      <li key={texto}>
+                        {cantidad}× {texto}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
                 <button
                   type="button"
-                  onClick={() =>
-                    accion(`/operacion/items/${e.item.id}/estado`, { estado: 'ENTREGADO' })
-                  }
+                  onClick={() => servirTodos(e.items)}
                   className={botonPrincipal}
                 >
-                  Entregado
+                  Servido
                 </button>
               </article>
             ),
           )}
-        </main>
-      )}
+        </aside>
+      </div>
 
       {mesaAbierta && (
         <MesaDetalle

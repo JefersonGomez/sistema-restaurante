@@ -189,6 +189,26 @@ export async function cambiarEstadoItem(
   return detalle;
 }
 
+// Pedido en línea (Fase 20.8): si la cocina ya no tiene nada por hacer, pasa solo a "Listo para
+// entregar" (antes la caja lo tocaba a mano). Solo desde "En cocina" (ACEPTADO).
+async function enLineaListoSiTerminado(restauranteId: string, cuentaId: string) {
+  const faltan = await prisma.pedidoItem.count({
+    where: {
+      cancelado: false,
+      estado: { in: ['PENDIENTE', 'EN_PREPARACION'] },
+      pedido: { cuentaId, estado: { not: 'CANCELADO' } },
+    },
+  });
+  if (faltan) return;
+  const { count } = await prisma.cuenta.updateMany({
+    where: { id: cuentaId, restauranteId, etapa: 'ACEPTADO' },
+    data: { etapa: 'LISTO' },
+  });
+  if (count)
+    for (const sala of ['meseros', 'caja', 'repartidores'] as const)
+      emitToRestaurant(restauranteId, sala, 'enlinea:actualizado', { cuentaId });
+}
+
 // Cocina: "Listo · avisar mesero". Solo con todos los platos (de su estación, si tiene una) listos;
 // la primera vez fija la hora (desde ahí se mide la espera en "Listos") y avisa al personal.
 export async function avisarListo(restauranteId: string, usuario: UsuarioToken, pedidoId: string) {
@@ -218,6 +238,7 @@ export async function avisarListo(restauranteId: string, usuario: UsuarioToken, 
     p.cuenta.tipo,
     ahora.toISOString(),
   );
+  if (p.cuenta.tipo !== 'MESA') await enLineaListoSiTerminado(restauranteId, p.cuentaId);
   return { listoAvisadoEn: ahora.toISOString() };
 }
 

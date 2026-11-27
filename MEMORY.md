@@ -302,6 +302,23 @@ root@169.58.105.198`. **Hay otros 5 proyectos con nginx del sistema en 80/443 (c
     intentos fallidos; el permiso de Claude Code bloqueó que lo hiciera Claude; bloque en
     `/etc/ssh/sshd_config.d/10-solo-llave.conf`). Reiniciar el VPS (actualizaciones pendientes)
     en horario de poco uso: afecta a los otros 5 proyectos.
+  - Docs del despliegue subidos (commit `8256854`).
+- **20.5 ✅ Mesero en una sola pantalla:** `MeseroPage` sin pestañas: mesas a la izquierda y
+  "Ahora" a la derecha (arriba en el celular, `order-first`). Orden: llamadas, pedidos por
+  confirmar, platos listos **juntos por mesa** (`juntarIguales`: suma mismo nombre+opciones; un
+  "Servido" marca todos). Sin borde verde parpadeante (`alerta-verde`) ni en mesas ni en "Ahora":
+  si esperan, texto ámbar "hace 12 min / 3 h / 2 días" (`haceCuanto`). "Entregado" → "Servido".
+  Probado en Chrome local (Servido de una mesa, Atendida). No revisado en ancho de celular.
+- **20.8 ✅ En línea con menos pasos** (pedido del usuario: "antes de subir simplifica la parte de
+  pedidos online también"): `EnLineaPage` reescrita: sin tablero de 4 columnas, KPIs, buscador ni
+  filtro de canal; cuadrícula ordenada por `prioridad` (por aceptar → SINPE → listos → en cocina →
+  en camino), línea superior + píldora "N min" como la cocina, una línea de estado y un botón
+  principal ("Aceptar", "Ya recibí el SINPE", "Entregado y cobrado"); "Ya está listo" chico;
+  "Salió a entregar" quitado de la caja (lo hace el repartidor); terminados en `<details>`.
+  API: `enLineaListoSiTerminado` en `operacion.service` (tras `avisarListo`, si la cuenta no es de
+  mesa y no quedan ítems PENDIENTE/EN_PREPARACION, ACEPTADO → LISTO y `enlinea:actualizado`). Test
+  nuevo en `enlinea.test.ts`. Se quitaron `Kpi`, `ColumnaTablero` y `tonoTiempo` de ui.tsx (sin
+  uso). Probado en Chrome local: aceptar, SINPE, listo automático desde cocina, entregar.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

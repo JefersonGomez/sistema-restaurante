@@ -40,14 +40,25 @@ Decisiones del usuario (misma fecha):
 4. **20.4 Confirmación del mesero opcional.** ✅ (ya existía `modoConfirmacion` con 3 modos: el
    default pasa a `NUNCA` y Ajustes lo muestra como un interruptor con las 2 variantes debajo.) Ajuste "El mesero confirma los pedidos del cliente",
    apagado por defecto: el pedido del QR va directo a cocina y el mesero solo recibe el aviso.
-5. **20.5 Mesero en una sola pantalla.** Las mesas, con una franja arriba de lo urgente
+5. **20.5 Mesero en una sola pantalla.** ✅ Las mesas, con una franja arriba de lo urgente
    (llamadas, platos listos y, si está encendida la confirmación, pedidos por confirmar).
 6. **20.6 Plan "Solo en línea" (₡7 900).** Menú en línea, recoger, domicilio, repartidores, cocina
    y caja; sin mesas, QR de mesa ni mesero. Las pantallas y el panel esconden lo que no incluye.
 7. **20.7 Inicio y Ajustes más simples.** Asistente de inicio para el dueño (menú → mesas →
    personal → listo) y Ajustes con lo avanzado (factura electrónica, CABYS, etc.) en
    "Opcional".
-8. **20.8 Pedidos en línea con menos pasos** (revisar etapas y toques en caja).
+8. **20.8 Pedidos en línea con menos pasos.** ✅ Pedido del usuario (2026-11-26): "antes de subir
+   simplifica la parte de pedidos online también".
+   - Sin tablero de 4 columnas ni KPIs ni buscador: una cuadrícula de tarjetas ordenada por lo que
+     hay que hacer (por aceptar → SINPE por verificar → listos para entregar → en cocina → en
+     camino), con **un botón principal** por tarjeta. Terminados en un desplegable abajo.
+   - **"Listo" automático:** cuando la cocina toca "Listo" y ya no queda ningún plato del pedido
+     por hacer, el pedido pasa solo a "Listo para entregar" (antes la caja tenía que tocarlo).
+     Queda un botón chico "Ya está listo" por si no se usa la pantalla de cocina.
+   - La caja ya no toca "Salió a entregar": eso lo hace el repartidor desde su celular. La caja
+     asigna repartidor y, si hace falta, marca "Entregado y cobrado".
+   - Tarjeta más limpia: sin barra de progreso ni marcas por plato; tiempo en minutos con el
+     mismo estilo que la cocina.
 
 Cada sub-fase se prueba en el navegador y se aprueba antes de la siguiente.
 
