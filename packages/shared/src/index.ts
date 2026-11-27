@@ -159,6 +159,7 @@ export const registroSchema = z.object({
     telefono: telefonoSchema,
     direccion: z.string().trim().max(200).optional(),
     plan: planSchema.optional(), // el plan del mes de prueba (el botón de la landing lo elige)
+    vieneDeDemo: z.boolean().optional(), // este navegador probó la demo antes (Fase 22)
   }),
   dueno: z.object({ nombre: texto(), email, password }),
 });
@@ -918,6 +919,8 @@ export type AdminResumen = {
   porEstado: Record<EstadoSuscripcion, number>;
   ingresosMes: number; // pagos registrados este mes (céntimos)
   mensualRecurrente: number; // precio mensual de los que están al día o por vencer
+  demos30d: number; // demos creadas en los últimos 30 días (Fase 22)
+  registrosDeDemo30d: number; // registros de esos 30 días que antes probaron la demo
 };
 export type AdminRestauranteFila = {
   id: string;

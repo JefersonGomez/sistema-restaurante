@@ -55,7 +55,7 @@ function Resumen({ r }: { r: AdminResumen }) {
     </div>
   );
   return (
-    <section aria-label="Resumen" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <section aria-label="Resumen" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
       {cifra('Restaurantes', String(r.restaurantes), `${r.porEstado.PRUEBA} en prueba`)}
       {cifra('Ingreso mensual', precio(r.mensualRecurrente), 'de los que están al día')}
       {cifra('Cobrado este mes', precio(r.ingresosMes))}
@@ -63,6 +63,11 @@ function Resumen({ r }: { r: AdminResumen }) {
         'Requieren atención',
         String(r.porEstado.POR_VENCER + r.porEstado.VENCIDO),
         `${r.porEstado.POR_VENCER} por vencer · ${r.porEstado.VENCIDO} vencidos`,
+      )}
+      {cifra(
+        'Demos (30 días)',
+        String(r.demos30d),
+        `${r.registrosDeDemo30d} se registraron${r.demos30d ? ` · ${Math.round((r.registrosDeDemo30d / r.demos30d) * 100)} %` : ''}`,
       )}
     </section>
   );

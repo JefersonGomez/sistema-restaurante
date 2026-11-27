@@ -15,6 +15,8 @@ import { Cargando } from '@menu-qr/ui';
 import { api, entrarDemo } from './api';
 import { useAuth } from './auth';
 
+export const PROBO_DEMO = 'kitchago:probo-demo';
+
 // Demo de una visita (Fase 21): cada visitante recibe su propio restaurante de ejemplo.
 const ROLES: { rol: RolPersonal; texto: string; detalle: string; icono: LucideIcon }[] = [
   {
@@ -59,6 +61,12 @@ export function DemoPage() {
     setCreando(true);
     try {
       await entrar(rol);
+      // Si después se registra desde este navegador, cuenta como "vino de la demo" (Fase 22).
+      try {
+        localStorage.setItem(PROBO_DEMO, '1');
+      } catch {
+        // Sin almacenamiento: no se cuenta.
+      }
     } catch (e) {
       setError((e as Error).message);
       setCreando(false);

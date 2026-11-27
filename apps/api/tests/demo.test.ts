@@ -92,6 +92,25 @@ describe('demo de una visita (Fase 21)', () => {
     expect(await prisma.usuario.count({ where: { email: { contains: '@demo.' } } })).toBe(0);
     // El restaurante real sigue intacto.
     expect(await tokenDe('dueno@real.test')).toBeTruthy();
-    expect(PASSWORD).toBeTruthy();
+  }, 60_000);
+
+  it('cuenta las demos por día y los registros que vienen de la demo (Fase 22)', async () => {
+    await nuevaDemo('DUENO');
+    await nuevaDemo('MESERO');
+    const registro = (email: string, vieneDeDemo?: boolean) =>
+      request(app)
+        .post('/auth/registro')
+        .send({
+          restaurante: { nombre: email, telefono: '8888 0000', vieneDeDemo },
+          dueno: { nombre: 'Dueña', email, password: PASSWORD },
+        });
+    expect((await registro('probo@x.test', true)).status).toBe(201);
+    expect((await registro('directo@x.test')).status).toBe(201);
+    // El conteo queda aunque las demos se borren.
+    await borrarVencidas(new Date(Date.now() + 25 * 3_600_000));
+
+    await crearUsuario('admin@x.test', 'SUPERADMIN', null);
+    const resumen = (await con(await tokenDe('admin@x.test')).get('/admin/resumen')).body;
+    expect(resumen).toMatchObject({ restaurantes: 2, demos30d: 2, registrosDeDemo30d: 1 });
   }, 60_000);
 });

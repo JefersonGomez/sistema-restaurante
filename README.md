@@ -614,13 +614,60 @@ proyectos. Detalle y decisiones en [`docs/despliegue.md`](docs/despliegue.md).
 - Variables de producción: `/opt/kitchago/.env` en el VPS (secretos generados allí, nunca en el
   repo). Tras editarlo: `cd /opt/kitchago/src && docker compose -f deploy/docker-compose.yml
 --env-file /opt/kitchago/.env up -d api`.
-- Respaldo diario 3:30 (cron de root): `/opt/kitchago/respaldos`, 14 días.
+- Respaldo diario 3:30 (cron de root): `/opt/kitchago/respaldos`, 14 días; cifrado y copia en
+  Backblaze B2 (ver "Respaldos fuera del VPS").
+- Despliegues con candado (`/opt/kitchago/.despliegue.lock`): si hay uno corriendo, el segundo se
+  detiene con un aviso.
 - HTTPS con certbot (certificado `kitchago.com`, renovación automática del sistema).
 - La factura electrónica sigue en el ambiente de **pruebas** de Hacienda (`HACIENDA_ENV=pruebas`).
 - **Demo para probar (Fase 21):** `https://panel.kitchago.com/demo` (también desde el login y la
   landing). Cada visita crea su propio restaurante de ejemplo (`esDemo`), sin contraseña conocida;
   se borra solo a las 24 h (trabajo de cada hora en la API). Máximo 100 demos vivas y 5 por IP
   cada hora. Las fotos de ejemplo se guardan una vez en `uploads/demo/` y se comparten.
+
+### Respaldos fuera del VPS (Backblaze B2, Fase 22)
+
+`deploy/respaldo.sh` cifra cada respaldo con AES-256 (`openssl`, clave `RESPALDO_CLAVE`) y lo sube
+a B2 con `apps/api/scripts/subir-respaldo.ts`. Sin `RESPALDO_CLAVE` o sin las variables `B2_*`, el
+respaldo queda solo en el VPS (como antes).
+
+Configurar (una vez):
+
+1. En backblaze.com: crear cuenta → **Buckets → Create a Bucket**, privado, sin cifrado del lado
+   de B2 (ya va cifrado). En **Lifecycle Settings** elegir _custom_: ocultar a los 30 días y borrar
+   1 día después (`daysFromUploadingToHiding: 30`, `daysFromHidingToDeleting: 1`).
+2. **Application Keys → Add a New Application Key**, solo para ese bucket, _Read and Write_.
+   Anotar `keyID` y `applicationKey` (esta se muestra una sola vez).
+3. En el VPS, agregar a `/opt/kitchago/.env` (y reiniciar la API como dice arriba):
+   `B2_KEY_ID=…`, `B2_APP_KEY=…`, `B2_BUCKET=…`, `B2_ENDPOINT=https://s3.<región>.backblazeb2.com`
+   (el endpoint sale en la ficha del bucket) y `RESPALDO_CLAVE=` con una clave larga
+   (`openssl rand -base64 32`). **Guardar `RESPALDO_CLAVE` también fuera del VPS** (gestor de
+   contraseñas): sin ella los respaldos de B2 no se pueden abrir.
+4. Probar: `bash /opt/kitchago/src/deploy/respaldo.sh` y ver los `.enc` en el bucket.
+
+Restaurar (en un servidor nuevo o en el mismo):
+
+```
+export RESPALDO_CLAVE='…'
+openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:RESPALDO_CLAVE \
+  -in kitchago-AAAA-MM-DD.sql.gz.enc | gunzip > kitchago.sql
+docker compose -f deploy/docker-compose.yml --env-file /opt/kitchago/.env exec -T db \
+  sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"' < kitchago.sql
+openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:RESPALDO_CLAVE \
+  -in imagenes-AAAA-MM-DD.tar.gz.enc | tar -xz -C /opt/kitchago
+```
+
+### Aviso si el sitio se cae (UptimeRobot, Fase 22)
+
+En uptimerobot.com (plan gratis): **Add New Monitor → HTTP(s)**, cada 5 minutos, con aviso por
+correo (y la app del celular, si se instala). Un monitor por dirección:
+
+| Monitor | Dirección                       | Qué revisa                    |
+| ------- | ------------------------------- | ----------------------------- |
+| API     | https://api.kitchago.com/health | la API **y** la base de datos |
+| Panel   | https://panel.kitchago.com      | panel del personal            |
+| Menú    | https://menu.kitchago.com       | menú de los clientes          |
+| Landing | https://kitchago.com            | página principal              |
 
 ## Scripts
 

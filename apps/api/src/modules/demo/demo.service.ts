@@ -69,6 +69,13 @@ export async function crear(rol: RolPersonal) {
       },
     });
     await historial(r);
+    // Conteo por día (hora de Costa Rica, UTC−6): queda aunque la demo se borre.
+    const dia = new Date(new Date(Date.now() - 6 * 3_600_000).toISOString().slice(0, 10));
+    await prisma.demoDia.upsert({
+      where: { dia },
+      create: { dia, creadas: 1 },
+      update: { creadas: { increment: 1 } },
+    });
   } catch (e) {
     await borrar(r.id).catch(() => {});
     throw e;

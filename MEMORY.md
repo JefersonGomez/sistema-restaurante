@@ -355,10 +355,34 @@ plan !== 'EN_LINEA'`. API: `planConMesas` en `mesasRouter`; `mesaPorToken` (QR p
     sin `AvisoPlan` en demos. Landing: "Ver demo" arriba y "Probar la demo" en el hero.
     Verificado: 260 tests, typecheck, lint, prettier, builds; probado en Chrome local (dueño,
     cambio a cocina, menú de la mesa).
+  - **21.3 ✅** Subida (commit `ffc5a5a`) y desplegada a kitchago.com el 2026-11-27: migración
+    `demo` aplicada, demo probada en producción desde la landing ("Ver demo" → dueño): Inicio con
+    datos, franja, menú con fotos compartidas. El primer `desplegar.sh` se cortó con `mv: cannot
+stat '/opt/kitchago/www'` (web nueva puesta, API sin reconstruir); probablemente se cruzaron
+    dos corridas de `actualizar.sh`. Se repitió `actualizar.sh` en el VPS y terminó bien.
   - **Problema encontrado:** `Get-Content`/`Set-Content` de PowerShell 5.1 leen UTF-8 sin BOM como
     ANSI y rompen tildes y emojis (y agregan BOM). Editar con Edit o Python, nunca así.
   - Nota de entorno: `pnpm` no está en el PATH de las shells de Claude; usar
     `corepack enable --install-directory <scratchpad>/bin pnpm` y anteponer esa carpeta al PATH.
+- **Fase 22 (producción más segura y visible, 2026-11-27)** — spec `docs/especificacion-fase22.md`.
+  Decisiones: respaldos en Backblaze B2, monitoreo con UptimeRobot; el cobro automático de la
+  mensualidad lo decide el usuario después.
+  - **22.1 ✅** Landing: `favicon.ico` (16/32/48 PNG adentro), `icono-192/512.png`,
+    `apple-touch-icon.png`, `robots.txt` (antes `/favicon.ico` devolvía el HTML → Google ponía el
+    planeta). `desplegar.sh` en una sola conexión con `flock` sobre `/opt/kitchago/.despliegue.lock`;
+    `actualizar.sh` toma el candado si se corre a mano (`KITCHAGO_CANDADO` evita el doble).
+  - **22.2 ✅** `og.png` 1200×630 + etiquetas Open Graph/Twitter y canonical en la landing.
+  - **22.3 ✅** Modelo `DemoDia` (conteo por día, hora CR) y `Restaurante.vieneDeDemo` (migración
+    `demo_conversion`); `registroSchema.restaurante.vieneDeDemo` lo manda el registro si el
+    navegador tiene `kitchago:probo-demo` (lo pone `DemoPage`); `AdminResumen.demos30d` y
+    `registrosDeDemo30d`, tarjeta "Demos (30 días)" en el superadmin. Test en `demo.test.ts`.
+  - **22.4 (código ✅)** `respaldo.sh` cifra con `openssl enc -aes-256-cbc -pbkdf2 -iter 200000`
+    (clave `RESPALDO_CLAVE` en el .env del VPS) y sube con `scripts/subir-respaldo.ts`
+    (`@aws-sdk/client-s3`, variables `B2_*`) por `docker compose exec -T api`. Sin variables, sigue
+    solo en el VPS. Pendiente del usuario: cuenta, bucket con lifecycle 30 días, llave y `.env`.
+  - **22.5 (pasos ✅)** Tabla de monitores en el README; pendiente que el usuario cree la cuenta.
+  - Los íconos y la imagen se generaron con scripts de sharp en el scratchpad (no en el repo).
+
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

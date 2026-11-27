@@ -104,7 +104,22 @@ export async function resumen(): Promise<AdminResumen> {
     where: { createdAt: { gte: inicioMes } },
     _sum: { monto: true },
   });
-  return { restaurantes: rs.length, porEstado, ingresosMes: _sum.monto ?? 0, mensualRecurrente };
+  // ¿La demo convierte? (Fase 22)
+  const hace30 = new Date(Date.now() - 30 * 86_400_000);
+  const [demos, registrosDeDemo30d] = await Promise.all([
+    prisma.demoDia.aggregate({ where: { dia: { gte: hace30 } }, _sum: { creadas: true } }),
+    prisma.restaurante.count({
+      where: { esDemo: false, vieneDeDemo: true, createdAt: { gte: hace30 } },
+    }),
+  ]);
+  return {
+    restaurantes: rs.length,
+    porEstado,
+    ingresosMes: _sum.monto ?? 0,
+    mensualRecurrente,
+    demos30d: demos._sum.creadas ?? 0,
+    registrosDeDemo30d,
+  };
 }
 
 export async function detalle(id: string): Promise<AdminRestauranteDetalle> {

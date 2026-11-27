@@ -90,6 +90,7 @@ model Restaurante {
   planVenceEn              DateTime?
   suspendidoPorPago        Boolean          @default(false) // suspensión automática (un pago la levanta)
   esDemo                   Boolean          @default(false) // demo de una visita (Fase 21): se borra a las 24 h
+  vieneDeDemo              Boolean          @default(false) // se registró después de probar la demo (Fase 22)
   // Wi-Fi del local: QR para conectarse en la tarjeta de la mesa (Fase 11)
   wifiNombre               String?
   wifiClave                String?
@@ -879,4 +880,13 @@ model Comprobante {
   @@unique([restauranteId, tipo, numero])
   @@index([estado, proximoIntento])
   @@index([cuentaId])
+}
+
+// Demos creadas por día (Fase 22): las demos se borran a las 24 h, el conteo queda.
+model DemoDia {
+  id        String   @id @default(uuid()) @db.Uuid
+  dia       DateTime @unique @db.Date
+  creadas   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -4,6 +4,11 @@
 set -euo pipefail
 DOMINIO=kitchago.com
 BASE=/opt/kitchago
+# Corrido a mano: toma el mismo candado que desplegar.sh (que ya lo tiene y avisa con la variable).
+if [ -z "${KITCHAGO_CANDADO:-}" ]; then
+  exec 9>"$BASE/.despliegue.lock"
+  flock -n 9 || { echo "Ya hay un despliegue en curso; espere a que termine." >&2; exit 1; }
+fi
 cd "$BASE/src"
 
 docker build -f deploy/Dockerfile.web \

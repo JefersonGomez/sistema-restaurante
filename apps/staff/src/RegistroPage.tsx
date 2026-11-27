@@ -2,6 +2,7 @@ import { Store, UserRound } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { planSchema, registroSchema } from '@menu-qr/shared';
+import { PROBO_DEMO } from './DemoPage';
 import { Cargando } from '@menu-qr/ui';
 import type { ErrorApi } from './api';
 import { useAuth } from './auth';
@@ -9,6 +10,14 @@ import { Boton, Campo, erroresDe } from './panel/comunes';
 
 // Registro de un restaurante nuevo en dos pasos: datos del local y datos del dueño. Al terminar
 // el dueño entra directo a su panel.
+const proboDemo = () => {
+  try {
+    return localStorage.getItem(PROBO_DEMO) === '1';
+  } catch {
+    return false;
+  }
+};
+
 export function RegistroPage() {
   const { registrar } = useAuth();
   const [paso, setPaso] = useState<1 | 2>(1);
@@ -36,6 +45,7 @@ export function RegistroPage() {
       telefono: f.telefono,
       direccion: f.direccion.trim() || undefined,
       plan: planElegido,
+      vieneDeDemo: proboDemo(),
     },
     dueno: { nombre: f.duenoNombre, email: f.email, password: f.password },
   });
