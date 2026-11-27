@@ -491,12 +491,6 @@ export function Campana() {
   );
 }
 
-// Pide un texto (motivo de cancelación). null si se canceló el diálogo.
-export function pedirMotivo(pregunta: string, sugerido?: string) {
-  const m = prompt(pregunta, sugerido)?.trim();
-  return m ? m.slice(0, 200) : null;
-}
-
 // Menú "Más" del encabezado: cada opción abre su propia pantalla. El contador avisa sin abrirlo.
 export function MenuMas({
   opciones,

@@ -13,10 +13,10 @@ import {
   formatoPrecio,
   hora,
   Kpi,
-  pedirMotivo,
   Segmentado,
   tonoTiempo,
 } from './ui';
+import { confirmar, pedirMotivo } from './dialogos';
 
 // Pedidos en línea (Fase 10): mismo lenguaje que la cocina. Nuevos → En cocina → Listos y en
 // camino → Terminados.
@@ -279,9 +279,10 @@ function Tarjeta({
             <button
               type="button"
               disabled={ocupado}
-              onClick={() =>
-                confirm(`¿Canjear «${d.fidelidad!.premio}» para ${d.clienteNombre}?`) &&
-                onAccion('/clientes/canjear', { telefono: d.clienteTelefono })
+              onClick={async () =>
+                (await confirmar(`¿Canjear «${d.fidelidad!.premio}» para ${d.clienteNombre}?`, {
+                  boton: 'Canjear',
+                })) && onAccion('/clientes/canjear', { telefono: d.clienteTelefono })
               }
               className="min-h-8 rounded-md bg-ok px-2 text-bg disabled:opacity-50"
             >
@@ -320,8 +321,15 @@ function Tarjeta({
             <button
               type="button"
               disabled={ocupado}
-              onClick={() => {
-                const motivo = pedirMotivo('¿Por qué no se puede aceptar? (lo verá el cliente)');
+              onClick={async () => {
+                const motivo = await pedirMotivo(
+                  '¿Por qué no se puede aceptar? Lo verá el cliente.',
+                  [
+                    'Estamos muy llenos en este momento',
+                    'Se acabó un plato del pedido',
+                    'No llegamos a esa dirección',
+                  ],
+                );
                 if (motivo) onAccion(`${base}/rechazar`, { motivo });
               }}
               className={`${boton} bg-surface-2 hover:bg-line`}
@@ -349,10 +357,10 @@ function Tarjeta({
                 <button
                   type="button"
                   disabled={ocupado}
-                  onClick={() => {
-                    const motivo = pedirMotivo(
-                      '¿Cancelar el pedido? Escriba el motivo (lo verá el cliente)',
-                      'No recibimos el pago por SINPE',
+                  onClick={async () => {
+                    const motivo = await pedirMotivo(
+                      '¿Por qué se cancela el pedido? Lo verá el cliente.',
+                      ['No recibimos el pago por SINPE', 'El cliente pidió cancelar'],
                     );
                     if (motivo) onAccion(`${base}/rechazar`, { motivo });
                   }}
@@ -401,9 +409,10 @@ function Tarjeta({
                 <button
                   type="button"
                   disabled={ocupado}
-                  onClick={() =>
-                    confirm(`¿Entregado y cobrado (${precio(c.total)})?`) &&
-                    onAccion(`${base}/entregar`, { metodoPago: metodo })
+                  onClick={async () =>
+                    (await confirmar(`¿Entregado y cobrado ${precio(c.total)}?`, {
+                      boton: 'Sí, entregado',
+                    })) && onAccion(`${base}/entregar`, { metodoPago: metodo })
                   }
                   className={`${boton} bg-ok text-bg`}
                 >

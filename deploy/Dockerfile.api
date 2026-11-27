@@ -1,0 +1,12 @@
+# API de KitchaGo en producción. Se construye desde la raíz del repo:
+#   docker build -f deploy/Dockerfile.api .
+FROM node:22-alpine
+WORKDIR /app
+RUN corepack enable
+COPY . .
+# prisma generate (postinstall) lee DATABASE_URL de la config; en la construcción basta uno falso.
+RUN DATABASE_URL=postgresql://x:x@localhost:5432/x pnpm install --frozen-lockfile --filter api...
+ENV NODE_ENV=production
+WORKDIR /app/apps/api
+# Aplica las migraciones pendientes y arranca (el código TS corre con tsx, igual que en desarrollo).
+CMD ["sh", "-c", "pnpm exec prisma migrate deploy && pnpm exec tsx src/server.ts"]

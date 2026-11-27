@@ -6,6 +6,7 @@ import { useAuth } from './auth';
 import { ListaComprobantes, useComprobantes } from './FacturaCaja';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
 import { Conexion, Encabezado, formatoPrecio, VolverACaja } from './ui';
+import { confirmar } from './dialogos';
 
 // Pantallas aparte de la caja (Fase 16): factura electrónica y efectivo de repartidores. Así la
 // caja no se llena cuando hay muchos comprobantes o entregas.
@@ -172,8 +173,11 @@ export function RepartidoresCajaPage() {
               <button
                 type="button"
                 disabled={ocupado}
-                onClick={() =>
-                  confirm(`¿Recibió ${precio(e.total)} en efectivo de ${e.repartidor.nombre}?`) &&
+                onClick={async () =>
+                  (await confirmar(
+                    `¿Recibió ${precio(e.total)} en efectivo de ${e.repartidor.nombre}?`,
+                    { boton: 'Sí, lo recibí' },
+                  )) &&
                   accion(async () => {
                     await api('/enlinea/efectivo/recibir', {
                       method: 'POST',

@@ -5,6 +5,7 @@ import type { ClienteFila } from '@menu-qr/shared';
 import { api, type ErrorApi } from '../api';
 import { formatoPrecio } from '../ui';
 import { Boton, ErrorCarga, Esqueleto, EstadoVacio, Etiqueta, TituloPagina } from './comunes';
+import { confirmar } from '../dialogos';
 
 type Config = {
   moneda: 'CRC' | 'USD';
@@ -138,10 +139,11 @@ export function ClientesPage() {
                       <Boton
                         variante="suave"
                         disabled={canjear.isPending}
-                        onClick={() =>
-                          confirm(
+                        onClick={async () =>
+                          (await confirmar(
                             `¿Canjear «${r.data?.premioFidelidad ?? 'el premio'}» para ${c.nombre}?`,
-                          ) && canjear.mutate(c.telefono)
+                            { boton: 'Canjear' },
+                          )) && canjear.mutate(c.telefono)
                         }
                       >
                         <Gift className="size-4" aria-hidden /> Canjear

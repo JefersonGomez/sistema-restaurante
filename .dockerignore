@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+.git
+.env
+secretos
+*.p12
+apps/api/uploads
+apps/api/src/generated
+prototipo_front
+coverage

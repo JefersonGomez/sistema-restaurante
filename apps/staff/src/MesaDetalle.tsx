@@ -2,7 +2,7 @@ import { Check, ChefHat, Clock, Ellipsis, ReceiptText, Send, Users } from 'lucid
 import type { ReactNode } from 'react';
 import type { CuentaDetalle, ItemDetalle, MesaOperacion } from '@menu-qr/shared';
 import { Modal } from '@menu-qr/ui';
-import { pedirMotivo } from './ui';
+import { pedirMotivo } from './dialogos';
 
 // Detalle de una mesa para el mesero (Fase 19): agrupado en el orden en que se actúa
 // (por confirmar → listo para servir → en cocina → ya servido) y con los platos iguales juntos.
@@ -142,13 +142,13 @@ export function MesaDetalle({
     else onRecargar();
   };
   const cancelarPedido = async (id: string) => {
-    const motivo = pedirMotivo('¿Por qué se cancela el pedido?');
+    const motivo = await pedirMotivo('¿Por qué se cancela el pedido?');
     if (!motivo) return;
     await onAccion(`/operacion/pedidos/${id}/cancelar`, { motivo });
     onRecargar();
   };
   const cancelarUno = async (g: Grupo) => {
-    const motivo = pedirMotivo(`¿Por qué se cancela ${g.nombre}?`);
+    const motivo = await pedirMotivo(`¿Por qué se cancela ${g.nombre}?`);
     if (!motivo) return;
     await onAccion(`/operacion/items/${g.ids[0]}/cancelar`, { motivo });
     onRecargar();
@@ -253,7 +253,10 @@ export function MesaDetalle({
                   <div className="absolute right-0 z-10 mt-1 w-56 rounded-md border border-line bg-surface p-1 shadow-lg">
                     <button
                       type="button"
-                      onClick={() => cancelarUno(g)}
+                      onClick={(e) => {
+                        e.currentTarget.closest('details')?.removeAttribute('open');
+                        void cancelarUno(g);
+                      }}
                       className="min-h-11 w-full rounded px-3 text-left text-sm text-danger hover:bg-danger-soft"
                     >
                       Cancelar {g.ids.length > 1 ? 'uno' : 'este plato'}

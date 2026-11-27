@@ -265,6 +265,21 @@ usarFoto)` (foto solo en la primera carga de la pantalla; después, sin red, fal
     apagada" si falta el permiso (punto ámbar en el icono). El audio sigue activándose con el
     primer toque (`activarConPrimerToque`). Se quitó `sonidoActivo`. Probado en Chrome (menú y
     guardado); el timbre no se puede oír desde la prueba automática.
+  - 19, 20.1 y 20.2 subidas (commit `8424aab`).
+  - **20.3 ✅ Ventanas propias:** `apps/staff/src/dialogos.tsx` (nuevo): `confirmar(titulo,
+{detalle, boton, peligro})` y `pedirMotivo(titulo, opciones = MOTIVOS_CANCELAR)` devuelven
+    promesas; `<Dialogos />` montado en `main.tsx` (Escape/fondo cierran). Motivos de un toque +
+    "Otro motivo…" con campo de texto. Reemplazados los 16 `confirm()`/`prompt()` (Admin, caja:
+    cobro con vuelto en el detalle y deshacer cobro, efectivo de repartidores, cierre de caja, en
+    línea: canjear, rechazar con motivos, cancelar sin SINPE, entregado; mesero/mesa: cancelar;
+    clientes: canjear; repartidor: entregado). `pedirMotivo` salió de `ui.tsx`. El menú "⋯" de la
+    mesa se cierra al elegir. Probado en Chrome (cancelar con "Se acabó", "Volver").
+  - **20.4 ✅ Confirmación opcional:** ya existía `Restaurante.modoConfirmacion` (SIEMPRE /
+    PRIMER_PEDIDO / NUNCA, antes default PRIMER_PEDIDO). Migración `confirmacion_directa`: default
+    `NUNCA` (no se cambiaron restaurantes existentes; el demo actual sigue en PRIMER_PEDIDO hasta
+    re-seed o cambiarlo en Ajustes). AjustesPage: sección "Pedidos desde el QR de la mesa" con
+    interruptor "El mesero revisa los pedidos del cliente antes de cocina" (on → PRIMER_PEDIDO) y,
+    encendido, radios "Solo el primero de cada mesa" / "Todos los pedidos".
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

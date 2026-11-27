@@ -21,6 +21,7 @@ import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
 import { FacturaA, receptorDelCobro, useComprobantes, type FormReceptor } from './FacturaCaja';
 import { TicketCierre, TurnoCaja } from './TurnoCaja';
 import { Conexion, Encabezado, formatoPrecio, hora, MenuMas, TituloColumna } from './ui';
+import { confirmar } from './dialogos';
 
 const METODOS: { id: MetodoPago; texto: string }[] = [
   { id: 'EFECTIVO', texto: 'Efectivo' },
@@ -189,9 +190,12 @@ export function CajaPage() {
   const cobroJunto = cuenta ? armarCobro(cobro, cuenta.total, precio) : null;
   const cobroGrupo = totalGrupo ? armarCobro(cobro, totalGrupo.total, precio) : null;
   // Confirmación con el vuelto a la vista.
-  const confirmar = (texto: string, lineas: LineaCobroInput[]) => {
+  const confirmarCobro = (texto: string, lineas: LineaCobroInput[]) => {
     const vuelto = lineas.reduce((n, l) => n + (l.recibido ? l.recibido - l.monto : 0), 0);
-    return confirm(vuelto ? `${texto}\n\nVuelto: ${precio(vuelto)}` : texto);
+    return confirmar(texto, {
+      detalle: vuelto ? `Vuelto: ${precio(vuelto)}` : undefined,
+      boton: 'Cobrar',
+    });
   };
 
   // Factura a nombre de alguien (solo si la factura electrónica está activa).
@@ -200,14 +204,14 @@ export function CajaPage() {
     fe.datos?.comprobantes.filter((c) => c.estado === 'ERROR' || c.estado === 'RECHAZADO').length ??
     0;
 
-  const cerrarJunto = () =>
+  const cerrarJunto = async () =>
     cuenta &&
     cobroJunto?.datos &&
     !factura.error &&
-    confirmar(
+    (await confirmarCobro(
       `¿Cerrar la cuenta (${cuenta.lugar}) por ${precio(cuenta.total)}?`,
       cobroJunto.datos.lineas,
-    ) &&
+    )) &&
     accion(async () => {
       await api(`/operacion/cuentas/${cuenta.id}/cerrar`, {
         method: 'POST',
@@ -217,13 +221,16 @@ export function CajaPage() {
       cargar();
     });
 
-  const cobrarGrupo = () =>
+  const cobrarGrupo = async () =>
     cuenta &&
     cobroGrupo?.datos &&
     !factura.error &&
     totalGrupo &&
     elegidos.length > 0 &&
-    confirmar(`¿Cobrar este grupo por ${precio(totalGrupo.total)}?`, cobroGrupo.datos.lineas) &&
+    (await confirmarCobro(
+      `¿Cobrar este grupo por ${precio(totalGrupo.total)}?`,
+      cobroGrupo.datos.lineas,
+    )) &&
     accion(async () => {
       const r = await api<{ cuenta: CuentaDetalle; cerrada: boolean }>(
         `/operacion/cuentas/${cuenta.id}/pagos`,
@@ -248,9 +255,13 @@ export function CajaPage() {
       } else setCuenta(r.cuenta);
     });
 
-  const deshacer = (pagoId: string) =>
+  const deshacer = async (pagoId: string) =>
     cuenta &&
-    confirm('¿Deshacer este cobro? Sus platos vuelven a quedar sin pagar.') &&
+    (await confirmar('¿Deshacer este cobro?', {
+      detalle: 'Sus platos vuelven a quedar sin pagar.',
+      boton: 'Deshacer cobro',
+      peligro: true,
+    })) &&
     accion(async () =>
       setCuenta(
         await api<CuentaDetalle>(`/operacion/cuentas/${cuenta.id}/pagos/${pagoId}`, {

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { TurnoCajaDetalle } from '@menu-qr/shared';
 import { api } from './api';
 import { hora } from './ui';
+import { confirmar } from './dialogos';
 
 // Billetes y monedas de Costa Rica (céntimos) para ayudar a contar la gaveta.
 const DENOMINACIONES = [
@@ -331,9 +332,11 @@ function FormCierre({
   // Si escribe el total a mano, manda ese; si no, la suma del conteo.
   const contado = total.trim() ? aCentimos(total) : sumaConteo;
   const hayConteo = total.trim() !== '' || sumaConteo > 0;
-  const cerrar = () =>
+  const cerrar = async () =>
     hayConteo &&
-    confirm(`¿Cerrar la caja con ${precio(contado)} contados?`) &&
+    (await confirmar(`¿Cerrar la caja con ${precio(contado)} contados?`, {
+      boton: 'Cerrar caja',
+    })) &&
     onCerrar({ efectivoContado: contado, nota: nota.trim() || undefined });
 
   // Bloquea el scroll de atrás y cierra con Escape.

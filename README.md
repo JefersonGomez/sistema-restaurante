@@ -64,12 +64,13 @@ Con `pnpm dev` corriendo y el seed cargado:
 2. **Mesero** — en otra ventana (o el celular): entrar con `mesero@sodalaesquina.test`.
 3. **Comensal** — abrir la URL de la **mesa 3** que imprimió el seed (`http://localhost:5180/m/<token>`).
    Elegir platos (el casado con bistec pide el término), agregar al pedido y **Enviar pedido**.
-4. Con `PRIMER_PEDIDO` (default) el primer pedido queda "esperando confirmación": el mesero lo ve
-   en **Pendientes** y toca **Confirmar y enviar a cocina** → aparece al instante en la columna
-   **Nuevos** de la cocina (y el bar recibe solo sus bebidas).
-5. Cocina toca cada ítem: pasa a **En preparación** y luego a **Listos** (un toque equivocado se
-   deshace con **Deshacer** durante 5 s). El comensal ve los estados en "Mi cuenta".
-6. El mesero ve "Listo para llevar" en **Pendientes** (y la insignia en la mesa) y toca **Entregado**.
+4. Por defecto el pedido va **directo a cocina** (`NUNCA`) y aparece al instante como comanda (el
+   bar recibe solo sus bebidas). Si el dueño encendió "El mesero revisa los pedidos del cliente"
+   en Ajustes, el pedido espera en **Pendientes** y en la mesa hasta **Confirmar y enviar a
+   cocina**.
+5. Cocina toca **Listo** en la comanda (un toque equivocado se deshace con **Deshacer**). El
+   comensal ve los estados en "Mi cuenta".
+6. El mesero ve el plato en **Listo para servir** (y la insignia en la mesa) y toca **Servido**.
 7. Abrir la misma URL de la mesa 3 en otro navegador: es la misma cuenta y ve los mismos estados.
 8. El comensal toca **Pedir la cuenta** → la caja (`caja@sodalaesquina.test`) la ve primero en la
    lista, con subtotal, servicio e IVA. **Imprimir pre-cuenta** abre el ticket de 80 mm.
@@ -367,8 +368,9 @@ temporalmente"). `estaAbierto()` vive en `packages/shared/src/horario.ts`. El me
 (`platoDestacadoId`) con textos ES/EN y `precioPromo` opcional: si lo tiene, el menú lo muestra y el
 servidor **lo cobra** a ese precio.
 
-**Confirmación** (`modoConfirmacion`, el dueño lo cambia en "Hoy"): `PRIMER_PEDIDO` (default: el
-mesero confirma el primero y la cuenta queda verificada), `SIEMPRE` o `NUNCA`. Los pedidos que
+**Confirmación** (`modoConfirmacion`, el dueño lo cambia en Ajustes con el interruptor "El mesero
+revisa los pedidos del cliente"): `NUNCA` (default desde la Fase 20.4: directo a cocina),
+`PRIMER_PEDIDO` (el mesero confirma el primero y la cuenta queda verificada) o `SIEMPRE`. Los pedidos que
 toma el mesero se confirman solos.
 
 **Estados** (cualquier otra transición → 409):

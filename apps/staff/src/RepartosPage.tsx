@@ -14,6 +14,7 @@ import {
   hora,
   TituloColumna,
 } from './ui';
+import { confirmar } from './dialogos';
 
 const boton =
   'inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md px-4 text-[15px] font-semibold disabled:opacity-50';
@@ -148,12 +149,13 @@ function Entrega({
           <button
             type="button"
             disabled={ocupado}
-            onClick={() =>
-              confirm(
+            onClick={async () =>
+              (await confirmar(
                 yaPagado
                   ? '¿Entregado al cliente?'
                   : `¿Entregado y cobrado ${precio(c.total)} (${metodo.toLowerCase()})?`,
-              ) &&
+                { boton: 'Sí, entregado' },
+              )) &&
               onAccion(`/repartos/${c.id}/entregar`, { metodoPago: yaPagado ? 'SINPE' : metodo })
             }
             className={`${boton} bg-ok text-on-accent`}

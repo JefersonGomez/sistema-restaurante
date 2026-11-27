@@ -107,10 +107,10 @@ type Restaurante = {
 
 const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const diaDe = (i: number) => (i + 1) % 7; // índice de la lista (lunes primero) → diaSemana (0 = domingo)
+// Con el interruptor encendido (Fase 20.4): qué pedidos revisa el mesero.
 const MODOS: { id: ModoConfirmacion; texto: string }[] = [
-  { id: 'SIEMPRE', texto: 'Siempre: el mesero confirma cada pedido' },
-  { id: 'PRIMER_PEDIDO', texto: 'Solo el primer pedido de cada mesa' },
-  { id: 'NUNCA', texto: 'Nunca: los pedidos van directo a cocina' },
+  { id: 'PRIMER_PEDIDO', texto: 'Solo el primero de cada mesa (para saber que la mesa es real)' },
+  { id: 'SIEMPRE', texto: 'Todos los pedidos' },
 ];
 const select = 'mt-1 h-11 w-full rounded-xl border border-line bg-surface px-3 text-fg';
 
@@ -342,24 +342,34 @@ function Formulario({ r }: { r: Restaurante }) {
         </Seccion>
 
         <Seccion
-          titulo="Confirmación de pedidos"
-          detalle="Cuándo tiene que aprobar un mesero lo que pide el cliente desde el QR."
+          titulo="Pedidos desde el QR de la mesa"
+          detalle="Por defecto van directo a cocina. Encienda esto si prefiere que un mesero los revise antes."
         >
-          <fieldset className="space-y-1 text-sm">
-            <legend className="sr-only">Confirmación de pedidos</legend>
-            {MODOS.map((m) => (
-              <label key={m.id} className="flex min-h-11 items-center gap-2">
-                <input
-                  type="radio"
-                  name="modo"
-                  className="size-5 accent-purple"
-                  checked={f.modoConfirmacion === m.id}
-                  onChange={() => poner('modoConfirmacion', m.id)}
-                />
-                {m.texto}
-              </label>
-            ))}
-          </fieldset>
+          <label className="flex min-h-11 items-center justify-between gap-3 text-sm">
+            <span>El mesero revisa los pedidos del cliente antes de cocina</span>
+            <Interruptor
+              activo={f.modoConfirmacion !== 'NUNCA'}
+              etiqueta="El mesero revisa los pedidos del cliente"
+              onCambio={(v) => poner('modoConfirmacion', v ? 'PRIMER_PEDIDO' : 'NUNCA')}
+            />
+          </label>
+          {f.modoConfirmacion !== 'NUNCA' && (
+            <fieldset className="mt-1 space-y-1 border-l-2 border-line pl-3 text-sm">
+              <legend className="sr-only">Qué pedidos revisa el mesero</legend>
+              {MODOS.map((m) => (
+                <label key={m.id} className="flex min-h-11 items-center gap-2">
+                  <input
+                    type="radio"
+                    name="modo"
+                    className="size-5 accent-purple"
+                    checked={f.modoConfirmacion === m.id}
+                    onChange={() => poner('modoConfirmacion', m.id)}
+                  />
+                  {m.texto}
+                </label>
+              ))}
+            </fieldset>
+          )}
         </Seccion>
       </div>
 

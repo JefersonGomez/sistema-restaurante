@@ -33,6 +33,7 @@ import { OlvidePage, RestablecerPage } from './RecuperarPage';
 import { RepartosPage } from './RepartosPage';
 import { tokenTablet } from './api';
 import './index.css';
+import { Dialogos } from './dialogos';
 
 // Pantalla de inicio por rol.
 const INICIO: Record<Rol, string> = {
@@ -62,6 +63,7 @@ function App() {
   return (
     <>
       <AvisosGlobales />
+      <Dialogos />
       {usuario && <AvisoConexion />}
       <Routes>
         <Route path="/login" element={usuario ? <Navigate to={inicio} replace /> : <LoginPage />} />

@@ -94,7 +94,7 @@ model Restaurante {
   wifiClave                String?
   // Factura electrónica (Fase 13): CABYS de los platos sin código propio (según la modalidad)
   cabysGeneral             String?
-  modoConfirmacion         ModoConfirmacion @default(PRIMER_PEDIDO)
+  modoConfirmacion         ModoConfirmacion @default(NUNCA) // Fase 20.4: directo a cocina por defecto
   zonaHoraria              String           @default("America/Costa_Rica")
   cerradoManual            Boolean          @default(false) // "Cerrar temporalmente"
   // Promoción del banner: si hay precioPromo, es el precio que se cobra por ese plato.

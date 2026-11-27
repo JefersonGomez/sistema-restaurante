@@ -14,6 +14,7 @@ import { api, type ErrorApi } from './api';
 import { Boton, Campo, ErrorCarga, Esqueleto, EstadoVacio } from './panel/comunes';
 import { aCentimos, aColones } from './panel/menu/PlatoForm';
 import { Encabezado, formatoPrecio } from './ui';
+import { confirmar } from './dialogos';
 
 const precio = formatoPrecio('CRC');
 const fecha = (iso: string | null) =>
@@ -277,12 +278,17 @@ function Detalle({ id, onCerrar }: { id: string; onCerrar: () => void }) {
         <Boton
           variante={r.estado === 'SUSPENDIDO' ? 'principal' : 'peligro'}
           disabled={accion.isPending}
-          onClick={() =>
-            confirm(
+          onClick={async () =>
+            (await confirmar(
+              r.estado === 'SUSPENDIDO' ? `¿Reactivar ${r.nombre}?` : `¿Suspender ${r.nombre}?`,
               r.estado === 'SUSPENDIDO'
-                ? `¿Reactivar ${r.nombre}?`
-                : `¿Suspender ${r.nombre}? Nadie del restaurante podrá entrar y su menú no abrirá.`,
-            ) &&
+                ? { boton: 'Reactivar' }
+                : {
+                    detalle: 'Nadie del restaurante podrá entrar y su menú no abrirá.',
+                    boton: 'Suspender',
+                    peligro: true,
+                  },
+            )) &&
             accion.mutate(() =>
               api(`/admin/restaurantes/${id}`, {
                 method: 'PATCH',
@@ -297,8 +303,10 @@ function Detalle({ id, onCerrar }: { id: string; onCerrar: () => void }) {
         <Boton
           variante="suave"
           disabled={accion.isPending || !r.dueno}
-          onClick={() =>
-            confirm(`¿Crear una contraseña temporal para ${r.dueno?.email}?`) &&
+          onClick={async () =>
+            (await confirmar(`¿Crear una contraseña temporal para ${r.dueno?.email}?`, {
+              boton: 'Crear',
+            })) &&
             accion.mutate(async () =>
               setTemporal(
                 await api<{ email: string; passwordTemporal: string }>(

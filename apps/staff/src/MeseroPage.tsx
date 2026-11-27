@@ -17,7 +17,8 @@ import { useAuth } from './auth';
 import { useRefrescoAgrupado, useTiempoReal } from './tiempoReal';
 import { MesaDetalle } from './MesaDetalle';
 import { TomarPedido } from './TomarPedido';
-import { BotonSonido, Conexion, Encabezado, formatoPrecio, hora, pedirMotivo } from './ui';
+import { BotonSonido, Conexion, Encabezado, formatoPrecio, hora } from './ui';
+import { pedirMotivo } from './dialogos';
 
 type PedidoPendiente = PedidoDetalle & {
   cuentaId: string;
@@ -391,8 +392,8 @@ export function MeseroPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      const motivo = pedirMotivo('¿Por qué se cancela el pedido?');
+                    onClick={async () => {
+                      const motivo = await pedirMotivo('¿Por qué se cancela el pedido?');
                       if (motivo) accion(`/operacion/pedidos/${e.pedido.id}/cancelar`, { motivo });
                     }}
                     className={botonSuave}

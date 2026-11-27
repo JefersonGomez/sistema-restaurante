@@ -22,6 +22,9 @@ import { cajaRouter } from './modules/caja/caja.routes';
 import { comprobantesRouter, haciendaRouter } from './modules/factura/factura.routes';
 
 export const app = express();
+// En producción va detrás del nginx del VPS: la IP real del cliente viene en X-Forwarded-For
+// (el límite de intentos se cuenta por cliente, no por el proxy).
+if (env.NODE_ENV === 'production') app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGINS, credentials: true }));

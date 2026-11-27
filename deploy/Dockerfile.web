@@ -1,0 +1,16 @@
+# Construye el menú, el panel y la landing y deja solo los archivos estáticos:
+#   docker build -f deploy/Dockerfile.web --output type=local,dest=<carpeta> .
+FROM node:22-alpine AS construir
+WORKDIR /app
+RUN corepack enable
+COPY . .
+ARG VITE_API_URL
+ARG VITE_PANEL_URL
+ENV VITE_API_URL=$VITE_API_URL VITE_PANEL_URL=$VITE_PANEL_URL
+RUN DATABASE_URL=postgresql://x:x@localhost:5432/x pnpm install --frozen-lockfile \
+  && pnpm --filter menu --filter staff --filter landing build
+
+FROM scratch
+COPY --from=construir /app/apps/menu/dist /menu
+COPY --from=construir /app/apps/staff/dist /panel
+COPY --from=construir /app/apps/landing/dist /landing

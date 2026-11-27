@@ -34,10 +34,11 @@ Decisiones del usuario (misma fecha):
    - "Listos para entregar" deja de ser columna: el mesero los ve en su pantalla.
 2. **20.2 Sonido suave.** ✅ Un tono corto y suave por defecto; elegible: suave, campana (cocinas
    ruidosas) o sin sonido. Se activa con el primer toque en la pantalla (sin el botón amarillo).
-3. **20.3 Ventanas propias.** Reemplazar las ventanas grises del navegador ("¿Por qué se
+3. **20.3 Ventanas propias.** ✅ Reemplazar las ventanas grises del navegador ("¿Por qué se
    cancela?", "¿Entregado y cobrado?") por ventanas de la app con motivos de un toque ("Se acabó",
    "El cliente cambió de idea", "Error al pedir", "Otro…").
-4. **20.4 Confirmación del mesero opcional.** Ajuste "El mesero confirma los pedidos del cliente",
+4. **20.4 Confirmación del mesero opcional.** ✅ (ya existía `modoConfirmacion` con 3 modos: el
+   default pasa a `NUNCA` y Ajustes lo muestra como un interruptor con las 2 variantes debajo.) Ajuste "El mesero confirma los pedidos del cliente",
    apagado por defecto: el pedido del QR va directo a cocina y el mesero solo recibe el aviso.
 5. **20.5 Mesero en una sola pantalla.** Las mesas, con una franja arriba de lo urgente
    (llamadas, platos listos y, si está encendida la confirmación, pedidos por confirmar).
