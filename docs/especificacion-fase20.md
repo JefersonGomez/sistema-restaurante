@@ -44,9 +44,16 @@ Decisiones del usuario (misma fecha):
    (llamadas, platos listos y, si está encendida la confirmación, pedidos por confirmar).
 6. **20.6 Plan "Solo en línea" (₡7 900).** ✅ Menú en línea, recoger, domicilio, repartidores, cocina
    y caja; sin mesas, QR de mesa ni mesero. Las pantallas y el panel esconden lo que no incluye.
-7. **20.7 Inicio y Ajustes más simples.** Asistente de inicio para el dueño (menú → mesas →
+7. **20.7 Inicio y Ajustes más simples.** ✅ Asistente de inicio para el dueño (menú → mesas →
    personal → listo) y Ajustes con lo avanzado (factura electrónica, CABYS, etc.) en
    "Opcional".
+   - Inicio: tarjeta "Primeros pasos" con cada paso tachado al cumplirse (hay platos, hay mesas,
+     hay personal además del dueño) y botón "Ocultar" (se recuerda en el navegador). Con el plan
+     Solo en línea, el paso de mesas es "Active los pedidos en línea". Indicadores: ventas,
+     cuentas abiertas (solo con mesas), por confirmar (solo si hay) y agotados; el ticket promedio
+     queda en Reportes.
+   - Ajustes: Wi-Fi y Factura electrónica bajo "Opcional"; con Solo en línea no salen Wi-Fi ni
+     "Pedidos desde el QR de la mesa".
 8. **20.8 Pedidos en línea con menos pasos.** ✅ Pedido del usuario (2026-11-26): "antes de subir
    simplifica la parte de pedidos online también".
    - Sin tablero de 4 columnas ni KPIs ni buscador: una cuadrícula de tarjetas ordenada por lo que

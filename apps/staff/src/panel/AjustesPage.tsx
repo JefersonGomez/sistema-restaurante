@@ -10,14 +10,16 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { useState, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import {
+  incluyeMesas,
   restauranteConfigSchema,
   type Idioma,
   type ModoConfirmacion,
   type Moneda,
 } from '@menu-qr/shared';
 import { api, type ErrorApi } from '../api';
+import { useAuth } from '../auth';
 import { AjustesEnLinea, type ConfigEnLinea } from './AjustesEnLinea';
 import { AjustesFactura } from './menu/FacturaPlato';
 import { AjustesHacienda } from './AjustesHacienda';
@@ -341,36 +343,38 @@ function Formulario({ r }: { r: Restaurante }) {
           </label>
         </Seccion>
 
-        <Seccion
-          titulo="Pedidos desde el QR de la mesa"
-          detalle="Por defecto van directo a cocina. Encienda esto si prefiere que un mesero los revise antes."
-        >
-          <label className="flex min-h-11 items-center justify-between gap-3 text-sm">
-            <span>El mesero revisa los pedidos del cliente antes de cocina</span>
-            <Interruptor
-              activo={f.modoConfirmacion !== 'NUNCA'}
-              etiqueta="El mesero revisa los pedidos del cliente"
-              onCambio={(v) => poner('modoConfirmacion', v ? 'PRIMER_PEDIDO' : 'NUNCA')}
-            />
-          </label>
-          {f.modoConfirmacion !== 'NUNCA' && (
-            <fieldset className="mt-1 space-y-1 border-l-2 border-line pl-3 text-sm">
-              <legend className="sr-only">Qué pedidos revisa el mesero</legend>
-              {MODOS.map((m) => (
-                <label key={m.id} className="flex min-h-11 items-center gap-2">
-                  <input
-                    type="radio"
-                    name="modo"
-                    className="size-5 accent-purple"
-                    checked={f.modoConfirmacion === m.id}
-                    onChange={() => poner('modoConfirmacion', m.id)}
-                  />
-                  {m.texto}
-                </label>
-              ))}
-            </fieldset>
-          )}
-        </Seccion>
+        {r.plan !== 'EN_LINEA' && (
+          <Seccion
+            titulo="Pedidos desde el QR de la mesa"
+            detalle="Por defecto van directo a cocina. Encienda esto si prefiere que un mesero los revise antes."
+          >
+            <label className="flex min-h-11 items-center justify-between gap-3 text-sm">
+              <span>El mesero revisa los pedidos del cliente antes de cocina</span>
+              <Interruptor
+                activo={f.modoConfirmacion !== 'NUNCA'}
+                etiqueta="El mesero revisa los pedidos del cliente"
+                onCambio={(v) => poner('modoConfirmacion', v ? 'PRIMER_PEDIDO' : 'NUNCA')}
+              />
+            </label>
+            {f.modoConfirmacion !== 'NUNCA' && (
+              <fieldset className="mt-1 space-y-1 border-l-2 border-line pl-3 text-sm">
+                <legend className="sr-only">Qué pedidos revisa el mesero</legend>
+                {MODOS.map((m) => (
+                  <label key={m.id} className="flex min-h-11 items-center gap-2">
+                    <input
+                      type="radio"
+                      name="modo"
+                      className="size-5 accent-purple"
+                      checked={f.modoConfirmacion === m.id}
+                      onChange={() => poner('modoConfirmacion', m.id)}
+                    />
+                    {m.texto}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+          </Seccion>
+        )}
       </div>
 
       <div className="sticky bottom-4 z-10 flex items-center gap-3 rounded-lg bg-app p-3 shadow-tarjeta">
@@ -393,7 +397,15 @@ function Formulario({ r }: { r: Restaurante }) {
 }
 
 type IdSeccion = 'horario' | 'general' | 'en-linea' | 'wifi' | 'factura';
-const SECCIONES: { id: IdSeccion; texto: string; detalle: string; icono: LucideIcon }[] = [
+// Fase 20.7: lo básico arriba; lo que no hace falta para empezar, en "Opcional".
+const SECCIONES: {
+  id: IdSeccion;
+  texto: string;
+  detalle: string;
+  icono: LucideIcon;
+  opcional?: boolean;
+  conMesas?: boolean;
+}[] = [
   {
     id: 'horario',
     texto: 'Horario',
@@ -403,7 +415,7 @@ const SECCIONES: { id: IdSeccion; texto: string; detalle: string; icono: LucideI
   {
     id: 'general',
     texto: 'General',
-    detalle: 'Idiomas, moneda, impuestos y confirmación',
+    detalle: 'Idiomas, moneda e impuestos',
     icono: SlidersHorizontal,
   },
   {
@@ -412,20 +424,31 @@ const SECCIONES: { id: IdSeccion; texto: string; detalle: string; icono: LucideI
     detalle: 'Recoger, domicilio, SINPE y sellos',
     icono: Globe,
   },
-  { id: 'wifi', texto: 'Wi-Fi', detalle: 'QR para conectarse desde la mesa', icono: Wifi },
+  {
+    id: 'wifi',
+    texto: 'Wi-Fi',
+    detalle: 'QR para conectarse desde la mesa',
+    icono: Wifi,
+    opcional: true,
+    conMesas: true,
+  },
   {
     id: 'factura',
     texto: 'Factura electrónica',
     detalle: 'CABYS y datos de Hacienda',
     icono: Receipt,
+    opcional: true,
   },
 ];
 
 export function AjustesPage() {
   const qc = useQueryClient();
+  const { usuario } = useAuth();
+  const conMesas = incluyeMesas(usuario?.restaurante?.plan ?? 'COMPLETO');
+  const visibles = SECCIONES.filter((x) => conMesas || !x.conMesas);
   // La sección elegida queda en la dirección (?seccion=…) para volver directo.
   const [params, setParams] = useSearchParams();
-  const seccion = SECCIONES.find((x) => x.id === params.get('seccion')) ?? SECCIONES[0]!;
+  const seccion = visibles.find((x) => x.id === params.get('seccion')) ?? visibles[0]!;
   const restaurante = useQuery({
     queryKey: ['restaurante'],
     queryFn: () => api<Restaurante>('/restaurante'),
@@ -498,20 +521,29 @@ export function AjustesPage() {
           aria-label="Secciones de ajustes"
           className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:sticky lg:top-6 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0"
         >
-          {SECCIONES.map(({ id, texto, icono: Icono }) => {
+          {visibles.map(({ id, texto, icono: Icono, opcional }, i) => {
             const activa = id === seccion.id;
+            const primeraOpcional = opcional && !visibles[i - 1]?.opcional;
             return (
-              <button
-                key={id}
-                type="button"
-                aria-current={activa ? 'page' : undefined}
-                onClick={() => setParams({ seccion: id }, { replace: true })}
-                className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-3 text-left text-sm font-medium whitespace-nowrap ${
-                  activa ? 'bg-purple text-on-accent' : 'text-muted hover:bg-surface hover:text-fg'
-                }`}
-              >
-                <Icono className="size-4 shrink-0" aria-hidden /> {texto}
-              </button>
+              <Fragment key={id}>
+                {primeraOpcional && (
+                  <p className="hidden px-3 pt-4 pb-1 text-xs font-medium tracking-wide text-muted uppercase lg:block">
+                    Opcional
+                  </p>
+                )}
+                <button
+                  type="button"
+                  aria-current={activa ? 'page' : undefined}
+                  onClick={() => setParams({ seccion: id }, { replace: true })}
+                  className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-3 text-left text-sm font-medium whitespace-nowrap ${
+                    activa
+                      ? 'bg-purple text-on-accent'
+                      : 'text-muted hover:bg-surface hover:text-fg'
+                  }`}
+                >
+                  <Icono className="size-4 shrink-0" aria-hidden /> {texto}
+                </button>
+              </Fragment>
             );
           })}
         </nav>

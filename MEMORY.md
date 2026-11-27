@@ -327,7 +327,17 @@ plan !== 'EN_LINEA'`. API: `planConMesas` en `mesasRouter`; `mesaPorToken` (QR p
   Panel: `verSeccion` esconde `/panel/mesas` y `/mesero` con EN_LINEA (y en línea/clientes con
   BASICO); Inicio esconde "Imprimir QR"; Registro lee `?plan=`. Landing: 3 tarjetas (Solo en
   línea, Básico con `?plan=BASICO`, Completo). Tests en planes.test y admin.test. Probado en Chrome
-  local (landing y panel con el demo pasado a EN_LINEA y devuelto a COMPLETO).
+  local (landing y panel con el demo pasado a EN_LINEA y devuelto a COMPLETO). Subida (commit
+  `e38a9d8`, 2026-11-27).
+- **20.7 ✅ Inicio y Ajustes más simples (2026-11-27):** `InicioPage` con `PrimerosPasos` (platos
+  activos / mesas activas o `enLineaActivo` con EN_LINEA / usuario no dueño activo; "Ocultar" en
+  localStorage `kitchago:primeros-pasos:<id>`); indicadores reducidos (sin ticket promedio; cuentas
+  abiertas solo con mesas; por confirmar solo si > 0); no pide `/operacion/mesas` sin mesas.
+  `AjustesPage`: `opcional`/`conMesas` en SECCIONES, título "Opcional" en la barra (solo lg), con
+  EN_LINEA se esconden Wi-Fi y la sección del QR de mesa. Probado en Chrome local con COMPLETO y
+  EN_LINEA. **Con esto la Fase 20 queda completa.**
+  - Nota de entorno: `pnpm` no está en el PATH de las shells de Claude; usar
+    `corepack enable --install-directory <scratchpad>/bin pnpm` y anteponer esa carpeta al PATH.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

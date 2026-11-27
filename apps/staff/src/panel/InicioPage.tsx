@@ -1,12 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CircleOff, QrCode, Store } from 'lucide-react';
+import { Check, CircleOff, QrCode, Store } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { MesaOperacion, Moneda, ReporteHoy } from '@menu-qr/shared';
+import { incluyeMesas, type MesaOperacion, type Moneda, type ReporteHoy } from '@menu-qr/shared';
 import { formatoPrecio, Modal } from '@menu-qr/ui';
 import { api } from '../api';
 import { useAuth } from '../auth';
-import { verSeccion } from '../ui';
 import { useTiempoReal } from '../tiempoReal';
 import {
   Boton,
@@ -19,7 +18,130 @@ import {
 } from './comunes';
 
 type Plato = { id: string; nombreEs: string; agotado: boolean; activo: boolean };
-type Restaurante = { nombre: string; moneda: Moneda; cerradoManual: boolean };
+type Restaurante = {
+  id: string;
+  nombre: string;
+  moneda: Moneda;
+  cerradoManual: boolean;
+  enLineaActivo: boolean;
+};
+
+const claseLink =
+  'inline-flex min-h-11 items-center justify-center rounded-md bg-surface px-4 text-sm font-semibold hover:bg-surface-2';
+
+// Asistente de inicio (Fase 20.7): menú → mesas (o pedidos en línea) → personal → listo.
+function PrimerosPasos({ restaurante, conMesas }: { restaurante: Restaurante; conMesas: boolean }) {
+  const clave = `kitchago:primeros-pasos:${restaurante.id}`;
+  const [oculto, setOculto] = useState(() => {
+    try {
+      return localStorage.getItem(clave) === 'oculto';
+    } catch {
+      return false;
+    }
+  });
+  const platos = useQuery({ queryKey: ['platos'], queryFn: () => api<Plato[]>('/platos') });
+  const mesas = useQuery({
+    queryKey: ['mesas'],
+    queryFn: () => api<{ activa: boolean }[]>('/mesas'),
+    enabled: conMesas,
+  });
+  const usuarios = useQuery({
+    queryKey: ['usuarios'],
+    queryFn: () => api<{ rol: string; activo: boolean }[]>('/usuarios'),
+  });
+  if (oculto || !platos.data || !usuarios.data || (conMesas && !mesas.data)) return null;
+
+  const pasos = [
+    {
+      titulo: 'Cargue su menú',
+      detalle: 'Categorías y platos con precio. La foto es opcional.',
+      hecho: platos.data.some((p) => p.activo),
+      a: '/panel/menu',
+      boton: 'Ir al menú',
+    },
+    conMesas
+      ? {
+          titulo: 'Cree sus mesas e imprima los QR',
+          detalle: 'Cada mesa lleva su QR para que el cliente pida desde el celular.',
+          hecho: !!mesas.data?.some((m) => m.activa),
+          a: '/panel/mesas',
+          boton: 'Ir a mesas',
+        }
+      : {
+          titulo: 'Active los pedidos en línea',
+          detalle: 'Recoger en el local, domicilio y SINPE.',
+          hecho: restaurante.enLineaActivo,
+          a: '/panel/ajustes?seccion=en-linea',
+          boton: 'Ir a pedidos en línea',
+        },
+    {
+      titulo: 'Agregue a su personal',
+      detalle: 'Cocina, caja y meseros entran con su propio usuario o PIN.',
+      hecho: usuarios.data.some((u) => u.rol !== 'DUENO' && u.activo),
+      a: '/panel/personal',
+      boton: 'Ir a personal',
+    },
+  ];
+  const listos = pasos.filter((p) => p.hecho).length;
+  const siguiente = pasos.find((p) => !p.hecho);
+  const ocultar = () => {
+    try {
+      localStorage.setItem(clave, 'oculto');
+    } catch {
+      // Sin almacenamiento: se oculta solo esta vez.
+    }
+    setOculto(true);
+  };
+
+  return (
+    <Tarjeta className="mt-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[17px] font-semibold">
+            {siguiente ? 'Primeros pasos' : '¡Listo para recibir pedidos!'}
+          </h2>
+          <p className="text-sm text-muted">
+            {siguiente
+              ? `${listos} de ${pasos.length} hechos. Lo demás (factura electrónica, Wi-Fi, colores) es opcional.`
+              : 'Ya tiene todo lo necesario. Lo opcional está en Ajustes y Personalizar.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={ocultar}
+          className="min-h-11 shrink-0 rounded-md px-3 text-sm font-semibold text-muted hover:bg-surface hover:text-fg"
+        >
+          Ocultar
+        </button>
+      </div>
+      <ol className="space-y-2">
+        {pasos.map((p, i) => (
+          <li
+            key={p.titulo}
+            className={`flex flex-wrap items-center gap-3 rounded-md p-2 ${p === siguiente ? 'bg-purple-soft' : ''}`}
+          >
+            <span
+              className={`grid size-8 shrink-0 place-items-center rounded-full text-sm font-semibold ${p.hecho ? 'bg-ok text-on-accent' : 'bg-surface text-muted'}`}
+            >
+              {p.hecho ? <Check className="size-4" aria-label="Hecho" /> : i + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className={`font-medium ${p.hecho ? 'text-muted line-through' : ''}`}>
+                {p.titulo}
+              </p>
+              {!p.hecho && <p className="text-sm text-muted">{p.detalle}</p>}
+            </div>
+            {!p.hecho && (
+              <Link to={p.a} className={claseLink}>
+                {p.boton}
+              </Link>
+            )}
+          </li>
+        ))}
+      </ol>
+    </Tarjeta>
+  );
+}
 
 function Indicador({
   titulo,
@@ -50,6 +172,7 @@ export function InicioPage() {
   const { usuario } = useAuth();
   const qc = useQueryClient();
   const [agotadosAbierto, setAgotadosAbierto] = useState(false);
+  const conMesas = incluyeMesas(usuario?.restaurante?.plan ?? 'COMPLETO');
   const reporte = useQuery({
     queryKey: ['reporte-hoy'],
     queryFn: () => api<ReporteHoy>('/reportes/hoy'),
@@ -57,6 +180,7 @@ export function InicioPage() {
   const mesas = useQuery({
     queryKey: ['mesas-operacion'],
     queryFn: () => api<MesaOperacion[]>('/operacion/mesas'),
+    enabled: conMesas,
   });
   const platos = useQuery({ queryKey: ['platos'], queryFn: () => api<Plato[]>('/platos') });
   const restaurante = useQuery({
@@ -118,21 +242,18 @@ export function InicioPage() {
         />
       )}
 
-      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+      {restaurante.data && <PrimerosPasos restaurante={restaurante.data} conMesas={conMesas} />}
+
+      {/* Lo esencial del día; el ticket promedio y lo demás está en Reportes. */}
+      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
         <Indicador
           titulo="Ventas de hoy"
           valor={reporte.data && precio(reporte.data.totalVendido)}
         />
-        <Indicador titulo="Cuentas abiertas" valor={abiertas} />
-        <Indicador
-          titulo="Ticket promedio"
-          valor={reporte.data && precio(reporte.data.ticketPromedio)}
-        />
-        <Indicador
-          titulo="Pedidos por confirmar"
-          valor={pendientes}
-          tono={pendientes ? 'amber' : undefined}
-        />
+        {conMesas && <Indicador titulo="Cuentas abiertas" valor={abiertas} />}
+        {!!pendientes && (
+          <Indicador titulo="Pedidos por confirmar" valor={pendientes} tono="amber" />
+        )}
         <Indicador
           titulo="Platos agotados"
           valor={agotados?.length}
@@ -170,17 +291,14 @@ export function InicioPage() {
             {cerrado ? 'Abrir' : 'Cerrar ahora'}
           </Boton>
         </Tarjeta>
-        {verSeccion(usuario?.restaurante?.plan, '/panel/mesas') && (
+        {conMesas && (
           <Tarjeta className="flex flex-col gap-3">
             <QrCode className="size-6 text-purple" aria-hidden />
             <div>
               <p className="font-semibold">Imprimir QR</p>
               <p className="text-sm text-muted">Tarjetas recortables con el QR de cada mesa.</p>
             </div>
-            <Link
-              to="/panel/mesas"
-              className="inline-flex min-h-11 items-center justify-center rounded-md bg-surface px-4 text-sm font-semibold hover:bg-surface-2"
-            >
+            <Link to="/panel/mesas" className={claseLink}>
               Ir a mesas y QR
             </Link>
           </Tarjeta>
