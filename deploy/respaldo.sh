@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Respaldo diario (cron del VPS): base de datos e imágenes subidas; se guardan 14 días.
 set -euo pipefail
+umask 077 # los respaldos tienen datos de los restaurantes: solo root
 BASE=/opt/kitchago
 DESTINO=$BASE/respaldos
 FECHA=$(date +%F)

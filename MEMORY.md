@@ -280,6 +280,28 @@ usarFoto)` (foto solo en la primera carga de la pantalla; después, sin red, fal
     re-seed o cambiarlo en Ajustes). AjustesPage: sección "Pedidos desde el QR de la mesa" con
     interruptor "El mesero revisa los pedidos del cliente antes de cocina" (on → PRIMER_PEDIDO) y,
     encendido, radios "Solo el primero de cada mesa" / "Todos los pedidos".
+  - 20.3, 20.4 y archivos de despliegue subidos (commit `d3949bf`). Quedan 20.5–20.8 (después del
+    despliegue).
+- **Despliegue (2026-11-26)** — `docs/despliegue.md`. kitchago.com (DonDominio, DNS A de @, www,
+  menu, panel, api → 169.58.105.198). VPS Contabo Ubuntu 24.04, acceso `ssh -i ~/.ssh/cubivo_vps
+root@169.58.105.198`. **Hay otros 5 proyectos con nginx del sistema en 80/443 (cubivo,
+  portafolio, rifas, stockly, techrag): no se instaló Caddy**; KitchaGo es un sitio más de nginx
+  (`/etc/nginx/sites-available/kitchago`, ya modificado por certbot: no sobrescribirlo con el del
+  repo sin rehacer el HTTPS). `deploy/`: Dockerfile.api (tsx + `prisma migrate deploy` al arrancar),
+  Dockerfile.web (estáticos con `--output`), docker-compose.yml (proyecto `kitchago`, API en
+  127.0.0.1:4100, uploads en /opt/kitchago/uploads), actualizar.sh, desplegar.sh (git archive HEAD
+  por SSH), respaldo.sh (cron 3:30, 14 días, umask 077). `app.set('trust proxy', 1)` en producción.
+  `/opt/kitchago/.env` con secretos generados en el servidor; vacíos para el usuario:
+  RESEND_API_KEY, HACIENDA_PROVEEDOR_ID, SOPORTE_WHATSAPP. Pendiente del usuario: crear el
+  superadmin y poner la clave de Resend (verificar el dominio en Resend con sus registros DNS).
+  - Hecho por el usuario: superadmin creado; dominio verificado en Resend (DKIM TXT
+    `resend._domainkey`, CNAME `rsend` y `send` → *.forge.rmta.net, DMARC `p=none`); clave en
+    `.env`. Correo de prueba ("olvidé mi contraseña") recibido.
+  - Pendientes de seguridad del usuario: rotar la clave de Resend (la pegó en el chat), cambiar
+    la contraseña de root (la escribió en la terminal) y apagar SSH con contraseña (>100 mil
+    intentos fallidos; el permiso de Claude Code bloqueó que lo hiciera Claude; bloque en
+    `/etc/ssh/sshd_config.d/10-solo-llave.conf`). Reiniciar el VPS (actualizaciones pendientes)
+    en horario de poco uso: afecta a los otros 5 proyectos.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).
 - **Factura electrónica:** el usuario la quiere; tiene acceso al ambiente de pruebas de Hacienda. Falta investigar actividad económica y temas legales antes de escribir la spec (fase propia; proveedor autorizado vs. directo a Hacienda sin decidir).
 - **Nombre del producto: KitchaGo** (sin dominio todavía). Los paquetes internos siguen como `@menu-qr/*`.

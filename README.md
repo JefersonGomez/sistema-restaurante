@@ -591,6 +591,27 @@ aleatorios desde 20 mesas con clientes de socket escuchando en cocina, meseros, 
 reenvía ~10 % de los pedidos con el mismo `clientRequestId`, y reporta la latencia (promedio, p95
 y máxima) de creación y de llegada a cocina. Termina con ✅ si no se perdió ni duplicó ningún pedido.
 
+## Producción (kitchago.com)
+
+Desplegado el 2026-11-26 en un VPS de Contabo (Ubuntu 24.04) que comparte nginx con otros
+proyectos. Detalle y decisiones en [`docs/despliegue.md`](docs/despliegue.md).
+
+| Dirección                    | Qué                  |
+| ---------------------------- | -------------------- |
+| https://kitchago.com (y www) | Landing              |
+| https://menu.kitchago.com    | Menú de los clientes |
+| https://panel.kitchago.com   | Panel del personal   |
+| https://api.kitchago.com     | API                  |
+
+- **Actualizar** (sube el último commit y reconstruye): `bash deploy/desplegar.sh` desde Git Bash
+  (usa la llave SSH `~/.ssh/cubivo_vps`; se cambian con `SERVIDOR=` y `LLAVE=`).
+- Variables de producción: `/opt/kitchago/.env` en el VPS (secretos generados allí, nunca en el
+  repo). Tras editarlo: `cd /opt/kitchago/src && docker compose -f deploy/docker-compose.yml
+--env-file /opt/kitchago/.env up -d api`.
+- Respaldo diario 3:30 (cron de root): `/opt/kitchago/respaldos`, 14 días.
+- HTTPS con certbot (certificado `kitchago.com`, renovación automática del sistema).
+- La factura electrónica sigue en el ambiente de **pruebas** de Hacienda (`HACIENDA_ENV=pruebas`).
+
 ## Scripts
 
 | Script                                                        | Qué hace                                                                                                                                                                                                         |

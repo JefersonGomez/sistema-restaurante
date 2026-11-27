@@ -34,6 +34,14 @@ modifica.
   `/opt/kitchago/respaldos`, 14 días.
 - Factura electrónica en **pruebas** de Hacienda hasta tener la llave de producción.
 
+## Estado (2026-11-26)
+
+Pasos 1–4 y 7 (respaldo) hechos por Claude con la llave SSH `~/.ssh/cubivo_vps` (usuario root):
+contenedores `kitchago-db-1` y `kitchago-api-1` arriba, 31 migraciones aplicadas, sitio de nginx
+probado con `nginx -t` antes de recargar, certificado `kitchago.com` (5 nombres), cron del
+respaldo a las 3:30 y una corrida de prueba. Los otros sitios del VPS siguieron respondiendo
+igual. Faltan los pasos 5 y 6 (los hace el usuario: llevan contraseña y clave).
+
 ## Pasos
 
 1. DNS en DonDominio: registros A de `kitchago.com`, `www`, `menu`, `panel` y `api` →
