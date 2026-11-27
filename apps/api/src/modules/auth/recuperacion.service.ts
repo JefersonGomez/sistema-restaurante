@@ -43,9 +43,10 @@ const texto = (nombre: string, enlace: string) =>
 export async function olvidePersonal(email: string) {
   const u = await prisma.usuario.findUnique({
     where: { email },
-    include: { restaurante: { select: { activo: true } } },
+    include: { restaurante: { select: { activo: true, esDemo: true } } },
   });
-  if (!u || !u.activo || u.restaurante?.activo === false) return;
+  // En una demo no se mandan correos (Fase 21).
+  if (!u || !u.activo || u.restaurante?.activo === false || u.restaurante?.esDemo) return;
   const token = await crearEnlace({ usuarioId: u.id });
   await enviarCorreo({
     para: u.email,
@@ -70,7 +71,7 @@ export async function restablecerPersonal(token: string, password: string) {
 
 export async function olvideCliente(slug: string, email: string) {
   const c = await prisma.clienteRegistrado.findFirst({
-    where: { email, restaurante: { slug, activo: true } },
+    where: { email, restaurante: { slug, activo: true, esDemo: false } },
     include: { restaurante: { select: { nombre: true } } },
   });
   if (!c) return;

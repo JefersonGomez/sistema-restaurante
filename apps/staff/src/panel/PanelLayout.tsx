@@ -134,7 +134,7 @@ export function PanelLayout() {
             <BotonSonido />
             <Campana />
           </div>
-          <AvisoPlan />
+          {!usuario?.restaurante?.esDemo && <AvisoPlan />}
           <div key={pathname} className="anim-entrar">
             <Outlet />
           </div>

@@ -335,7 +335,28 @@ plan !== 'EN_LINEA'`. API: `planConMesas` en `mesasRouter`; `mesaPorToken` (QR p
   abiertas solo con mesas; por confirmar solo si > 0); no pide `/operacion/mesas` sin mesas.
   `AjustesPage`: `opcional`/`conMesas` en SECCIONES, título "Opcional" en la barra (solo lg), con
   EN_LINEA se esconden Wi-Fi y la sección del QR de mesa. Probado en Chrome local con COMPLETO y
-  EN_LINEA. **Con esto la Fase 20 queda completa.**
+  EN_LINEA. **Con esto la Fase 20 queda completa.** 20.6 + 20.7 subidas (commit `4061ee5`) y
+  desplegadas a kitchago.com el 2026-11-27 (migración `plan_en_linea` aplicada en producción).
+- **Fase 21 (demo para probar, 2026-11-27)** — spec `docs/especificacion-fase21.md`. Backlog
+  (`mejoras-pendientes.md`) revisado: lo que lleva código ya está hecho. Decisiones: una demo propia
+  por visita (24 h), elegir rol, botón en login y landing, límites recomendados (el usuario no
+  respondió esa pregunta).
+  - **21.1 ✅** `Restaurante.esDemo` (migración `demo`). `prisma/demo-extra.ts` →
+    `src/modules/demo/datos.ts` con `crearRestauranteDemo(tx, {nombre, slug, esDemo, usuarios})`
+    y `crearOperacionDemo` (antes en seed.ts); fotos y banner con `compartidas=true` van a
+    `demo/…` (una vez por proceso). `demo.service`: `crear` (máx. 100, contraseña al azar con
+    bcrypt 4), `cambiarRol`, `info`, `borrar` (deleteMany en orden; no todo es cascada) y
+    `borrarVencidas` (cada hora en server.ts). Rutas `/demo` (POST con `limiteDemo` 5/h, GET,
+    POST /rol). `sinDemo` en PUT /hacienda/config, POST /hacienda/probar, POST
+    /comprobantes/:id/enviar y /auth/cambiar-password; recuperación sin correo en demos; admin
+    lista/resumen con `esDemo: false`. `usuarioPublico.restaurante.esDemo`. Tests `demo.test.ts`.
+  - **21.2 ✅** Staff: `DemoPage.tsx` (`/demo` con 5 roles y `FranjaDemo`: vence, "Ver como" que
+    recarga la página, enlaces al menú de mesa/en línea, "Crear mi cuenta"), sección en el login,
+    sin `AvisoPlan` en demos. Landing: "Ver demo" arriba y "Probar la demo" en el hero.
+    Verificado: 260 tests, typecheck, lint, prettier, builds; probado en Chrome local (dueño,
+    cambio a cocina, menú de la mesa).
+  - **Problema encontrado:** `Get-Content`/`Set-Content` de PowerShell 5.1 leen UTF-8 sin BOM como
+    ANSI y rompen tildes y emojis (y agregan BOM). Editar con Edit o Python, nunca así.
   - Nota de entorno: `pnpm` no está en el PATH de las shells de Claude; usar
     `corepack enable --install-directory <scratchpad>/bin pnpm` y anteponer esa carpeta al PATH.
 - **Fase 13 completa** (datos del pago en caja + CABYS e IVA por plato, 2026-11-13). Subida (commit siguiente a la 12).

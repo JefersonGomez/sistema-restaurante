@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { Reporte } from '@menu-qr/shared';
 import { app } from '../src/app';
 import { prisma } from '../src/lib/prisma';
-import { historial } from '../prisma/demo-extra';
+import { historial } from '../src/modules/demo/datos';
 import {
   abrirSesion,
   crearRestaurante,

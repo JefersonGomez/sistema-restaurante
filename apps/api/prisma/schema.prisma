@@ -89,6 +89,7 @@ model Restaurante {
   plan                     Plan             @default(COMPLETO)
   planVenceEn              DateTime?
   suspendidoPorPago        Boolean          @default(false) // suspensión automática (un pago la levanta)
+  esDemo                   Boolean          @default(false) // demo de una visita (Fase 21): se borra a las 24 h
   // Wi-Fi del local: QR para conectarse en la tarjeta de la mesa (Fase 11)
   wifiNombre               String?
   wifiClave                String?

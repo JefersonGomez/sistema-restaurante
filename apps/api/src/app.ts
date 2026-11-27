@@ -20,6 +20,7 @@ import { clientesRouter } from './modules/clientes/clientes.routes';
 import { enLineaRouter, repartosRouter } from './modules/enlinea/enlinea.routes';
 import { cajaRouter } from './modules/caja/caja.routes';
 import { comprobantesRouter, haciendaRouter } from './modules/factura/factura.routes';
+import { demoRouter } from './modules/demo/demo.routes';
 
 export const app = express();
 // En producción va detrás del nginx del VPS: la IP real del cliente viene en X-Forwarded-For
@@ -63,6 +64,7 @@ app.use('/clientes', clientesRouter);
 app.use('/caja', cajaRouter);
 app.use('/comprobantes', comprobantesRouter);
 app.use('/hacienda', haciendaRouter);
+app.use('/demo', demoRouter);
 
 app.use(noEncontrado);
 app.use(errorHandler);

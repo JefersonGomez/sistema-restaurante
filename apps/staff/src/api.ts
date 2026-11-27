@@ -69,6 +69,24 @@ export async function registro(datos: unknown) {
   return r.usuario;
 }
 
+// Demo de una visita (Fase 21): crea una nueva (`/demo`) o cambia de rol dentro de la actual
+// (`/demo/rol`, con la sesión). Deja la sesión iniciada como en el login.
+export async function entrarDemo(rol: string, cambiar = false) {
+  const res = await fetch(`${API}${cambiar ? '/demo/rol' : '/demo'}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(cambiar && accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({ rol }),
+  });
+  const r = await res.json();
+  if (!res.ok) throw new ErrorApi(res.status, r.error?.code, r.error?.message ?? 'Error');
+  fijarToken(r.accessToken);
+  return r.usuario;
+}
+
 // Olvidé mi contraseña: pedir el enlace y crear la nueva con el token del correo.
 export async function pedirEnlace(email: string) {
   const res = await post('/auth/olvide', { email });

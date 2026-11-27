@@ -12,6 +12,7 @@ import { ComprobantesCajaPage, RepartidoresCajaPage } from './CajaExtras';
 import { EnLineaPage } from './EnLineaPage';
 import { EstacionPage } from './EstacionPage';
 import { LoginPage } from './LoginPage';
+import { DemoPage, FranjaDemo } from './DemoPage';
 import { MeseroPage } from './MeseroPage';
 import { Cargando, UiProvider } from '@menu-qr/ui';
 import { InicioPage } from './panel/InicioPage';
@@ -62,11 +63,13 @@ function App() {
   const inicio = usuario ? INICIO[usuario.rol] : tokenTablet() ? '/tablet' : '/login';
   return (
     <>
+      {usuario?.restaurante?.esDemo && <FranjaDemo />}
       <AvisosGlobales />
       <Dialogos />
       {usuario && <AvisoConexion />}
       <Routes>
         <Route path="/login" element={usuario ? <Navigate to={inicio} replace /> : <LoginPage />} />
+        <Route path="/demo" element={usuario ? <Navigate to={inicio} replace /> : <DemoPage />} />
         <Route path="/olvide" element={<OlvidePage />} />
         <Route path="/restablecer" element={<RestablecerPage />} />
         <Route

@@ -617,6 +617,10 @@ proyectos. Detalle y decisiones en [`docs/despliegue.md`](docs/despliegue.md).
 - Respaldo diario 3:30 (cron de root): `/opt/kitchago/respaldos`, 14 días.
 - HTTPS con certbot (certificado `kitchago.com`, renovación automática del sistema).
 - La factura electrónica sigue en el ambiente de **pruebas** de Hacienda (`HACIENDA_ENV=pruebas`).
+- **Demo para probar (Fase 21):** `https://panel.kitchago.com/demo` (también desde el login y la
+  landing). Cada visita crea su propio restaurante de ejemplo (`esDemo`), sin contraseña conocida;
+  se borra solo a las 24 h (trabajo de cada hora en la API). Máximo 100 demos vivas y 5 por IP
+  cada hora. Las fotos de ejemplo se guardan una vez en `uploads/demo/` y se comparten.
 
 ## Scripts
 

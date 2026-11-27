@@ -172,6 +172,11 @@ export type AdminRestaurantePatchInput = z.infer<typeof adminRestaurantePatchSch
 // --- Usuarios (personal del restaurante) ---
 
 export const rolPersonalSchema = z.enum(['DUENO', 'MESERO', 'COCINA', 'CAJA', 'REPARTIDOR']);
+export type RolPersonal = z.infer<typeof rolPersonalSchema>;
+
+// Demo de una visita (Fase 21): se entra con el rol elegido y se puede cambiar adentro.
+export const demoRolSchema = z.object({ rol: rolPersonalSchema });
+export type DemoInfo = { expiraEn: string; enLineaUrl: string; mesaUrl: string | null };
 
 export const crearUsuarioSchema = z.object({
   nombre: texto(),

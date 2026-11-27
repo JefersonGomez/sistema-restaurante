@@ -38,6 +38,8 @@ export const limitePin = crear(20, 15, {
 });
 // Registro de restaurantes: 5 por IP cada hora (cuenten o no).
 export const limiteRegistro = crear(5, 60);
+// Demos nuevas (Fase 21): 5 por IP cada hora; cada una crea un restaurante con datos.
+export const limiteDemo = crear(5, 60);
 // Pedidos en línea: 10 por IP cada 10 minutos.
 export const limiteEnLinea = crear(10, 10);
 // Cuentas de clientes del menú en línea: 10 entradas fallidas por IP cada 15 min y 10 cuentas

@@ -7,6 +7,7 @@ import {
   restablecerSchema,
 } from '@menu-qr/shared';
 import { autenticar } from '../../middlewares/auth';
+import { sinDemo } from '../../middlewares/demo';
 import {
   limiteLogin,
   limiteOlvide,
@@ -33,6 +34,7 @@ authRouter.get('/me', autenticar, c.me);
 authRouter.post(
   '/cambiar-password',
   autenticar,
+  sinDemo,
   validate({ body: cambiarPasswordSchema }),
   c.cambiarPassword,
 );

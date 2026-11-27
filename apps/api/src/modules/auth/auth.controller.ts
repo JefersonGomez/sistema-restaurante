@@ -3,8 +3,8 @@ import { env } from '../../lib/env';
 import * as service from './auth.service';
 import * as recuperacion from './recuperacion.service';
 
-const COOKIE = 'refreshToken';
-const opcionesCookie: CookieOptions = {
+export const COOKIE = 'refreshToken';
+export const opcionesCookie: CookieOptions = {
   httpOnly: true,
   secure: env.NODE_ENV === 'production',
   sameSite: 'lax',

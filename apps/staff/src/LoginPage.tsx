@@ -91,6 +91,18 @@ export function LoginPage() {
         <Link to="/tablet" className="block min-h-11 text-center text-sm text-muted underline">
           ¿Es una tablet de cocina? Entrar con PIN
         </Link>
+        <div className="rounded-xl bg-purple-soft p-4 text-center">
+          <p className="font-semibold">¿Quiere ver cómo funciona?</p>
+          <p className="mt-1 text-sm text-muted">
+            Una soda de ejemplo con pedidos y ventas, solo para usted. Sin registrarse.
+          </p>
+          <Link
+            to="/demo"
+            className="mt-3 inline-flex min-h-11 items-center justify-center rounded-md bg-purple px-5 text-sm font-semibold text-on-accent hover:opacity-90"
+          >
+            Probar la demo
+          </Link>
+        </div>
       </form>
     </main>
   );

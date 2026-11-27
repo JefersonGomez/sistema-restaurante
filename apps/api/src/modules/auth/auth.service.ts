@@ -14,14 +14,14 @@ import { finPrueba } from '../restaurantes/restaurantes.service';
 // Se compara contra este hash cuando el email no existe, para no revelar qué emails existen.
 const HASH_RELLENO = bcrypt.hashSync('relleno', 10);
 
-const usuarioPublico = {
+export const usuarioPublico = {
   id: true,
   nombre: true,
   email: true,
   rol: true,
   restauranteId: true,
   debeCambiarPassword: true,
-  restaurante: { select: { id: true, nombre: true, slug: true, plan: true } },
+  restaurante: { select: { id: true, nombre: true, slug: true, plan: true, esDemo: true } },
 } as const;
 
 const conRestaurante = {
@@ -32,7 +32,7 @@ const conRestaurante = {
 const puedeEntrar = (u: { activo: boolean; restaurante: { activo: boolean } | null }) =>
   u.activo && (u.restaurante?.activo ?? true);
 
-async function emitirTokens({ id, rol, restauranteId }: Omit<UsuarioToken, 'estacionId'>) {
+export async function emitirTokens({ id, rol, restauranteId }: Omit<UsuarioToken, 'estacionId'>) {
   const u = { id, rol, restauranteId };
   const refreshToken = generarRefreshToken();
   await prisma.refreshToken.create({

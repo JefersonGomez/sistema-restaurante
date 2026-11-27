@@ -58,13 +58,14 @@ export async function listar(filtro: { buscar?: string; estado?: EstadoSuscripci
   const rs = await prisma.restaurante.findMany({
     where: b
       ? {
+          esDemo: false,
           OR: [
             { nombre: { contains: b, mode: 'insensitive' } },
             { slug: { contains: b, mode: 'insensitive' } },
             { usuarios: { some: { email: { contains: b, mode: 'insensitive' } } } },
           ],
         }
-      : {},
+      : { esDemo: false }, // las demos de una visita no cuentan (Fase 21)
     orderBy: { createdAt: 'desc' },
     include: incluir,
   });
@@ -75,6 +76,7 @@ export async function listar(filtro: { buscar?: string; estado?: EstadoSuscripci
 
 export async function resumen(): Promise<AdminResumen> {
   const rs = await prisma.restaurante.findMany({
+    where: { esDemo: false },
     select: {
       activo: true,
       plan: true,

@@ -9,6 +9,7 @@ import {
 } from '@menu-qr/shared';
 import { z } from 'zod';
 import { autenticar } from '../../middlewares/auth';
+import { sinDemo } from '../../middlewares/demo';
 import { requireRole } from '../../middlewares/roles';
 import { tenant } from '../../middlewares/tenant';
 import { validate } from '../../middlewares/validate';
@@ -26,6 +27,7 @@ comprobantesRouter.get(
 comprobantesRouter.post('/:id/reintentar', validate({ params: idParamSchema }), c.reintentar);
 comprobantesRouter.post(
   '/:id/enviar',
+  sinDemo,
   validate({ params: idParamSchema, body: enviarComprobanteSchema }),
   c.enviar,
 );
@@ -50,5 +52,5 @@ comprobantesRouter.post(
 export const haciendaRouter = Router();
 haciendaRouter.use(autenticar, requireRole('DUENO'), tenant);
 haciendaRouter.get('/config', c.obtenerConfig);
-haciendaRouter.put('/config', validate({ body: configHaciendaSchema }), c.guardarConfig);
-haciendaRouter.post('/probar', c.probar);
+haciendaRouter.put('/config', sinDemo, validate({ body: configHaciendaSchema }), c.guardarConfig);
+haciendaRouter.post('/probar', sinDemo, c.probar);

@@ -14,6 +14,7 @@ export type Usuario = {
     nombre: string;
     slug: string;
     plan: 'EN_LINEA' | 'BASICO' | 'COMPLETO';
+    esDemo: boolean;
   } | null;
 };
 
@@ -25,6 +26,7 @@ type Sesion = {
   logout: () => Promise<void>;
   recargar: () => Promise<void>;
   entrarTablet: (accessToken: string, usuario: Usuario) => void;
+  entrarDemo: (rol: string, cambiar?: boolean) => Promise<void>;
 };
 
 const Ctx = createContext<Sesion | null>(null);
@@ -75,6 +77,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [u] = await Promise.all([api.registro(datos), new Promise((r) => setTimeout(r, 700))]);
     setUsuario(u);
   };
+  const entrarDemo = async (rol: string, cambiar = false) => {
+    const [u] = await Promise.all([
+      api.entrarDemo(rol, cambiar),
+      new Promise((r) => setTimeout(r, 700)),
+    ]);
+    setUsuario(u);
+  };
   const logout = async () => {
     await api.logout();
     borrarFotos();
@@ -90,7 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsuario((await api.api<{ usuario: Usuario }>('/auth/me')).usuario);
 
   return (
-    <Ctx.Provider value={{ usuario, cargando, login, registrar, logout, recargar, entrarTablet }}>
+    <Ctx.Provider
+      value={{ usuario, cargando, login, registrar, logout, recargar, entrarTablet, entrarDemo }}
+    >
       {children}
     </Ctx.Provider>
   );

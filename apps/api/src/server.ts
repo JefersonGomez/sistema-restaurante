@@ -5,6 +5,7 @@ import { logger } from './lib/logger';
 import { iniciarRealtime } from './realtime';
 import { suspenderVencidos } from './modules/admin/admin.service';
 import { procesarCola } from './modules/factura/factura.service';
+import { borrarVencidas } from './modules/demo/demo.service';
 
 const server = createServer(app);
 iniciarRealtime(server);
@@ -17,6 +18,14 @@ const revisarPlanes = () =>
     .catch((e) => logger.error('No se pudieron revisar los planes vencidos', e));
 void revisarPlanes();
 setInterval(revisarPlanes, 60 * 60 * 1000).unref();
+
+// Demos de una visita (Fase 21): se borran a las 24 h.
+const limpiarDemos = () =>
+  borrarVencidas()
+    .then((n) => n && logger.info(`Demos borradas: ${n}`))
+    .catch((e) => logger.error('No se pudieron borrar las demos vencidas', e));
+void limpiarDemos();
+setInterval(limpiarDemos, 60 * 60 * 1000).unref();
 
 // Factura electrónica: envía a Hacienda los comprobantes pendientes y consulta su estado.
 const enviarComprobantes = () =>
